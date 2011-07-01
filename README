@@ -2,6 +2,9 @@
   uPopup for jQuery, version 1.0-pre
   ==================================
 
+    uPopup (pronounced "micro popup") is a lightweight, small, and beautiful
+    "bubble" style popup dialog plugin for jQuery.
+
     This library is currently in active development; there is no production
     version available at this time.
 
