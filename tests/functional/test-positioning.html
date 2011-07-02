@@ -22,7 +22,7 @@
     <body>
         <script type="text/javascript">
             jQuery(function () {
-                $('.button').click(function (rv) {
+                $('.button').click(function (ev) {
                     var elt = $('<div style="width: 10em; height: 10em;" />');
                     var popup = elt.uPopup('create', this).uPopup('elements');
                     popup.click(function (ev) {
@@ -31,8 +31,20 @@
                 });
             });
         </script>
-        <div style="position: absolute; left: 30em; top: 20em;">
-            <input id="x" class="button" type="button" value="Test" />
+        <div style="position: absolute; left: 40%; top: 40%;">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 50%; top: 50%;">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 60%; top: 60%;">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 60%; top: 40%;">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 40%; top: 60%;">
+            <input class="button" type="button" value="Test" />
         </div>
         <div style="float: right">
             <input class="button" type="button" value="Test" />

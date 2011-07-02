@@ -126,12 +126,20 @@
                     options: options
                 });
 
-
                 /* Insert popup */
                 priv.insert(wrapper_elt, target_elt, popup_elt, options);
 
                 /* Re-position popup to fit */
-                priv.autoposition(wrapper_elt, target_elt);
+                priv.autoposition(wrapper_elt, target_elt, options);
+
+                /* Register event handlers */
+                if (options.reposition !== false) {
+                    $(window).resize(function (ev) {
+                        $.uPopup.impl.priv.autoposition(
+                            wrapper_elt, target_elt, options
+                        );
+                    });
+                }
 
             });
 
@@ -145,35 +153,29 @@
          */
         show: function (_callback) {
             return $.uPopup.impl.priv.show_or_hide.call(
-                this,
-                function (_anim) {
-                    if (_anim) { this.fadeIn(); } else { this.show(); }
-                },
-                _callback
+                this, true, _callback
             );
         },
 
         /**
-         * Hide the popup currently wrapping the selected element.
+         * Hide the popup currently wrapping the selected element(s).
          * You can disable animations by setting _options.fx = false
          * in the `create` method, or by disabling jQuery's effects.
          */
         hide: function (_callback) {
             return $.uPopup.impl.priv.show_or_hide.call(
-                this,
-                function (_anim) {
-                    if (_anim) { this.fadeOut(); } else { this.hide(); }
-                },
-                _callback
+                this, false, _callback
             );
         },
 
         /**
-         *
+         * Destroys the popup that is currently wrapping the
+         * selected element(s), hiding the popup first if necessary.
          */
         destroy: function () {
             $.uPopup.impl.hide.call(this, function (_wrapper_elt) {
                 _wrapper_elt.remove();
+                delete _wrapper_elt;
             });
         },
 
@@ -267,7 +269,7 @@
                     (priv._zindex_base + priv._serial_number++)
                 );
 
-                _wrapper_elt.hide();
+                _wrapper_elt.css('display', 'none');
                 _wrapper_elt.prependTo('body');
 
                 $.uPopup.impl.show.call(_elt, _options.onShow)
@@ -279,7 +281,7 @@
              * destroy function. To create a new instance, use `create`.
              * This is the backend for impl.show and impl.hide.
              */
-            show_or_hide: function (_fn, _callback) {
+            show_or_hide: function (_is_show, _callback) {
 
                 var priv = $.uPopup.impl.priv;
 
@@ -291,17 +293,27 @@
                     var options = (data.options || {});
                     var wrapper_elt = data.elt;
 
-                    /* Hide wrapper element:
-                        This contains the originally-provided element. */
+                    /* Build callback */
+                    var callback = function () {
+                        if (_callback) {
+                            _callback.call(popup_elt, wrapper_elt);
+                        }
+                    };
 
-                    if (options.fx == undefined || options.fx === true) {
-                        _fn.call(wrapper_elt, true);
+                    /* Invoke action */
+                    if (options.fx !== false) {
+                        if (_is_show) {
+                            wrapper_elt.fadeIn(null, callback);
+                        } else {
+                            wrapper_elt.fadeOut(null, callback);
+                        }
                     } else {
-                        _fn.call(wrapper_elt, false);
-                    }
-
-                    if ($.isFunction(_callback)) {
-                        _callback.call(popup_elt, wrapper_elt);
+                        if (_is_show) {
+                            wrapper_elt.show();
+                        } else {
+                            wrapper_elt.hide();
+                        }
+                        callback.call(this);
                     }
                 });
 
@@ -313,35 +325,59 @@
              * `wrapper_elt` on the side of `target_elt` that has the most
              * available screen space, in each of two dimensions.
              */
-            autoposition: function (_wrapper_elt, _target_elt) {
+            autoposition: function (_wrapper_elt, _target_elt, _options) {
 
+                var avail;
+                var options = (_options || {});
+
+                var ev = options.eventData;
                 var container_elt = $(document);
-                var target_offset = _target_elt.offset();
 
-                /* Precompute sizes:
+                /* Precompute sizes, offsets:
                     These figures are used in the placement algorithm. */
                     
+                var target_offset = _target_elt.offset();
+
                 var target_size = {
-                    width: _target_elt.outerWidth(true),
-                    height: _target_elt.outerHeight(true)
+                    x: _target_elt.outerWidth(true),
+                    y: _target_elt.outerHeight(true)
                 };
                 
                 /* Available space on each side of target:
                     { x: [ left, right ], y: [ top, bottom ] } */
-                    
-                var avail = {
-                    x: [
-                        target_offset.left,
-                        container_elt.width()
-                            - (target_offset.left + target_size.width)
-                    ],
-                    y: [
-                        target_offset.top,
-                        container_elt.height()
-                            - (target_offset.top + target_size.height)
-                    ]
-                };
                 
+                if (ev) {
+                        
+                    /* Event object provided:
+                        This tells us where the pointer currently is.
+                        We can use this instead of the target's corners. */
+
+                    var x = ev.pageX, y = ev.pageY;
+
+                    avail = {
+                        x: [ x, container_elt.width() - x ],
+                        y: [ y, container_elt.height() - y ]
+                    };
+
+                } else {
+
+                    /* No event object:
+                        Compute space relative to `target_elt`'s corners. */
+
+                    avail = {
+                        x: [
+                            target_offset.left,
+                            container_elt.width()
+                                - (target_offset.left + target_size.x)
+                        ],
+                        y: [
+                            target_offset.top,
+                            container_elt.height()
+                                - (target_offset.top + target_size.y)
+                        ]
+                    };
+                }
+
                 /* Indices:
                     Each value is an index for `avail` and `offsets`. */
 
@@ -351,7 +387,7 @@
                 };
 
                 return $.uPopup.impl.priv.reposition(
-                    _wrapper_elt, _target_elt, indices.x, indices.y
+                    _wrapper_elt, _target_elt, indices.x, indices.y, _options
                 );
             },
 
@@ -364,48 +400,80 @@
              * priv.wrap; _x and _y are boolean values denoting left/right
              * and top/bottom (each zero/one or true/false, respectively).
              */
-            reposition: function (_wrapper_elt, _target_elt, _x, _y) {
+            reposition: function (_wrapper_elt, _target_elt, _x, _y, _options) {
 
-                var target_offset = _target_elt.offset();
+                var offsets;
+                var options = (_options || {});
+
+                var ev = options.eventData;
                 var inner_elt = _wrapper_elt.closestChild('.direction');
                 var arrow_elt = inner_elt.closestChild('.arrow');
 
                 /* Precompute sizes:
                     These figures are used in the placement algorithm. */
-                    
-                var target_size = {
-                    width: _target_elt.outerWidth(true),
-                    height: _target_elt.outerHeight(true)
-                };
+                        
+                var target_offset = _target_elt.offset();
+
                 var wrapper_size = {
-                    width: _wrapper_elt.outerWidth(true),
-                    height: _wrapper_elt.outerHeight(true)
+                    x: _wrapper_elt.outerWidth(true),
+                    y: _wrapper_elt.outerHeight(true)
+                };
+                var target_size = {
+                    x: _target_elt.outerWidth(true),
+                    y: _target_elt.outerHeight(true)
                 };
                 var padding_size = {
-                    width: (wrapper_size.width - inner_elt.width()) / 2,
-                    height: (wrapper_size.height - inner_elt.height()) / 2
+                    x: (wrapper_size.x - inner_elt.width()) / 2,
+                    y: (wrapper_size.y - inner_elt.height()) / 2
                 };
                 var arrow_size = {
-                    height: arrow_elt.outerHeight(true)
+                    x: arrow_elt.outerWidth(),
+                    y: arrow_elt.outerHeight()
                 };
 
-                /* Possible placement offsets:
-                    Each candidate matches a value in `avail`, below. */
-                    
-                var offsets = {
-                    x: [
-                        target_offset.left - wrapper_size.width
-                            + padding_size.width,
-                        target_offset.left + target_size.width
-                            - padding_size.width
-                    ],
-                    y: [
-                        target_offset.top - wrapper_size.height +
-                            padding_size.height + 1.5 * arrow_size.height,
-                        target_offset.top + target_size.height -
-                            1.5 * arrow_size.height - padding_size.height
-                    ]
-                };
+                var d = $.uPopup.impl.priv.calculate_arrow_delta(
+                    _wrapper_elt
+                );
+
+                if (ev) {
+
+                    /* Event object provided:
+                        This tells us where the pointer currently is.
+                        We can use this instead of the target's corners. */
+
+                    var x = ev.pageX, y = ev.pageY;
+
+                    offsets = {
+                        x: [
+                            x - wrapper_size.x - arrow_size.x / 2 + d.x,
+                            x + arrow_size.x / 2 - d.x
+                        ],
+                        y: [
+                            y - wrapper_size.y + arrow_size.y / 2 + d.y,
+                            y - arrow_size.y / 2 - d.y
+                        ]
+                    };
+
+                } else {
+
+                    /* Possible placement offsets:
+                        Each candidate matches a value in `avail`, below. */
+     
+                    offsets = {
+                        x: [
+                            target_offset.left - wrapper_size.x + d.x
+                                + padding_size.x - arrow_size.x / 2,
+                            target_offset.left + target_size.x - d.x
+                                - padding_size.x + arrow_size.x / 2
+                        ],
+                        y: [
+                            target_offset.top - wrapper_size.y + d.y +
+                                padding_size.y + arrow_size.y / 2,
+                            target_offset.top + target_size.y - d.y -
+                                padding_size.y - arrow_size.y / 2
+                        ]
+                    };
+                }
 
                 /* Position arrow:
                     We place the arrow on the corner of the popup that
@@ -432,6 +500,24 @@
                     top: offsets.y[_y],
                     left: offsets.x[_x]
                 });
+            },
+
+            /**
+             * Use an invisible <div> to determine the number of additional
+             * pixels needed to shift to the arrow element's exact point.
+             * This is required due to the use of absolute positioning.
+             */
+            calculate_arrow_delta: function (_wrapper_elt)
+            {
+                var adjust_div = $('<div />').addClass('adjust');
+                _wrapper_elt.append(adjust_div)
+
+                var delta = {
+                    x: 0, y: adjust_div.height()
+                };
+
+                adjust_div.remove();
+                return delta;
             }
 
         }
