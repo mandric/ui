@@ -29,6 +29,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * Special thanks to Medic Mobile, Inc. for making this project possible. Medic
+ * Mobile is a US-based non-profit that works in developing countries to improve
+ * health care systems and outcomes, by leveraging SMS and web technologies.
+ * If this project has made your life easier in one way or another, and
+ * you'd like to give back in some way, please consider donating directly at
+ * medicmobile.org. Your donation is likely to be tax deductible if you reside
+ * within the United States. Your donation will directly assist our construction
+ * of open-source mobile health software.
+ */
+
 (function ($) {
 
     /**
@@ -83,9 +94,9 @@
          */
         create: function (_target_elts, _options) {
 
-            var impl = $.uPopup.impl;
+            var priv = $.uPopup.impl.priv;
             var options = (_options || {});
-            var target_elts = impl.priv.listify(_target_elts);
+            var target_elts = priv.listify(_target_elts);
 
             $(this).each(function (i, popup_elt) {
 
@@ -106,107 +117,95 @@
                 popup_elt = $(popup_elt);
                 target_elt = $(target_elt);
 
-                /* Compute other options */
-                var insert_options = {
-                    direction: 'left'
-                };
-               
-                /* Insert popup */
-                var wrapper_elt = impl.wrap(popup_elt, insert_options);
-                impl.insert(wrapper_elt, target_elt);
-
-                /* Re-position popup to fit */
-                impl.priv.reposition(wrapper_elt, target_elt);
+                /* Wrap `popup_elt` inside of `wrapper_elt` */
+                var wrapper_elt = priv.wrap(popup_elt);
 
                 /* Save instance data */
                 popup_elt.data('upopup', {
                     elt: wrapper_elt,
                     options: options
                 });
+
+
+                /* Insert popup */
+                priv.insert(wrapper_elt, target_elt, popup_elt, options);
+
+                /* Re-position popup to fit */
+                priv.autoposition(wrapper_elt, target_elt);
+
             });
 
             return this;
         },
 
         /**
-         * Returns a new DOM element, consisting of _popup_elt wrapped
-         * inside of uPopup-specific elements. Values in _options
-         * are used to control the appearance and layout of the wrapper.
+         * Show the popup currently wrapping the selected element.
+         * You can disable animations by setting _options.fx = false
+         * in the `create` method, or by disabling jQuery's effects.
          */
-        wrap: function (_popup_elt, _options) {
-
-            var options = (_options || {});
-            var wrap_elt = $(
-                '<div class="upopup">' +
-                    '<div class="direction">' +
-                        '<div class="arrow first-arrow" />' +
-                        '<div class="border">' +
-                            '<div class="inner" />' +
-                        '</div>' +
-                        '<div class="arrow last-arrow" />' +
-                        '<div class="clear" />' +
-                    '</div>' +
-                '</div>'
+        show: function (_callback) {
+            return $.uPopup.impl.priv.show_or_hide.call(
+                this,
+                function (_anim) {
+                    if (_anim) { this.fadeIn(); } else { this.show(); }
+                },
+                _callback
             );
-
-            $('.inner', wrap_elt).append(_popup_elt);
-            return wrap_elt;
         },
 
         /**
-         * Places a wrapped uPopup element inside of the DOM.
-         * Values inside of the _options object are used to
-         * control position and placement.
+         * Hide the popup currently wrapping the selected element.
+         * You can disable animations by setting _options.fx = false
+         * in the `create` method, or by disabling jQuery's effects.
          */
-        insert: function (_popup_elt, _target_elt, _options) {
-
-            var impl = $.uPopup.impl;
-
-            _popup_elt.css(
-                'z-index',
-                (impl.priv._zindex_base + impl.priv._serial_number++)
+        hide: function (_callback) {
+            return $.uPopup.impl.priv.show_or_hide.call(
+                this,
+                function (_anim) {
+                    if (_anim) { this.fadeOut(); } else { this.hide(); }
+                },
+                _callback
             );
-
-            _popup_elt.css('display', 'none');
-            _popup_elt.prependTo('body').fadeIn();
         },
 
         /**
-         * Destroy a popup instance, removing it from the DOM and
-         * discarding the element if either hasn't already been done.
+         *
          */
         destroy: function () {
-
-            var impl = $.uPopup.impl;
-
-            $(this).each(function (i, popup_elt) {
-
-                /* Retrieve instance data */
-                var data = impl.priv.storage_for(popup_elt);
-
-                /* Remove wrapper element:
-                    This contains the original pop-up element. */
-
-                if (data.elt) {
-                    data.elt.remove();
-                }
+            $.uPopup.impl.hide.call(this, function (_wrapper_elt) {
+                _wrapper_elt.remove();
             });
-
-            return this;
         },
 
         /**
-         * A namespace that contains private functions
+         * Given a list of originally-provided elements, this method
+         * returns a list of the 'wrapper' elements currently in use.
+         */
+        elements: function () {
+
+            var priv = $.uPopup.impl.priv;
+
+            return $(
+                $(this).map(function (i, elt) {
+                    var wrapper_elt = priv.storage_for(elt).elt;
+                    return (wrapper_elt ? wrapper_elt[0] : undefined);
+                }).filter(function (elt) {
+                    return !elt;
+                })
+            );
+        },
+
+        /**
+         * A namespace that contains private functions, each
          * used internally as part of uPopup's implementation.
          * Please don't call these from outside of $.uPopup.impl.
          */
         priv: {
-
             /**
              * Local variables:
              *  We provide a monotonically-increasing z-index for the
              *  popups we create, so as to ensure that newer popups
-             *  appear above older popups. This method imposes an
+             *  always appear above older popups. This method imposes an
              *  artificial limit on the number of popups per page load,
              *  but it's far higher than any real-world use case.
              */
@@ -228,16 +227,96 @@
             },
 
             /**
-             * The popup dialog repositioning algorithm. Places
-             * `wrapper_elt` on the side of `target_elt` that has
-             * the most available screen space, for each dimension.
+             * Returns a new DOM element, consisting of _popup_elt wrapped
+             * inside of uPopup-specific elements. Values in _options
+             * are used to control the appearance and layout of the wrapper.
              */
-            reposition: function (_wrapper_elt, _target_elt) {
+            wrap: function (_popup_elt, _options) {
+
+                var options = (_options || {});
+
+                var wrap_elt = $(
+                    '<div class="upopup">' +
+                        '<div class="direction">' +
+                            '<div class="arrow first-arrow" />' +
+                            '<div class="border">' +
+                                '<div class="inner" />' +
+                            '</div>' +
+                            '<div class="arrow last-arrow" />' +
+                            '<div class="clear" />' +
+                        '</div>' +
+                    '</div>'
+                );
+
+                $('.inner', wrap_elt).append(_popup_elt);
+                return wrap_elt;
+            },
+
+            /**
+             * Places a wrapped uPopup element inside of the DOM.
+             * Values inside of the _options object are used to
+             * control position and placement.
+             */
+            insert: function (_wrapper_elt, _target_elt, _elt, _options) {
+
+                var options = (_options || {});
+                var priv = $.uPopup.impl.priv;
+
+                _wrapper_elt.css(
+                    'z-index',
+                    (priv._zindex_base + priv._serial_number++)
+                );
+
+                _wrapper_elt.hide();
+                _wrapper_elt.prependTo('body');
+
+                $.uPopup.impl.show.call(_elt, _options.onShow)
+            },
+
+            /**
+             * Shows or hides a currently-visible popup instance. To remove
+             * an instance altogether, and discard the element, see the
+             * destroy function. To create a new instance, use `create`.
+             * This is the backend for impl.show and impl.hide.
+             */
+            show_or_hide: function (_fn, _callback) {
+
+                var priv = $.uPopup.impl.priv;
+
+                /* Multiple elements are allowed */
+                $(this).each(function (i, popup_elt) {
+
+                    /* Retrieve instance data */
+                    var data = priv.storage_for(popup_elt);
+                    var options = (data.options || {});
+                    var wrapper_elt = data.elt;
+
+                    /* Hide wrapper element:
+                        This contains the originally-provided element. */
+
+                    if (options.fx == undefined || options.fx === true) {
+                        _fn.call(wrapper_elt, true);
+                    } else {
+                        _fn.call(wrapper_elt, false);
+                    }
+
+                    if ($.isFunction(_callback)) {
+                        _callback.call(popup_elt, wrapper_elt);
+                    }
+                });
+
+                return this;
+            },
+
+            /**
+             * The popup dialog automatic repositioning algorithm. Places
+             * `wrapper_elt` on the side of `target_elt` that has the most
+             * available screen space, in each of two dimensions.
+             */
+            autoposition: function (_wrapper_elt, _target_elt) {
 
                 var container_elt = $(document);
                 var target_offset = _target_elt.offset();
-                var inner_elt = _wrapper_elt.closestChild('.direction');
-                var arrow_elt = inner_elt.closestChild('.arrow');
 
                 /* Precompute sizes:
                     These figures are used in the placement algorithm. */
@@ -245,36 +324,6 @@
                 var target_size = {
                     width: _target_elt.outerWidth(true),
                     height: _target_elt.outerHeight(true)
-                };
-                var wrapper_size = {
-                    width: _wrapper_elt.outerWidth(true),
-                    height: _wrapper_elt.outerHeight(true)
-                };
-                var padding_size = {
-                    width: (wrapper_size.width - inner_elt.width()) / 2,
-                    height: (wrapper_size.height - inner_elt.height()) / 2
-                };
-                var arrow_size = {
-                    width: arrow_elt.outerWidth(true),
-                    height: arrow_elt.outerHeight(true)
-                };
-                
-                /* Possible placement offsets:
-                    Each candidate matches a value in `avail`, below. */
-                    
-                var offsets = {
-                    x: [
-                        target_offset.left - wrapper_size.width
-                            + padding_size.width,
-                        target_offset.left + target_size.width
-                            - padding_size.width
-                    ],
-                    y: [
-                        target_offset.top - wrapper_size.height +
-                            padding_size.height + 1.5 * arrow_size.height,
-                        target_offset.top + target_size.height -
-                            1.5 * arrow_size.height - padding_size.height
-                    ]
                 };
                 
                 /* Available space on each side of target:
@@ -301,18 +350,75 @@
                     y: (avail.y[0] > avail.y[1] ? 0 : 1)
                 };
 
+                return $.uPopup.impl.priv.reposition(
+                    _wrapper_elt, _target_elt, indices.x, indices.y
+                );
+            },
+
+            /**
+             * This is the core repositioning function. This is used as the
+             * back-end of auto_position, and can also be used if you want
+             * force a popup to appear facing a certain direction. The
+             * _target_elt is the element that the popup should point
+             * to; _wrapper_elt is the return value obtained from calling
+             * priv.wrap; _x and _y are boolean values denoting left/right
+             * and top/bottom (each zero/one or true/false, respectively).
+             */
+            reposition: function (_wrapper_elt, _target_elt, _x, _y) {
+
+                var target_offset = _target_elt.offset();
+                var inner_elt = _wrapper_elt.closestChild('.direction');
+                var arrow_elt = inner_elt.closestChild('.arrow');
+
+                /* Precompute sizes:
+                    These figures are used in the placement algorithm. */
+                    
+                var target_size = {
+                    width: _target_elt.outerWidth(true),
+                    height: _target_elt.outerHeight(true)
+                };
+                var wrapper_size = {
+                    width: _wrapper_elt.outerWidth(true),
+                    height: _wrapper_elt.outerHeight(true)
+                };
+                var padding_size = {
+                    width: (wrapper_size.width - inner_elt.width()) / 2,
+                    height: (wrapper_size.height - inner_elt.height()) / 2
+                };
+                var arrow_size = {
+                    height: arrow_elt.outerHeight(true)
+                };
+
+                /* Possible placement offsets:
+                    Each candidate matches a value in `avail`, below. */
+                    
+                var offsets = {
+                    x: [
+                        target_offset.left - wrapper_size.width
+                            + padding_size.width,
+                        target_offset.left + target_size.width
+                            - padding_size.width
+                    ],
+                    y: [
+                        target_offset.top - wrapper_size.height +
+                            padding_size.height + 1.5 * arrow_size.height,
+                        target_offset.top + target_size.height -
+                            1.5 * arrow_size.height - padding_size.height
+                    ]
+                };
+
                 /* Position arrow:
                     We place the arrow on the corner of the popup that
                     is closest to the near corner of the target element. */
 
-                if (indices.x) {
-                    if (indices.y) {
+                if (_x) {
+                    if (_y) {
                         inner_elt.addClass('w');
                     } else {
                         inner_elt.addClass('wsw');
                     }
                 } else {
-                    if (indices.y) {
+                    if (_y) {
                         inner_elt.addClass('e');
                     } else {
                         inner_elt.addClass('ese');
@@ -323,8 +429,8 @@
                     Write the actual style change to the DOM element. */
 
                 return _wrapper_elt.offset({
-                    top: offsets.y[indices.y],
-                    left: offsets.x[indices.x]
+                    top: offsets.y[_y],
+                    left: offsets.x[_x]
                 });
             }
 
@@ -352,27 +458,28 @@
  * Dual licensed under the MIT license and GPL licenses:
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.opensource.org/licenses/gpl-license.php
- * 
  */
 (function ($) {
-    $.fn.closestChild = function (selector) {
-        /* Breadth-first search for the first matched node */
-        if (selector && selector !== '') {
-            var queue = [];
-            queue.push(this);
-            while (queue.length > 0) {
-                var node = queue.shift();
-                var children = node.children();
-                for (var i = 0; i < children.length; ++i) {
-                    var child = $(children[i]);
-                    if (child.is(selector)) {
-                        return child;
+    if (!$.fn.closestChild) {
+        $.fn.closestChild = function (selector) {
+            /* Breadth-first search for the first matched node */
+            if (selector && selector !== '') {
+                var queue = [];
+                queue.push(this);
+                while (queue.length > 0) {
+                    var node = queue.shift();
+                    var children = node.children();
+                    for (var i = 0; i < children.length; ++i) {
+                        var child = $(children[i]);
+                        if (child.is(selector)) {
+                            return child;
+                        }
+                        queue.push(child);
                     }
-                    queue.push(child);
                 }
             }
-        }
-        return $(); /* Nothing found */
-    };
+            return $(); /* Nothing found */
+        };
+    }
 }(jQuery));
 
