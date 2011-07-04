@@ -535,7 +535,7 @@
                     [ 'ese', 'e' ], [ 'wsw', 'w' ]
                 ]
 
-                inner_elt.attr('class', 'direction');
+                inner_elt.removeClass('e w ese wsw');
                 inner_elt.addClass(classes[_x][_y]);
 
                 /* Finally, reposition:
