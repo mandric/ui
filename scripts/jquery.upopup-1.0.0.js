@@ -43,7 +43,7 @@
 (function ($) {
 
     /**
-     * uPopup - Markup and CSS Overview:
+     * uPopup - Markup and CSS Overview
      *
      *  The uPopup plugin uses CSS for all layout and appearance,
      *  including rounded corners, arrow/pointer placement, and
@@ -83,6 +83,122 @@
      *  To modify the appearance of any uPopup-managed element, use a
      *  custom stylesheet to override properties found in the default
      *  uPopup CSS file.
+     */
+
+    /**
+     * uPopup - External API Overview
+     *
+     *  $.uPopup(_method, ...):
+     *      This function is the primary entry point for all uPopup
+     *      methods. To call a uPopup method, invoke this function on
+     *      any jQuery object. Supply the method name in the first
+     *      argument, followed by the arguments to the method. This
+     *      function will dispatch your call to the appropriate API
+     *      function.
+     *
+     *  create(this, _target_elts, _options):
+     *      Create one or more popup windows out of the selected elements.
+     *      The `this` object should be a jQuery selection, containing the
+     *      element(s) that you'd like to have displayed inside of popup
+     *      window. If the selection contains multiple elements, multiple
+     *      popups will be created -- one for each. If you need to add
+     *      multiple elements to a single popup dialog, wrap the elements
+     *      in a single <div> (e.g. using jQuery's {wrap} function) before
+     *      calling uPopup's {create} method.
+     *
+     *      this:
+     *          A jQuery selection. These are referred to as 'source
+     *          elements'; each element in the list will be wrapped inside
+     *          of a separate popup dialog and displayed.
+     *
+     *      _target_elts:
+     *          This argument is either (i) an array of elements,
+     *          (ii) an array of javascript functions, or (iii) a jQuery
+     *          selection. For each source element s[i] in {this}, the
+     *          positioning algorithm will place s[i]'s popup relative
+     *          to the target element t[i] in {_target_elts}. If t[i] is
+     *          not defined, the positioning algorithm will use the closest
+     *          previous element t[j] (max(j) | j < i) to determine an
+     *          optimal position. If t[i] is a function, it will be invoked
+     *          before positioning occurs, and must return an element.
+     *
+     *      _options:
+     *          A javascript object, containing options that influence the
+     *          behaviour of uPopup. A summary of the available options
+     *          appears below:
+     *
+     *              fx:
+     *                  A boolean value. True (default) if uPopup should be
+     *                  permitted to use jQuery effects when showing/hiding
+     *                  a popup dialog; false otherwise. Note that jQuery
+     *                  itself has a similar global option.
+     *
+     *              eventData:
+     *                  A jQuery event object, obtained from a mouse click
+     *                  or mouse move handler. Each source element in {this}
+     *                  will be placed directly underneath the coordinates
+     *                  specified by this object's pageX and pageY values.
+     *
+     *              centerX, centerY, center:
+     *                  A boolean value. Centres each source element in
+     *                  {this} on its respective target element from
+     *                  {_target_elts} -- either on the x-axis, y-axis,
+     *                  or on both axes, respectively.
+     *
+     *              vertical:
+     *                  A boolean value. If true, place each popup dialog's
+     *                  pointer (i.e. triangular arrow) on the top or bottom
+     *                  of the dialog, rather than on the left or right
+     *                  side. This is useful if a popup dialog appears close
+     *                  to the top or bottom edge of a window, and will be
+     *                  used automatically bu the positioning code if it
+     *                  isn't explicitly disabled here.
+     *
+     *              reposition:
+     *                  A boolean value. True (the default) if uPopup should
+     *                  attempt to reposition the popup dialog(s) when the
+     *                  browser window is resized; false otherwise.
+     *
+     *              onShow:
+     *                  A callback function. This function will be triggered
+     *                  by uPopup after a popup window has appeared. When
+     *                  this function is called, the popup window is
+     *                  guaranteed to be visible, and all effects will have
+     *                  completed.
+     *
+     *              onHide:
+     *                  A callback function. This function will be triggered
+     *                  by uPopup after a popup window has disappeared. When
+     *                  this function is called, the popup window is
+     *                  guaranteed to be invisible, and all effects will have
+     *                  completed.
+     *      
+     *  elements():
+     *      Returns the set of wrapper elements being maintained by the
+     *      uPopup library. This function returns an array whose size is
+     *      equal to the number of elements supplied to {create} in the
+     *      {this} parameter. Each element in the return value "wraps"
+     *      (i.e. contains) exactly one source element supplied to {create}.
+     *
+     *  show():
+     *      Show a set of popup dialogs created using the {create} method.
+     *      The value of {this} should contain only elements that have
+     *      already been supplied to the {create} method. To fire an action
+     *      when the popup dialogs are fully visible, use the {onShow}
+     *      callback function.
+     *
+     *  hide():
+     *      Hide a set of popup dialogs shown using the {show} method.
+     *      The value of {this} should contain only elements that have
+     *      already been supplied to the {create} method. To fire an action
+     *      when the popup dialogs are fully visible, use the {onHide}
+     *      callback function.
+     *
+     *  destroy():
+     *      Irreversibly destroy the popup dialog "wrapper", along with
+     *      the source elements you supplied in the {this} argument when
+     *      calling {create}. Elements supplied in other arguments,
+     *      including {_target_elts} and {_options}, are not affected.
      */
 
     $.uPopup = {};
