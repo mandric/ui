@@ -24,7 +24,7 @@
             jQuery(function () {
                 $('.button').click(function (ev) {
                     var elt = $('<div style="width: 10em; height: 10em;" />');
-                    elt.uPopup('create', this, { eventData: ev });
+                    elt.uPopup('create', this, { center: true });
                     var popup = elt.uPopup('elements');
                     popup.click(function (ev) {
                         $(elt).uPopup('destroy');
@@ -32,13 +32,13 @@
                 });
             });
         </script>
-        <div class="button" style="position: absolute; left: 0; top: 0; width: 60%; height: 30%; border: solid 1em #00f;">
+        <div class="button" style="position: absolute; left: 0; top: 0; width: 60%; height: 30%; border: solid 1em #777;">
         </div>
-        <div class="button" style="position: absolute; right: 0; top: 0; width: 30%; height: 30%; border: solid 1em #00f;">
+        <div class="button" style="position: absolute; right: 0; top: 0; width: 30%; height: 30%; border: solid 1em #777;">
         </div>
-        <div class="button" style="position: absolute; right: 0; bottom: 0; width: 30%; height: 30%; border: solid 1em #00f;">
+        <div class="button" style="position: absolute; right: 0; bottom: 0; width: 30%; height: 30%; border: solid 1em #777;">
         </div>
-        <div class="button" style="position: absolute; bottom: 0; left: 0; width: 30%; height: 30%; border: solid 1em #00f;">
+        <div class="button" style="position: absolute; bottom: 0; left: 0; width: 30%; height: 30%; border: solid 1em #777;">
         </div>
       </body>
 </html>

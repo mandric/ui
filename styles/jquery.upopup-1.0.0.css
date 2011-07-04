@@ -72,6 +72,7 @@
     -moz-box-shadow: 0.15em 0.15em 0.35em #777;
 }
 .upopup .s .border,
+.upopup .se .border,
 .upopup .sw .border {
     box-shadow: -0.15em -0.15em 0.35em #777;
     -webkit-box-shadow: -0.15em -0.15em 0.35em #777;
@@ -246,5 +247,18 @@
     background-color: #b6caff;
     border-color: #b6caff;
 }
+
+.upopup .orange .arrow {
+    border-color: #db9742;
+}
+.upopup .orange .border {
+    border-color: #db9742;
+    background-color: #db9742;
+}
+.upopup .orange .border .inner {
+    background-color: #f8b762;
+    border-color: #f8b762;
+}
+
 
 

@@ -31,13 +31,13 @@
 
 /*
  * Special thanks to Medic Mobile, Inc. for making this project possible. Medic
- * Mobile is a US-based non-profit that works in developing countries to improve
- * health care systems and outcomes, by leveraging SMS and web technologies.
- * If this project has made your life easier in one way or another, and
- * you'd like to give back in some way, please consider donating directly at
- * medicmobile.org. Your donation is likely to be tax deductible if you reside
- * within the United States. Your donation will directly assist our construction
- * of open-source mobile health software.
+ * Mobile is a US-based non-profit, that works in developing countries to improve
+ * health care outcomes by leveraging SMS and web technologies.  If this project
+ * has made your life easier in one way or another, and you'd like to give back
+ * in some way, please consider donating directly at medicmobile.org. Your
+ * donation is likely to be tax deductible if you reside within the United
+ * States. Your donation will directly assist our construction of open-source
+ * mobile health software.
  */
 
 (function ($) {
@@ -122,7 +122,6 @@
 
                 /* Save instance state data */
                 popup_elt.data('upopup', {
-                    ratio: null,
                     elt: wrapper_elt,
                     options: options
                 });
@@ -494,19 +493,21 @@
 
                     /* No event object:
                         Possible offsets are the target's four corners. */
-     
+
+                    var coeff = (options.vertical ? -2.5 : 1);
+
                     offsets = {
                         x: [
                             target_offset.left - wrapper_size.x + d.x
-                                + padding_size.x - arrow_size.x / 2,
+                                + padding_size.x - coeff * arrow_size.x / 2,
                             target_offset.left + target_size.x - d.x
-                                - padding_size.x + arrow_size.x / 2
+                                - padding_size.x + coeff * arrow_size.x / 2
                         ],
                         y: [
-                            target_offset.top - wrapper_size.y + d.y +
-                                padding_size.y + arrow_size.y / 2,
-                            target_offset.top + target_size.y - d.y -
-                                padding_size.y - arrow_size.y / 2
+                            target_offset.top - wrapper_size.y + d.y
+                                + padding_size.y + coeff * arrow_size.y / 2,
+                            target_offset.top + target_size.y - d.y
+                                - padding_size.y - coeff * arrow_size.y / 2
                         ]
                     };
                 }
@@ -517,25 +518,30 @@
                     space). Due to this fact, the following steps never
                     yield less room for dialog placement -- always more. */
 
-                if (!options.eventData && options.useCenter !== false) {
-                    var dx = target_size.x / 2;
-                    var dy = target_size.y / 2;
-
-                    offsets.x[0] += dx;
-                    offsets.x[1] -= dx;
-                    offsets.y[0] += dy;
-                    offsets.y[1] -= dy;
+                if (!options.eventData) {
+                    if (options.center || options.centerX) {
+                        var dx = target_size.x / 2;
+                        offsets.x[0] += dx;
+                        offsets.x[1] -= dx;
+                    }
+                    if (options.center || options.centerY) {
+                        var dy = target_size.y / 2;
+                        offsets.y[0] += dy;
+                        offsets.y[1] -= dy;
+                    }
                 }
 
                 /* Position arrow:
                     We place the arrow on the corner of the popup that
                     is closest to the near corner of the target element. */
 
-                var classes = [
-                    [ 'ese', 'e' ], [ 'wsw', 'w' ]
-                ]
+                var classes = (
+                    options.vertical ?
+                        [ [ 'se', 'ne' ], [ 's', 'n' ] ]
+                        : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
+                );
 
-                inner_elt.removeClass('e w ese wsw');
+                inner_elt.removeClass('se ne s n ese e wsw w');
                 inner_elt.addClass(classes[_x][_y]);
 
                 /* Finally, reposition:
