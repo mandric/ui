@@ -65,7 +65,7 @@
      *      </div>
      *    </div>
      *
-     *  The popup dialog uses a triangular <div> (made with a thick
+     *  The popup dialog uses a triangular <div> (made using a thick
      *  border, with three transparent sides) to point at the target
      *  element that you provide. Only one arrow may be visible at a
      *  time; the visible arrow can be controlled by using one of the
@@ -172,6 +172,16 @@
      *                  this function is called, the popup window is
      *                  guaranteed to be invisible, and all effects will have
      *                  completed.
+     *
+     *              useViewport:
+     *                  When set to true, the uPopup auto-positioning code
+     *                  only considers visible space -- that is, space
+     *                  appearing inside of the window element -- to be
+     *                  available for placement. This constrains the dialog's
+     *                  placement to visible locations only, and is the
+     *                  default. Set this to false if you're okay with the
+     *                  popup dialog occasionally being placed outside of
+     *                  the viewport (but still within the document).
      *      
      *  elements():
      *      Returns the set of wrapper elements being maintained by the
@@ -271,10 +281,15 @@
          * You can disable animations by setting _options.fx = false
          * in the `create` method, or by disabling jQuery's effects.
          */
-        show: function (_callback) {
-            return $.uPopup.impl.priv.toggle.call(
-                this, true, _callback
-            );
+        show: function () {
+            var priv = $.uPopup.impl.priv;
+
+            $(this).each(function (i, popup_elt) {
+                var state = priv.instance_data_for(popup_elt);
+                $.uPopup.impl.priv.toggle.call(
+                    popup_elt, true, (state.options || {}).onShow
+                )
+            });
         },
 
         /**
@@ -283,9 +298,14 @@
          * in the `create` method, or by disabling jQuery's effects.
          */
         hide: function (_callback) {
-            return $.uPopup.impl.priv.toggle.call(
-                this, false, _callback
-            );
+            var priv = $.uPopup.impl.priv;
+
+            $(this).each(function (i, popup_elt) {
+                var state = priv.instance_data_for(popup_elt);
+                $.uPopup.impl.priv.toggle.call(
+                    popup_elt, false, (state.options || {}).onHide
+                )
+            });
         },
 
         /**
@@ -293,10 +313,12 @@
          * selected element(s), hiding the popup first if necessary.
          */
         destroy: function () {
-            $.uPopup.impl.hide.call(this, function (_wrapper_elt) {
-                _wrapper_elt.remove();
-                delete _wrapper_elt;
-            });
+            $.uPopup.impl.priv.toggle.call(
+                this, false, function (_wrapper_elt) {
+                    _wrapper_elt.remove();
+                    delete _wrapper_elt;
+                }
+            );
         },
 
         /**
@@ -409,7 +431,7 @@
                 _wrapper_elt.css('display', 'none');
                 _wrapper_elt.prependTo('body');
 
-                $.uPopup.impl.show.call(_popup_elt, _options.onShow)
+                $.uPopup.impl.show.call(_popup_elt)
             },
 
             /**
@@ -484,7 +506,7 @@
                     x: _target_elt.outerWidth(true),
                     y: _target_elt.outerHeight(true)
                 };
-                
+
                 /* Available space on each side of target:
                     { x: [ left, right ], y: [ top, bottom ] } */
                 
@@ -523,6 +545,32 @@
                     };
                 }
 
+                /* Placement relative to viewport:
+                    If the viewport option has been set, then
+                    only count space that's immediately visible. */
+
+                if (options.useViewport !== false) {
+
+                    var window_elt = $(window);
+
+                    var window_offset = {
+                        y: window_elt.scrollTop(),
+                        x: window_elt.scrollLeft()
+                    };
+
+                    avail.x[0] -= window_offset.x;
+                    avail.x[1] -= (
+                        container_size.x -
+                            (window_offset.x + window_elt.width())
+                    );
+                    avail.y[0] -= window_offset.y;
+                    avail.y[1] -= (
+                        container_size.y -
+                            (window_offset.y + window_elt.height())
+                    );
+
+                }
+                
                 /* Indices:
                     Each value is an index for `avail` and `offsets`. */
 
@@ -539,12 +587,12 @@
 
             /**
              * This is the core repositioning function. This is used as the
-             * back-end of auto_position, and can also be used if you want
+             * back-end of auto_position, and may be called directly to
              * force a popup to appear facing a certain direction. The
-             * _target_elt is the element that the popup should point
-             * to; _wrapper_elt is the return value obtained from calling
-             * priv.wrap; _x and _y are boolean values denoting left/right
-             * and top/bottom (each zero/one or true/false, respectively).
+             * {_target_elt} is the element that the popup should point
+             * to; {_wrapper_elt} is the return value obtained from calling
+             * {priv.wrap}; _x and _y are boolean values denoting left/right
+             * and top/bottom (each zero/one or false/true, respectively).
              */
             reposition: function (_wrapper_elt, _popup_elt,
                                   _target_elt, _x, _y, _options) {
@@ -578,8 +626,17 @@
                     y: arrow_elt.outerHeight()
                 };
 
-                /* Difference between arrow's point and edge */
+                /* Delta value:
+                    Distance between popup's edge and arrow's edge. */
+
                 var d = priv.calculate_arrow_delta(_wrapper_elt);
+
+                /* Coefficients:
+                    Arrow size, adjust width/x, adjust height/y */
+
+                var c = (
+                    options.vertical ? [ -1, 1, 0 ] : [ 1, 0, 1 ]
+                );
 
                 if (ev) {
 
@@ -595,35 +652,34 @@
 
                     offsets = {
                         x: [
-                            pt.x - wrapper_size.x - arrow_size.x / 2 + d.x,
-                            pt.x + arrow_size.x / 2 - d.x
+                            pt.x - wrapper_size.x - c[0] * arrow_size.x / 2
+                                + c[1] * d.x,
+                            pt.x + c[0] * arrow_size.x / 2 - c[1] * d.x
                         ],
                         y: [
-                            pt.y - wrapper_size.y + arrow_size.y / 2 + d.y,
-                            pt.y - arrow_size.y / 2 - d.y
+                            pt.y - wrapper_size.y + c[0] * arrow_size.y / 2
+                                + c[2] * d.y,
+                            pt.y - c[0] * arrow_size.y / 2 - c[2] * d.y
                         ]
                     };
-
 
                 } else {
 
                     /* No event object:
                         Possible offsets are the target's four corners. */
 
-                    var coeff = (options.vertical ? -2.5 : 1);
-
                     offsets = {
                         x: [
-                            target_offset.left - wrapper_size.x + d.x
-                                + padding_size.x - coeff * arrow_size.x / 2,
-                            target_offset.left + target_size.x - d.x
-                                - padding_size.x + coeff * arrow_size.x / 2
+                            target_offset.left - wrapper_size.x + c[1] * d.x
+                                + padding_size.x - c[0] * arrow_size.x / 2,
+                            target_offset.left + target_size.x - c[1] * d.x
+                                - padding_size.x + c[0] * arrow_size.x / 2
                         ],
                         y: [
-                            target_offset.top - wrapper_size.y + d.y
-                                + padding_size.y + coeff * arrow_size.y / 2,
-                            target_offset.top + target_size.y - d.y
-                                - padding_size.y - coeff * arrow_size.y / 2
+                            target_offset.top - wrapper_size.y + c[2] * d.y
+                                + padding_size.y + c[0] * arrow_size.y / 2,
+                            target_offset.top + target_size.y - c[2] * d.y
+                                - padding_size.y - c[0] * arrow_size.y / 2
                         ]
                     };
                 }
@@ -672,7 +728,9 @@
             /**
              * Use an invisible <div> to determine the number of additional
              * pixels needed to shift to the arrow element's exact point.
-             * This is required due to the use of absolute positioning.
+             * This is required due to the use of absolute positioning --
+             * we don't have a solid way to determine the offset-from-edge
+             * in pixels using position data alone.
              */
             calculate_arrow_delta: function (_wrapper_elt)
             {
@@ -680,7 +738,8 @@
                 _wrapper_elt.append(adjust_div)
 
                 var delta = {
-                    x: 0, y: adjust_div.height()
+                    x: adjust_div.width(),
+                    y: adjust_div.height()
                 };
 
                 adjust_div.remove();
@@ -697,6 +756,10 @@
                 var x = ev.pageX, y = ev.pageY;
 
                 if (state.ratio) {
+
+                    /* Do we have a offset-to-size ratio?
+                        If so, adjust x and y before returning. */
+
                     x = offset.left + state.ratio.x * size.x;
                     y = offset.top + state.ratio.y * size.y;
                 }

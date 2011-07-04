@@ -24,7 +24,7 @@
             jQuery(function () {
                 $('.button').click(function (ev) {
                     var elt = $('<div style="width: 10em; height: 10em;" />');
-                    elt.uPopup('create', this, { center: true });
+                    elt.uPopup('create', this, { eventData: ev, vertical: true });
                     var popup = elt.uPopup('elements');
                     popup.click(function (ev) {
                         $(elt).uPopup('destroy');

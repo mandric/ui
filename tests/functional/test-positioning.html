@@ -24,7 +24,10 @@
             jQuery(function () {
                 $('.button').click(function (ev) {
                     var elt = $('<div style="width: 10em; height: 10em;" />');
-                    var popup = elt.uPopup('create', this).uPopup('elements');
+                    elt.uPopup('create', this, {
+                        vertical: $(this).hasClass('vertical')
+                    });
+                    var popup = elt.uPopup('elements');
                     popup.click(function (ev) {
                         $(elt).uPopup('destroy');
                     });
@@ -47,10 +50,10 @@
             <input class="button" type="button" value="Test" />
         </div>
         <div style="float: right">
-            <input class="button" type="button" value="Test" />
+            <input class="vertical button" type="button" value="Test" />
         </div>
         <div style="padding-bottom: 10em;">
-            <input class="button" type="button" value="Test" />
+            <input class="vertical button" type="button" value="Test" />
         </div>
         <div style="float: right;">
             <input class="button" type="button" value="Test" />
