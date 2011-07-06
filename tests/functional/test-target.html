@@ -17,6 +17,12 @@
                 margin: 0;
                 overflow: hidden;
             }
+            .button {
+                position: absolute;
+                text-align: center;
+                vertical-align: middle;
+                padding-top: 3em;
+            }
         </style>
     </head>
     <body>
@@ -24,7 +30,13 @@
             jQuery(function () {
                 $('.button').click(function (ev) {
                     var elt = $('<div style="width: 10em; height: 10em;" />');
-                    elt.uPopup('create', this, { eventData: ev, vertical: true });
+                    elt.uPopup('create', this, {
+                        eventData: ($(this).hasClass('target') ? ev : null),
+                        vertical: !!($(this).hasClass('vertical')),
+                        center: !!($(this).hasClass('center')),
+                        centerX: !!($(this).hasClass('center-x')),
+                        centerY: !!($(this).hasClass('center-y'))
+                    });
                     var popup = elt.uPopup('elements');
                     popup.click(function (ev) {
                         $(elt).uPopup('destroy');
@@ -32,13 +44,34 @@
                 });
             });
         </script>
-        <div class="button" style="position: absolute; left: 0; top: 0; width: 60%; height: 30%; border: solid 1em #777;">
+        <div class="target button"
+            style="left: 0; top: 0; width: 60%; height: 30%; border: solid 1em #777;">
+
+            Click a spot inside of this box, and verify that a popup dialog appears.
+            The popup dialog should point at the exact location you clicked on.
         </div>
-        <div class="button" style="position: absolute; right: 0; top: 0; width: 30%; height: 30%; border: solid 1em #777;">
+        <div class="center button"
+            style="right: 0; top: 0; width: 30%; height: 30%; border: solid 1em #777;">
+
+            Click a spot inside of this box, and verify that a popup dialog appears.
+            The popup dialog should point at the center of the box in both
+            dimensions.
         </div>
-        <div class="button" style="position: absolute; right: 0; bottom: 0; width: 30%; height: 30%; border: solid 1em #777;">
+        <div class="center-x button vertical"
+            style="right: 0; bottom: 0; width: 30%; height: 30%; border: solid 1em #777;">
+
+            Click a spot inside of this box, and verify that a popup dialog
+            appears.  The popup dialog should point at the center along the
+            x-axis, and along the top of the box. Verify that the popup dialog's
+            arrow points straight down.
         </div>
-        <div class="button" style="position: absolute; bottom: 0; left: 0; width: 30%; height: 30%; border: solid 1em #777;">
+        <div class="center-y button"
+            style="bottom: 0; left: 0; width: 30%; height: 30%; border: solid 1em #777;">
+
+            Click a spot inside of this box, and verify that a popup dialog appears.
+            The popup dialog should point at the center along the y-axis, and
+            along the right side of the box. Verify that the popup dialog's
+            arrow points to the left.
         </div>
       </body>
 </html>

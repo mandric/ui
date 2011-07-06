@@ -17,6 +17,12 @@
                 margin: 0;
                 overflow: hidden;
             }
+            .test-instructions {
+                width: 50%;
+                padding: 1em;
+                text-align: center;
+                margin: auto;
+            }
         </style>
     </head>
     <body>
@@ -34,6 +40,12 @@
                 });
             });
         </script>
+        <div class="test-instructions">
+            Click each button, and verify that a gray popup dialog appears.
+            Verify that the popup is fully on screen, and is visible without
+            additional scrolling. Verify that each dialog's arrow points at
+            the appropriate corner of the button that triggered it.
+        </div>
         <div style="position: absolute; left: 40%; top: 40%;">
             <input class="button" type="button" value="Test" />
         </div>

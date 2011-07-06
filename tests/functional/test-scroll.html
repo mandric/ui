@@ -21,14 +21,29 @@
                 overflow-y: scroll;
                 overflow-x: hidden;
             }
+            .test-instructions {
+                margin: auto;
+                text-align: center;
+                padding: 1em;
+                width: 50%;
+            }
         </style>
     </head>
     <body>
+        <div class="test-instructions">
+            Click each button on this page, taking care to scroll downward and
+            through to the end. There are a total of four buttons on the page.
+            After clicking a button, verify that a popup dialog appears
+            immediately beside it. Verify that each popup dialog is immediately
+            visible inside of the browser's viewport.
+        </div>
         <script type="text/javascript">
             jQuery(function () {
                 $('.button').click(function (ev) {
                     var elt = $('<div style="width: 10em; height: 10em;" />');
-                    elt.uPopup('create', this);
+                    elt.uPopup('create', this, {
+                        useViewport: true
+                    });
                     var popup = elt.uPopup('elements');
                     popup.click(function (ev) {
                         $(elt).uPopup('destroy');
@@ -43,6 +58,9 @@
             <input class="button" type="button" value="Test" />
         </div>
         <div style="position: absolute; right: 0; top: 200%;">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 50%; top: 300%;">
             <input class="button" type="button" value="Test" />
         </div>
     </body>
