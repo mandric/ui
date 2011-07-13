@@ -257,18 +257,39 @@
                     wrapper_elt, popup_elt, target_elt, options
                 );
 
-                /* Re-position popup to fit */
-                priv.autoposition(
-                    wrapper_elt, popup_elt, target_elt, options
-                );
+                /* Show popup */
+                priv.toggle.call(popup_elt, true);
+               
+                /* Reusable function that invokes positioning code:
+                    This is used both to set the initial position, and
+                    from within resize and ajax event handlers, below. */
 
-                /* Register event handlers */
+                var reposition_fn = function (ev) {
+                    priv.autoposition(
+                        wrapper_elt, popup_elt, target_elt, options
+                    );
+                };
+
+                /* Set initial position */
+                reposition_fn.call();
+
+                /* Workaround for Webkit reflow bug:
+                    The first call to autoposition triggers a reflow
+                    problem in Webkit, but subsequent calls work without
+                    incident. Get the problem out of the way immediately. */
+
+                if ($.browser.webkit) {
+                    reposition_fn.call();
+                }
+
+                /* Support for automatic repositioning */
                 if (options.reposition !== false) {
-                    $(window).resize(function (ev) {
-                        $.uPopup.impl.priv.autoposition(
-                            wrapper_elt, popup_elt, target_elt, options
-                        );
-                    });
+
+                    /* Browser window resize/reflow */
+                    $(window).resize(reposition_fn);
+
+                    /* AJAX update affecting popup's content */
+                    popup_elt.bind('ajaxComplete', reposition_fn);
                 }
 
             });
@@ -286,7 +307,7 @@
 
             $(this).each(function (i, popup_elt) {
                 var state = priv.instance_data_for(popup_elt);
-                $.uPopup.impl.priv.toggle.call(
+                priv.toggle.call(
                     popup_elt, true, (state.options || {}).onShow
                 )
             });
@@ -302,7 +323,7 @@
 
             $(this).each(function (i, popup_elt) {
                 var state = priv.instance_data_for(popup_elt);
-                $.uPopup.impl.priv.toggle.call(
+                priv.toggle.call(
                     popup_elt, false, (state.options || {}).onHide
                 )
             });
@@ -430,8 +451,6 @@
 
                 _wrapper_elt.css('display', 'none');
                 _wrapper_elt.prependTo('body');
-
-                $.uPopup.impl.show.call(_popup_elt)
             },
 
             /**

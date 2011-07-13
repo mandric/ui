@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet"
+            href="../../styles/jquery.upopup-1.0.0.css" />
+        <script type="text/javascript"
+            src="../../scripts/contrib/jquery-1.4.2.min.js">
+        </script>
+        <script type="text/javascript"
+            src="../../scripts/jquery.upopup-1.0.0.js">
+        </script>
+        <style type="text/css">
+            body {
+                margin: 2em;
+                padding: 1em;
+                font-size: 18pt;
+            }
+            .x1 {
+                padding: 0;
+                margin: 1em;
+            }
+            .x2 {
+                margin: 0;
+                padding: 1em;
+                margin-left: 45%;
+            }
+            .x3 {
+                margin: 0.5em;
+                padding: 0.5em;
+                margin-left: 90%;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="test-instructions">
+            Click each of the buttons below. A popup window will appear.
+            Verify that each popup window points at the center of the
+            button that caused it to appear. Verify that each popup window
+            appears immediately and without special effects. Verify that the
+            popup window is larger-than-usual, but intact.
+        </div>
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('.button').click(function (ev) {
+                    var elt = $('<div />');
+                    elt.uPopup('create', this, {
+                        center: true, fx: false
+                    });
+                    var popup = elt.uPopup('elements');
+                    popup.click(function (ev) {
+                        $(elt).uPopup('destroy');
+                    });
+                });
+            });
+        </script>
+        <div class="x1">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div class="x2">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div class="x3">
+            <input class="button" type="button" value="Test" />
+        </div>
+    </body>
+</html>
