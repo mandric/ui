@@ -26,8 +26,8 @@
             Click the button below. A popup will appear and -- after a short
             duration -- will have its dimensions adjusted. Using a browser
             <a class="m" href="#">that supports DOM mutation events</a>
-            &#8212; verify that the popup arrow points directly at the button
-            before, during, and after the update size changes
+            &#8212; verify that the popup arrow points directly at the button,
+            both before and after the size change.
 
         </div>
         <script type="text/javascript">
@@ -41,21 +41,18 @@
                     elt.uPopup('create', this, {
                         center: true, vertical: true,
                         onShow: function () {
-                            console.log('onShow');
                             setTimeout(function () {
-                                console.log('here');
                                 $('.update').animate({
-                                    width: '+=300',
-                                    height: '+=300'
+                                    width: 350, height: 200
                                 }, {
-                                    duration: 2500,
+                                    duration: 1000,
                                     complete: function () {
                                         $('.update').html(
                                             'Check position now.'
                                         );
                                     }
                                 });
-                            }, 2500);
+                            }, 100);
                         }
                     });
                     var popup = elt.uPopup('elements');
