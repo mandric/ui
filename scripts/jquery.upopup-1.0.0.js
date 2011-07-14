@@ -258,8 +258,8 @@
                 );
 
                 /* Show popup */
-                priv.toggle.call(popup_elt, true);
-               
+                priv.toggle.call(popup_elt, true, options.onShow);
+                    
                 /* Reusable function that invokes positioning code:
                     This is used both to set the initial position, and
                     from within resize and ajax event handlers, below. */
@@ -290,6 +290,9 @@
 
                     /* AJAX update affecting popup's content */
                     popup_elt.bind('ajaxComplete', reposition_fn);
+
+                    /* DOM element mutation, where supported */
+                    popup_elt.bind('DOMSubtreeModified', reposition_fn);
                 }
 
             });

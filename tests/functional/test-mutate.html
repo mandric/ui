@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet"
+            href="../../styles/jquery.upopup-1.0.0.css" />
+        <script type="text/javascript"
+            src="../../scripts/contrib/jquery-1.4.2.min.js">
+        </script>
+        <script type="text/javascript"
+            src="../../scripts/jquery.upopup-1.0.0.js">
+        </script>
+        <style type="text/css">
+            body {
+                margin: 0;
+            }
+            .test-instructions, .center {
+                padding: 3em;
+            }
+            .center {
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="test-instructions">
+            Click the button below. A popup will appear and -- after a short
+            duration -- will have its dimensions adjusted. Using a browser
+            <a class="m" href="#">that supports DOM mutation events</a>
+            &#8212; verify that the popup arrow points directly at the button
+            before, during, and after the update size changes
+
+        </div>
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('.button').click(function (ev) {
+                    var elt = $(
+                        '<div class="update">' +
+                            'Please wait for size to change...' +
+                        '</div>'
+                    );
+                    elt.uPopup('create', this, {
+                        center: true, vertical: true,
+                        onShow: function () {
+                            console.log('onShow');
+                            setTimeout(function () {
+                                console.log('here');
+                                $('.update').animate({
+                                    width: '+=300',
+                                    height: '+=300'
+                                }, {
+                                    duration: 2500,
+                                    complete: function () {
+                                        $('.update').html(
+                                            'Check position now.'
+                                        );
+                                    }
+                                });
+                            }, 2500);
+                        }
+                    });
+                    var popup = elt.uPopup('elements');
+                    popup.click(function (ev) {
+                        $(elt).uPopup('destroy');
+                    });
+                });
+            });
+        </script>
+        <div class="center">
+            <input class="button" type="button" value="Test" />
+        </div>
+    </body>
+</html>
