@@ -2,12 +2,12 @@
 <html>
     <head>
         <link rel="stylesheet"
-            href="../../styles/jquery.upopup-1.0.0.css" />
+            href="../../../styles/jquery.upopup.css" />
         <script type="text/javascript"
-            src="../../scripts/contrib/jquery-1.4.2.min.js">
+            src="../../../scripts/contrib/jquery-1.4.2.min.js">
         </script>
         <script type="text/javascript"
-            src="../../scripts/jquery.upopup-1.0.0.js">
+            src="../../../scripts/jquery.upopup.js">
         </script>
         <style type="text/css">
             body {
@@ -24,24 +24,35 @@
     <body>
         <div class="test-instructions">
             Click the button below. A popup will appear and -- after a short
-            duration -- will have content added to it dynamically. Verify that
-            the popup arrow points directly at the button both before and after
-            the update.
+            duration -- will have its dimensions adjusted. Using a browser
+            <a class="m" href="#">that supports DOM mutation events</a>
+            &#8212; verify that the popup arrow points directly at the button,
+            both before and after the size change.
+
         </div>
         <script type="text/javascript">
             jQuery(function ($) {
                 $('.button').click(function (ev) {
                     var elt = $(
                         '<div class="update">' +
-                            'Please wait for content to load...' +
+                            'Please wait for size to change...' +
                         '</div>'
                     );
                     elt.uPopup('create', this, {
                         center: true, vertical: true,
                         onShow: function () {
                             setTimeout(function () {
-                                $('.update').load('test-update/inner.html');
-                            }, 2500);
+                                $('.update').animate({
+                                    width: 350, height: 200
+                                }, {
+                                    duration: 1000,
+                                    complete: function () {
+                                        $('.update').html(
+                                            'Check position now.'
+                                        );
+                                    }
+                                });
+                            }, 100);
                         }
                     });
                     var popup = elt.uPopup('elements');

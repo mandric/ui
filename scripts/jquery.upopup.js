@@ -350,7 +350,6 @@
          * returns a list of the 'wrapper' elements currently in use.
          */
         elements: function () {
-
             var priv = $.uPopup.impl.priv;
 
             return $(
@@ -808,6 +807,10 @@
         /* Dispatch to appropriate method handler:
             Note that the `method` argument should always be a constant.
             Never allow user-provided input to be used for the argument. */
+
+        if (_method == 'priv') {
+            return null;
+        }
 
         return $.uPopup.impl[_method].apply(
             this, Array.prototype.slice.call(arguments, 1)

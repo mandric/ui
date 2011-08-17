@@ -61,7 +61,7 @@ exports.squeeze = function (_data) {
  * Program entry point
  */
 exports.compress(
-    'scripts/jquery.upopup-1.0.0.js', function (rv) {
+    'scripts/jquery.upopup.js', function (rv) {
         console.log(exports.squeeze(rv));
     }
 );
