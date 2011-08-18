@@ -1,11 +1,7 @@
 
-uPopup for jQuery, version 1.0-pre
-----------------------------------
+µI is a small, fast, and beautiful library of user interface components for jQuery.
 
-uPopup (pronounced "micro popup") is a lightweight, small, and beautiful
-"bubble" style popup dialog plugin for jQuery.
-
-This library is currently in active development; there is no production version
+µI is currently in active development; there is no production version
 available at this time.
 
 If you'd like to be notified when a production version is released, please watch
