@@ -13,20 +13,20 @@
             body {
                 margin: 1em;
                 padding: 1em;
-                overflow: hidden;
+                overflow-x: hidden;
+                overflow-y: scroll;
             }
             .outer {
-                margin: 1em;
-                padding: 20em 1em 1em 1em;
+                margin: 0.5em;
+                padding: 0.5em;
             }
             .drag {
-                margin: 1em;
                 max-width: 10em;
                 border: solid 7px #00f;
                 background-color: #f04;
             }
             .scroll {
-                width: 35%;
+                width: 45%;
                 height: 10em;
                 overflow: scroll;
                 overflow-y: scroll;
@@ -36,33 +36,61 @@
             .tall {
                 height: 100em;
             }
+            .right {
+                float: right;
+                height: 25em;
+            }
+            .inner {
+                width: 90%;
+                margin: 1em;
+                height: 10em;
+                position: relative;
+                top: 50em;
+            }
         </style>
     </head>
     <body>
         <div class="test-instructions">
         </div>
+        <div class="scroll right">
+            <div class="outer">
+                <div id="d1" class="tall drop">
+                    <div class="scroll inner">
+                        <div class="outer">
+                            <div id="d2" class="tall drop">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <script type="text/javascript">
             jQuery(function ($) {
                 $('.scroll').scrollTop(2 << 15);
                 $('.drag').uDrag('create', {
-                    drop: $('.scroll')
+                    drop: $('.drop'),
+                    container: '.scroll'
                 });
             });
         </script>
         <div class="scroll">
             <div class="outer">
-                <div class="drag">
-                    This is a test.<br />
-                    This is a test.<br />
-                    This is a test.<br />
-                    This is a test.
+                <div id="d3" class="tall drop">
+                    <div class="drag">
+                        This is a test.<br />
+                        This is a test.<br />
+                        This is a test.<br />
+                        This is a test.
+                    </div>
                 </div>
             </div>
         </div>
         <div style="height: 5em;">
         </div>
         <div class="scroll">
-            <div class="tall">
+            <div class="outer">
+                <div id="d4" class="tall drop">
+                </div>
             </div>
         </div>
     </body>
