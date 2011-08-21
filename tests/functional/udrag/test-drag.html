@@ -41,11 +41,16 @@
                 height: 25em;
             }
             .inner {
-                width: 90%;
-                margin: 1em;
+                width: 100%;
+                margin: 0;
                 height: 10em;
-                position: relative;
                 top: 50em;
+            }
+            .break {
+                margin-top: 2em;
+            }
+            .hover {
+                border: solid 2px #f00;
             }
         </style>
     </head>
@@ -54,10 +59,16 @@
         </div>
         <div class="scroll right">
             <div class="outer">
-                <div id="d1" class="tall drop">
+                <div id="d1" class="tall">
                     <div class="scroll inner">
                         <div class="outer">
-                            <div id="d2" class="tall drop">
+                            <div id="d11" class="tall drop">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scroll inner break">
+                        <div class="outer">
+                            <div id="d12" class="tall drop">
                             </div>
                         </div>
                     </div>
@@ -66,10 +77,8 @@
         </div>
         <script type="text/javascript">
             jQuery(function ($) {
-                $('.scroll').scrollTop(2 << 15);
                 $('.drag').uDrag('create', {
-                    drop: $('.drop'),
-                    container: '.scroll'
+                    drop: $('.drop'), container: '.scroll'
                 });
             });
         </script>

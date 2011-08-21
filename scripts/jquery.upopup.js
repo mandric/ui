@@ -286,13 +286,17 @@
                 if (options.reposition !== false) {
 
                     /* Browser window resize/reflow */
-                    $(window).resize(reposition_fn);
-
+                    $(window).bind(
+                        'resize.upopup', reposition_fn
+                    );
                     /* AJAX update affecting popup's content */
-                    popup_elt.bind('ajaxComplete', reposition_fn);
-
+                    popup_elt.bind(
+                        'ajaxComplete.upopup', reposition_fn
+                    );
                     /* DOM element mutation, where supported */
-                    popup_elt.bind('DOMSubtreeModified', reposition_fn);
+                    popup_elt.bind(
+                        'DOMSubtreeModified.upopup', reposition_fn
+                    );
                 }
 
             });
@@ -343,6 +347,10 @@
                     delete _wrapper_elt;
                 }
             );
+            $(this).each(function (i, popup_elt) {
+                popup_elt.unbind('.upopup');
+                popup_elt.data('upopup', null);
+            });
         },
 
         /**
