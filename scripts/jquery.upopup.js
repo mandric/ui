@@ -30,14 +30,14 @@
  */
 
 /*
- * Special thanks to Medic Mobile, Inc. for making this project possible. Medic
- * Mobile is a US-based non-profit, that works in developing countries to improve
- * health care outcomes by leveraging SMS and web technologies.  If this project
- * has made your life easier in one way or another, and you'd like to give back
- * in some way, please consider donating directly at medicmobile.org. Your
- * donation is likely to be tax deductible if you reside within the United
- * States. Your donation will directly assist our construction of open-source
- * mobile health software.
+ * Special thanks to Medic Mobile, Inc. for making this project possible.
+ * Medic Mobile is a US-based non-profit organization that works in
+ * developing countries to improve health care outcomes, using SMS and web
+ * technologies. If this project has made your life easier in one way or
+ * another, and you'd like to give back in some way, please consider
+ * donating directly at medicmobile.org. Your donation is likely to be tax
+ * deductible if you reside within the United States, and will directly
+ * assist our design and construction of open-source mobile health software.
  */
 
 (function ($) {

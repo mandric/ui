@@ -29,6 +29,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * Special thanks to Medic Mobile, Inc. for making this project possible.
+ * Medic Mobile is a US-based non-profit organization that works in
+ * developing countries to improve health care outcomes, using SMS and web
+ * technologies. If this project has made your life easier in one way or
+ * another, and you'd like to give back in some way, please consider
+ * donating directly at medicmobile.org. Your donation is likely to be tax
+ * deductible if you reside within the United States, and will directly
+ * assist our design and construction of open-source mobile health software.
+ */
+
 (function ($) {
 
     $.uDrag = {};
@@ -40,10 +51,15 @@
          */
         create: function (_options) {
 
+            var default_options = {
+                scrollDelta: 32, /* px */
+                scrollInterval: 128, /* ms */
+                scrollEdgeExtent: 32 /* px, per side */
+            };
+
             var doc = $(document);
             var priv = $.uDrag.impl.priv;
-            var options = (_options || {});
-
+            var options = $.extend(default_options, _options || {});
 
             this.each(function (i, elt) {
 
@@ -72,7 +88,7 @@
                 );
 
                 priv.bind_drop_zones(elt, options);
-                priv.refresh_drop_zones(elt);
+                priv.recalculate_drop_zones(elt);
             });
 
             return this;
@@ -93,12 +109,6 @@
 
                 elt.unbind('.udrag');
                 elt.data('udrag', null);
-
-                data.drop_zone_parents.each(function (j, parents) {
-                    parents.each(function (p) {
-                        p.unbind('.udrag');
-                    });
-                });
             });
 
             return this;
@@ -106,7 +116,7 @@
 
         /**
          * A namespace that contains private functions, each
-         * used internally as part of uPopup's implementation.
+         * used internally as part of uDrag's implementation.
          * Please don't call these from outside of $.uDrag.impl.
          */
         priv: {
@@ -172,6 +182,7 @@
                     y: _ev.pageY - data.delta.y
                 };
 
+                priv.recalculate_drop_zones(_elt);
                 priv.update_position(_elt, _ev);
             },
 
@@ -184,26 +195,43 @@
                 var data = priv.instance_data(_elt);
                 var drop_zone = priv.find_drop_zone_beneath(_elt, _ev);
 
-                priv.clear_highlight(drop_zone, data);
+                priv.clear_highlight(data);
 
                 if (drop_zone) {
+
                     var drop_elt = drop_zone.elt;
 
-                    /* Fix me: Move to positioning callback */
-                    var pos = priv.relative_drop_offset(
-                        _elt, drop_elt, _ev
+                    var position_callback = (
+                        data.options.positionElement ||
+                            priv.default_position_element
                     );
-                    _elt.css('position', 'relative');
-                    _elt.css('top', pos.y + 'px');
-                    _elt.css('left', pos.x + 'px');
+
+                    position_callback(
+                        _elt, priv.relative_drop_offset(_elt, drop_elt, _ev)
+                    );
 
                     priv.move_element(_elt, drop_elt, _ev);
                 }
 
                 data.is_dragging = false;
+                priv.stop_autoscroll(_elt);
                 priv.return_to_original_position(_elt);
             },
-                        
+           
+            /**
+             * The default implementation of the positionElement callback.
+             * If not overridden, this will use relative positioning to
+             * maintain the exact coordinates of the dropped element.
+             */
+            default_position_element: function (_elt, _offset) {
+
+                _elt.css('position', 'relative');
+                _elt.css('top', _offset.y + 'px');
+                _elt.css('left', _offset.x + 'px');
+
+                return _elt;
+            },
+
             /**
              * Update the apparent position of the element being dragged,
              * so that it is appears at the coordinates specified in {_ev}.
@@ -220,20 +248,113 @@
                     left: _ev.pageX - data.delta.x
                 });
 
-                priv.clear_highlight(drop_zone, data);
-                priv.set_highlight(drop_zone, data);
+                if (drop_zone) {
+                    priv.set_highlight(drop_zone, data);
+                    priv.start_autoscroll(_elt, drop_zone);
+                } else {
+                    priv.clear_highlight(data);
+                    priv.stop_autoscroll(_elt);
+                }
+
+                return _elt;
             },
 
             /**
-             *
+             * Start scrolling the container element in {_drop_zone},
+             * using the scroll-axis information found in {_elt}. This
+             * information is calculated in find_drop_zone_beneath, which
+             * is called every time the draggable element is repositioned.
              */
-            start_scrolling: function (_drop_elt) {
+            start_autoscroll: function (_elt, _drop_zone) {
+
+                var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data(_elt);
+                var scroll_axes = _drop_zone.autoscroll_axes;
+
+                if (data.is_autoscrolling) {
+                    return false;
+                }
+
+                if (!scroll_axes.x && !scroll_axes.y) {
+                    return false;
+                }
+
+                data.is_autoscrolling = true;
+                data.autoscroll_elt = _drop_zone.container_elt[0];
+
+                priv.handle_autoscroll_timeout(_elt, _drop_zone);
             },
 
             /**
-             *
+             * Stop scrolling the container element found in {_drop_zone}.
+             * This merely modifies {_elt}'s private storage, which causes
+             * {_handle_autoscroll_timeout} to clean up and stop running.
              */
-            stop_scrolling: function (_drop_elt) {
+            stop_autoscroll: function (_elt) {
+                
+                var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data(_elt);
+
+                if (!data.is_autoscrolling) {
+                    return false;
+                }
+
+                /* The timeout functoin is still scheduled:
+                    Clear the auto-scroll element; the timeout function
+                    will set is_autoscrolling to false when it's invoked. */
+
+                data.autoscroll_elt = null;
+            },
+
+            /**
+             * Represents a single 'frame' of the auto-scrolling feature.
+             * If the {autoscroll_elt} private storage field is set,
+             * this function reschedules itself to run again.
+             */
+            handle_autoscroll_timeout: function (_elt, _drop_zone) {
+
+                var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data(_elt);
+
+                var options = data.options;
+                var scroll_axes = _drop_zone.autoscroll_axes;
+                var container_elt = _drop_zone.container_elt;
+
+                /* Scroll window:
+                    Move each actively-scrolling axis by one step.
+                    The values in scroll_axes are either -1, 0, or 1. */
+
+                container_elt.scrollLeft(
+                    container_elt.scrollLeft() +
+                        scroll_axes.x * options.scrollDelta
+                );
+                
+                container_elt.scrollTop(
+                    container_elt.scrollTop() +
+                        scroll_axes.y * options.scrollDelta
+                );
+
+
+                /* Stop scrolling?
+                    Stop if neither axis is active, or if we're
+                    currently hovering over a non-droppable target. */
+
+                if (!data.autoscroll_elt) {
+                    data.is_autoscrolling = false;
+                    return false;
+                }
+
+                /* Re-invoke:
+                    Schedule this function to execute again,
+                    after the scrolling interval has passed. */
+
+                var callback_fn = function () {
+                    return priv.handle_autoscroll_timeout(
+                        _elt, _drop_zone
+                    );
+                };
+
+                setTimeout(callback_fn, data.options.scrollInterval);
             },
 
             /**
@@ -243,9 +364,9 @@
              */
             set_highlight: function (_zone, _data) {
 
-                if (_zone && !_zone.container.hasClass('hover')) {
-                    _zone.container.addClass('hover');
-                    _data.previous_drop_zone = _zone;
+                if (_zone && _zone != _data.previous_highlight_zone) {
+                    _zone.container_elt.addClass('hover');
+                    _data.previous_highlight_zone = _zone;
                 }
             },
 
@@ -253,14 +374,32 @@
              * Remove the highlighting from the previous drop zone,
              * provided there was one. Otherwise, take no action.
              */
-            clear_highlight: function (_zone, _data, _force) {
+            clear_highlight: function (_data) {
 
-                var prev_zone = _data.previous_drop_zone;
+                var prev_zone = _data.previous_highlight_zone;
 
                 if (prev_zone) {
-                    prev_zone.container.removeClass('hover');
-                    _data.previous_drop_zone = null;
+                    prev_zone.container_elt.removeClass('hover');
+                    _data.previous_highlight_zone = null;
                 }
+            },
+
+            /**
+             * Initialize private storage on the element _elt, setting
+             * all private fields to their original default values. This
+             * must be called before any drop zones can be modified.
+             */
+            init_private_storage: function (_elt, _options) {
+                return _elt.data(
+                    'udrag', {
+                        drop_zones: [],
+                        options: _options,
+                        previous_highlight_zone: null,
+                        is_autoscrolling: false,
+                        autoscroll_element: null,
+                        autoscroll_axes: { x: 0, y: 0 }
+                    }
+                );
             },
 
             /**
@@ -270,85 +409,112 @@
              */
             bind_drop_zones: function (_elt, _options) {
 
-                var drop_zones = [];
-                var drop_zone_parents = [];
-
                 var priv = $.uDrag.impl.priv;
                 var drop_option = (_options.drop || []);
                 var container_option = (_options.container || false);
 
+                priv.init_private_storage(_elt, _options);
+
+                /* Array-ize */
                 if (!$.isArray(drop_option)) {
                     drop_option = [ drop_option ];
                 }
 
+                /* Traverse array of jQuery collection objects */
                 for (var i = 0, len = drop_option.length; i < len; ++i) {
                     $(drop_option[i]).each(function (j, drop_elt) {
+
                         drop_elt = $(drop_elt);
-                        var container_elt = (
+
+                        var container_elt = $(
                             container_option ?
-                                drop_elt.parents(container_option).first()
-                                    : drop_elt
+                                drop_elt.parents(container_option).first() :
+                                    drop_elt
                         );
 
-                        /* Save parents */
-                        var parents = container_elt.parents();
-                        drop_zone_parents.push(parents);
+                        /* Find ancestors of drop zone:
+                            We bind to the scroll event for these elements;
+                            this ultimately invokes recalculate_drop_zones to
+                            recalculate the position of all drop targets. */
 
-                        /* Recalculate offsets on scroll */
-                        parents.each(function (elt) {
-                            $(elt).bind(
+                        var ancestors = [ container_elt[0] ].concat(
+                            container_elt.parentsUntil('body').toArray()
+                        );
+
+                        for (var k = 0, l = ancestors.length; k < l; ++k) {
+                            $(ancestors[k]).bind(
                                 'scroll.udrag',
-                                priv.handle_drop_parent_scroll
+                                $.proxy(priv.handle_ancestor_scroll, _elt)
                             );
-                        });
+                        }
 
-                        drop_zones.push({
+                        /* Cache a single drop zone:
+                            This fills in details about the drop zone,
+                            and prepares it for fast indexed retrieval. */
+
+                        priv.cache_drop_zone(_elt, {
                             elt: drop_elt,
-                            container: container_elt
+                            container_elt: container_elt,
+                            ancestor_elts: ancestors
                         });
                     });
                 }
 
-                _elt.data(
-                    'udrag', {
-                        options: _options,
-                        drop_zones: drop_zones,
-                        drop_zone_parents: drop_zone_parents,
-                        previous_drop_zone: null
-                    }
-                );
-
                 return _elt;
             },
 
-            /*
+            /**
+             *
+             */
+            cache_drop_zone: function (_elt, _zone) {
+
+                var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data(_elt);
+
+                priv.recalculate_drop_zone(_zone);
+                data.drop_zones.push(_zone);
+
+                return _zone;
+            },
+
+            /**
              * Recalculates position and extent information for
              * the {drop_zones} structure. This structure is used to
              * map page coordinates to specific drop zone elements.
              */
-            refresh_drop_zones: function (_elt) {
+            recalculate_drop_zones: function (_elt) {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data(_elt);
                 var drop_zones = data.drop_zones;
 
                 for (var i = 0, len = drop_zones.length; i < len; ++i) {
-
-                    var drop_zone = drop_zones[i];
-                    var container_elt = drop_zone.container;
-
-                    var offset = container_elt.offset();
-
-                    var size = {
-                        x: container_elt.outerWidth(),
-                        y: container_elt.outerHeight()
-                    }
-
-                    drop_zone.x = [ offset.left, offset.left + size.x ];
-                    drop_zone.y = [ offset.top, offset.top + size.y ];
+                    priv.recalculate_drop_zone(drop_zones[i]);
                 }
 
                 return _elt;
+            },
+
+            /*
+             * Recalculates position and extent information for a single
+             * member of the {drop_zones} structure, specified in {_zone}.
+             * These structures are used to map page coordinates to specific
+             * drop zone elements.
+             */
+            recalculate_drop_zone: function (_zone) {
+
+                var container_elt = _zone.container_elt;
+                var offset = container_elt.offset();
+
+                var size = {
+                    x: container_elt.outerWidth(),
+                    y: container_elt.outerHeight()
+                }
+
+                _zone.x = [ offset.left, offset.left + size.x ];
+                _zone.y = [ offset.top, offset.top + size.y ];
+
+                return _zone;
             },
 
             /**
@@ -373,29 +539,69 @@
             },
 
             /**
-             * Returns the set of drop zones that lie directly
-             * underneath the mouse pointer (position specified in _ev).
+             * Returns the set of drop zones that lie directly beneath
+             * the mouse pointer. The position is taken from the pageX
+             * and pageY values of the supplied event object {_ev}.
              */
             find_drop_zone_beneath: function (_elt, _ev) {
 
-                var rv = [];
+                var overlapping_zones = [];
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data(_elt);
                 var drop_zones = data.drop_zones;
 
+                var x = _ev.pageX;
+                var y = _ev.pageY;
+
+                /* Hit detection:
+                    If the mouse pointer is currently positioned over one
+                    or more drop zone containers, save them in an array. */
+
                 for (var i = 0, len = drop_zones.length; i < len; ++i) {
                     var drop = drop_zones[i];
 
-                    if (_ev.pageX < drop.x[0] || _ev.pageX > drop.x[1])
+                    /* Containment */
+                    if (x < drop.x[0] || x > drop.x[1])
                         continue;
 
-                    if (_ev.pageY < drop.y[0] || _ev.pageY > drop.y[1])
+                    if (y < drop.y[0] || y > drop.y[1])
                         continue;
 
-                    rv.push(drop);
+                    overlapping_zones.push(drop);
                 }
 
-                return priv.find_topmost_drop_zone(rv);
+                /* No drop zones under pointer?
+                    Skip the autoscroll calculations, and return nothing. */
+
+                if (overlapping_zones.length <= 0) {
+                    return null;
+                }
+
+                /* Support for auto-scrolling:
+                    Determine if we're hovering over one or more edges
+                    of the drop zone's container. If so, set the sign
+                    bit of the appropriate member of rv.autoscroll_axes. */
+
+                var scroll_axes = { x: 0, y: 0 };
+                var scroll_edge = data.options.scrollEdgeExtent;
+                var rv = priv.find_topmost_drop_zone(overlapping_zones);
+
+                /* Auto-scroll: x-axis */
+                if (x > rv.x[0] && x < rv.x[0] + scroll_edge) {
+                    scroll_axes.x = -1;
+                } else if (x < rv.x[1] && x > rv.x[1] - scroll_edge) {
+                    scroll_axes.x = 1;
+                }
+
+                /* Auto-scroll: y-axis */
+                if (y > rv.y[0] && y < rv.y[0] + scroll_edge) {
+                    scroll_axes.y = -1;
+                } else if (y < rv.y[1] && y > rv.y[1] - scroll_edge) {
+                    scroll_axes.y = 1;
+                }
+
+                rv.autoscroll_axes = scroll_axes;
+                return rv;
             },
 
             /**
@@ -515,25 +721,6 @@
             },
 
             /**
-             * Calculate a sum of all scrollTop/scrollLeft values,
-             * along the path from {_elt} to its furthest ancestor.
-             */
-            cumulative_scroll: function (_elt) {
-
-                var rv = { x: 0, y: 0 };
-                var ancestors = $(_elt).parents();
-
-                for (var i = 0, len = ancestors.length; i < len; ++i) {
-                    var a = ancestors[i];
-
-                    rv.x += a.scrollLeft;
-                    rv.y += a.scrollTop;
-                }
-
-                return rv;
-            },
-
-            /**
              * Event handler for document's mouse-up event.
              */
             handle_document_mouseup: function (_ev) {
@@ -570,7 +757,7 @@
 
                 var priv = $.uDrag.impl.priv;
 
-                priv.refresh_drop_zones($(this));
+                priv.recalculate_drop_zones($(this));
                 return false;
             },
 
@@ -579,22 +766,26 @@
              */
             handle_drag_mousedown: function (_ev) {
 
+                var priv = $.uDrag.impl.priv;
+
                 /* Require primary mouse button */
                 if (_ev.which != 1) {
                     return false;
                 }
 
-                $.uDrag.impl.priv.start_dragging($(this), _ev);
+                priv.start_dragging($(this), _ev);
                 return false;
             },
 
             /**
-             * Event handler for drop zone parent's scroll event.
+             * Event handler for scrolling on a drop zone's container,
+             * on on one of the container's ancestors.
              */
-            handle_drop_parent_scroll: function (_ev) {
+            handle_ancestor_scroll: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
-                priv.refresh_drop_zones($(this));
+
+                priv.recalculate_drop_zones(this);
             }
 
         }
@@ -607,7 +798,7 @@
             Note that the `method` argument should always be a constant.
             Never allow user-provided input to be used for the argument. */
 
-        if (_method == 'priv') {
+        if (_method === 'priv') {
             return null;
         }
 
@@ -617,37 +808,4 @@
     };
 
 })(jQuery);
-
-
-/* 
- * closestChild for jQuery
- * Copyright 2011, Tobias Lindig
- * 
- * Dual licensed under the MIT license and GPL licenses:
- *   http://www.opensource.org/licenses/mit-license.php
- *   http://www.opensource.org/licenses/gpl-license.php
- */
-(function ($) {
-    if (!$.fn.closestChild) {
-        $.fn.closestChild = function (selector) {
-            /* Breadth-first search for the first matched node */
-            if (selector && selector !== '') {
-                var queue = [];
-                queue.push(this);
-                while (queue.length > 0) {
-                    var node = queue.shift();
-                    var children = node.children();
-                    for (var i = 0; i < children.length; ++i) {
-                        var child = $(children[i]);
-                        if (child.is(selector)) {
-                            return child;
-                        }
-                        queue.push(child);
-                    }
-                }
-            }
-            return $(); /* Nothing found */
-        };
-    }
-}(jQuery));
 
