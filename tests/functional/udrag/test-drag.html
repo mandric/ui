@@ -7,7 +7,7 @@
             src="../../../scripts/contrib/jquery-1.4.2.js">
         </script>
         <script type="text/javascript"
-            src="../../../build/output/jquery.udrag.min.js">
+            src="../../../scripts/jquery.udrag.js">
         </script>
         <style type="text/css">
             body {
@@ -52,6 +52,9 @@
             .hover {
                 border: solid 2px #f00;
             }
+            body.hover {
+                border: 0;
+            }
         </style>
     </head>
     <body>
@@ -78,7 +81,8 @@
         <script type="text/javascript">
             jQuery(function ($) {
                 $('.drag').uDrag('create', {
-                    drop: $('.drop'), container: '.scroll'
+                    container: '.scroll',
+                    drop: [ $('.drop'), $('.more-drop') ]
                 });
             });
         </script>

@@ -53,7 +53,7 @@
 
             var default_options = {
                 scrollDelta: 32, /* px */
-                scrollDelay: 512, /* ms */
+                scrollDelay: 256, /* ms */
                 scrollInterval: 128, /* ms */
                 scrollEdgeExtent: 32 /* px, per side */
             };
@@ -242,6 +242,7 @@
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
                 var drop_zone = priv.find_drop_zone_beneath(_elt, _ev);
+                var recent = data.recent_drop_zone_containers;
 
                 /* Move element */
                 data.drag_element.offset({
@@ -250,6 +251,11 @@
                 });
 
                 priv.clear_highlight(drop_zone, data);
+                data.recent_drop_zone_containers = [ recent[1], drop_zone ];
+
+                if (recent[0] != recent[1]) {
+                    priv.stop_autoscroll(_elt);
+                }
 
                 if (drop_zone) {
                     priv.set_highlight(drop_zone, data);
@@ -418,6 +424,7 @@
                         autoscroll_elt: null,
                         has_scrolled_recently: false,
                         autoscroll_axes: { x: 0, y: 0 },
+                        recent_drop_zone_containers: []
                     }
                 );
             },
@@ -444,13 +451,22 @@
                 for (var i = 0, len = drop_option.length; i < len; ++i) {
                     $(drop_option[i]).each(function (j, drop_elt) {
 
+                        /* Find drop zone element's container:
+                            This is used for auto-scrolling. The container is a
+                            parent that matches the supplied container selector,
+                            or the same as the drop zone element otherwise. */
+
                         drop_elt = $(drop_elt);
 
-                        var container_elt = $(
+                        var container_elt = (
                             container_option ?
                                 drop_elt.parents(container_option).first() :
                                     drop_elt
                         );
+
+                        if (!container_elt[0]) {
+                            container_elt = drop_elt;
+                        }
 
                         /* Find ancestors of drop zone:
                             We bind to the scroll event for these elements;
@@ -524,7 +540,10 @@
             recalculate_drop_zone: function (_zone) {
 
                 var container_elt = _zone.container_elt;
-                var offset = container_elt.offset();
+
+                var offset = (
+                    container_elt.offset() || { left: 0, top: 0 }
+                );
 
                 var size = {
                     x: container_elt.outerWidth(),
