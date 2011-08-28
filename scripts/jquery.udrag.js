@@ -53,6 +53,7 @@
 
             var default_options = {
                 scrollDelta: 32, /* px */
+                scrollDelay: 512, /* ms */
                 scrollInterval: 128, /* ms */
                 scrollEdgeExtent: 32 /* px, per side */
             };
@@ -195,7 +196,7 @@
                 var data = priv.instance_data(_elt);
                 var drop_zone = priv.find_drop_zone_beneath(_elt, _ev);
 
-                priv.clear_highlight(data);
+                priv.clear_highlight(null, data);
 
                 if (drop_zone) {
 
@@ -248,11 +249,12 @@
                     left: _ev.pageX - data.delta.x
                 });
 
+                priv.clear_highlight(drop_zone, data);
+
                 if (drop_zone) {
                     priv.set_highlight(drop_zone, data);
                     priv.start_autoscroll(_elt, drop_zone);
                 } else {
-                    priv.clear_highlight(data);
                     priv.stop_autoscroll(_elt);
                 }
 
@@ -270,12 +272,14 @@
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data(_elt);
                 var scroll_axes = _drop_zone.autoscroll_axes;
+                var options = data.options;
 
                 if (data.is_autoscrolling) {
                     return false;
                 }
 
                 if (!scroll_axes.x && !scroll_axes.y) {
+                    data.has_scrolled_recently = false;
                     return false;
                 }
 
@@ -320,41 +324,54 @@
                 var scroll_axes = _drop_zone.autoscroll_axes;
                 var container_elt = _drop_zone.container_elt;
 
-                /* Scroll window:
-                    Move each actively-scrolling axis by one step.
-                    The values in scroll_axes are either -1, 0, or 1. */
-
-                container_elt.scrollLeft(
-                    container_elt.scrollLeft() +
-                        scroll_axes.x * options.scrollDelta
-                );
-                
-                container_elt.scrollTop(
-                    container_elt.scrollTop() +
-                        scroll_axes.y * options.scrollDelta
-                );
-
-
                 /* Stop scrolling?
                     Stop if neither axis is active, or if we're
                     currently hovering over a non-droppable target. */
 
                 if (!data.autoscroll_elt) {
                     data.is_autoscrolling = false;
+                    data.has_scrolled_recently = false;
                     return false;
                 }
 
+                /* Scroll window:
+                    Move each actively-scrolling axis by one step,
+                    provided that this isn't the first frame in a scrolling
+                    operation. The values in scroll_axes are -1, 0, or 1. */
+
+                if (data.has_scrolled_recently) {
+
+                    container_elt.scrollLeft(
+                        container_elt.scrollLeft() +
+                            scroll_axes.x * options.scrollDelta
+                    );
+
+                    container_elt.scrollTop(
+                        container_elt.scrollTop() +
+                            scroll_axes.y * options.scrollDelta
+                    );
+                }
+
                 /* Re-invoke:
-                    Schedule this function to execute again,
-                    after the scrolling interval has passed. */
+                    Schedule this function to execute again, after
+                    the scrolling interval has passed. Use a longer timeout
+                    if this is the first frame of the scrolling process;
+                    this avoids accidental scrolling during a drag/drop. */
 
                 var callback_fn = function () {
-                    return priv.handle_autoscroll_timeout(
-                        _elt, _drop_zone
-                    );
+                    return priv.handle_autoscroll_timeout(_elt, _drop_zone);
                 };
 
-                setTimeout(callback_fn, data.options.scrollInterval);
+                var timeout = (
+                    data.has_scrolled_recently ?
+                        options.scrollInterval : options.scrollDelay
+                );
+
+                data.has_scrolled_recently = (
+                    scroll_axes.y || scroll_axes.x
+                );
+
+                setTimeout(callback_fn, timeout);
             },
 
             /**
@@ -374,13 +391,15 @@
              * Remove the highlighting from the previous drop zone,
              * provided there was one. Otherwise, take no action.
              */
-            clear_highlight: function (_data) {
+            clear_highlight: function (_zone, _data) {
 
                 var prev_zone = _data.previous_highlight_zone;
 
                 if (prev_zone) {
-                    prev_zone.container_elt.removeClass('hover');
-                    _data.previous_highlight_zone = null;
+                    if (!_zone || _zone != prev_zone) {
+                        prev_zone.container_elt.removeClass('hover');
+                        _data.previous_highlight_zone = null;
+                    }
                 }
             },
 
@@ -397,7 +416,8 @@
                         previous_highlight_zone: null,
                         is_autoscrolling: false,
                         autoscroll_element: null,
-                        autoscroll_axes: { x: 0, y: 0 }
+                        has_scrolled_recently: false,
+                        autoscroll_axes: { x: 0, y: 0 },
                     }
                 );
             },
