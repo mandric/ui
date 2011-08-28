@@ -106,7 +106,7 @@
 
             this.each(function (i, elt) {
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(elt);
+                var data = priv.instance_data_for(elt);
 
                 elt.unbind('.udrag');
                 elt.data('udrag', null);
@@ -125,7 +125,7 @@
             /**
              * Set/get the uDrag-private storage attached to `_elt`.
              */
-            instance_data: function (_elt, _v) {
+            instance_data_for: function (_elt, _v) {
 
                 var key = 'udrag';
                 var elt = $(_elt);
@@ -148,7 +148,7 @@
             start_dragging: function (_elt, _ev) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var offset = _elt.offset();
 
                 if (data.is_dragging) {
@@ -193,7 +193,7 @@
             stop_dragging: function (_elt, _ev) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var drop_zone = priv.find_drop_zone_beneath(_elt, _ev);
 
                 priv.clear_highlight(null, data);
@@ -240,7 +240,7 @@
             update_position: function (_elt, _ev) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var drop_zone = priv.find_drop_zone_beneath(_elt, _ev);
 
                 /* Move element */
@@ -270,7 +270,7 @@
             start_autoscroll: function (_elt, _drop_zone) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var scroll_axes = _drop_zone.autoscroll_axes;
                 var options = data.options;
 
@@ -297,7 +297,7 @@
             stop_autoscroll: function (_elt) {
                 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
 
                 if (!data.is_autoscrolling) {
                     return false;
@@ -318,7 +318,7 @@
             handle_autoscroll_timeout: function (_elt, _drop_zone) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
 
                 var options = data.options;
                 var scroll_axes = _drop_zone.autoscroll_axes;
@@ -408,14 +408,14 @@
              * all private fields to their original default values. This
              * must be called before any drop zones can be modified.
              */
-            init_private_storage: function (_elt, _options) {
+            create_instance_data: function (_elt, _options) {
                 return _elt.data(
                     'udrag', {
                         drop_zones: [],
                         options: _options,
                         previous_highlight_zone: null,
                         is_autoscrolling: false,
-                        autoscroll_element: null,
+                        autoscroll_elt: null,
                         has_scrolled_recently: false,
                         autoscroll_axes: { x: 0, y: 0 },
                     }
@@ -433,7 +433,7 @@
                 var drop_option = (_options.drop || []);
                 var container_option = (_options.container || false);
 
-                priv.init_private_storage(_elt, _options);
+                priv.create_instance_data(_elt, _options);
 
                 /* Array-ize */
                 if (!$.isArray(drop_option)) {
@@ -489,7 +489,7 @@
             cache_drop_zone: function (_elt, _zone) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
 
                 priv.recalculate_drop_zone(_zone);
                 data.drop_zones.push(_zone);
@@ -505,7 +505,7 @@
             recalculate_drop_zones: function (_elt) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var drop_zones = data.drop_zones;
 
                 for (var i = 0, len = drop_zones.length; i < len; ++i) {
@@ -567,7 +567,7 @@
 
                 var overlapping_zones = [];
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var drop_zones = data.drop_zones;
 
                 var x = _ev.pageX;
@@ -632,7 +632,7 @@
             relative_drop_offset: function (_elt, _drop_elt, _ev) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var offset = _drop_elt.offset();
 
                 var scroll = {
@@ -674,7 +674,7 @@
             create_overlay: function (_elt, _ev) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var drag_elt = data.drag_element = _elt.clone(true);
 
                 drag_elt.css('position', 'absolute');
@@ -699,7 +699,7 @@
             move_element: function (_elt, _new_parent_elt, _ev) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
 
                 /* Move element */
                 _new_parent_elt.prepend(_elt);
@@ -722,7 +722,7 @@
             return_to_original_position: function (_elt, _callback) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(_elt);
+                var data = priv.instance_data_for(_elt);
                 var drag_elt = data.drag_element;
 
                 drag_elt.animate({
@@ -746,7 +746,7 @@
             handle_document_mouseup: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(this);
+                var data = priv.instance_data_for(this);
 
                 if (data.is_dragging) {
                     priv.stop_dragging($(this), _ev);
@@ -761,7 +761,7 @@
             handle_document_mousemove: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data(this);
+                var data = priv.instance_data_for(this);
 
                 if (data.is_dragging) {
                     priv.update_position($(this), _ev);
