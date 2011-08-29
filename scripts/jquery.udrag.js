@@ -685,11 +685,13 @@
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
+
                 var offset = _drop_elt.offset();
+                var is_body = (_drop_elt[0] == document.body);
 
                 var scroll = {
-                    x: _drop_elt.scrollLeft(),
-                    y: _drop_elt.scrollTop()
+                    x: (is_body ? 0 : _drop_elt.scrollLeft()),
+                    y: (is_body ? 0 : _drop_elt.scrollTop())
                 };
 
                 var drop_extent = {
@@ -714,6 +716,16 @@
 
                     )
                 };
+
+                /* Special case:
+                    Subtract one side of the element's padding from the
+                    coordinates, if we're dropping on the document body. */
+
+                if (is_body) {
+                    var body = $(document.body);
+                    rv.x -= (body.outerWidth() - body.width()) / 2;
+                    rv.y -= (body.outerHeight() - body.height()) / 2;
+                }
 
                 return rv;
             },
@@ -757,12 +769,12 @@
                 _new_parent_elt.prepend(_elt);
                 var offset = _elt.offset();
 
-                /* Calculate new "initial" position */
+                /* Set new "initial" position:
+                    The return_to_original_position function will use
+                    this when it's called, effectively moving the element. */
+
+                data.initial_position = { x: offset.left, y: offset.top };
                 data.delta.x = data.delta.y = 0;
-                data.initial_position = {
-                    x: offset.left,
-                    y: offset.top
-                };
 
                 return _elt;
             },
