@@ -54,8 +54,8 @@
             var default_options = {
                 scrollDelta: 32, /* px */
                 scrollDelay: 256, /* ms */
-                scrollInterval: 128, /* ms */
-                scrollEdgeExtent: 32 /* px, per side */
+                scrollInterval: 64, /* ms */
+                scrollEdgeExtent: 48 /* px, per side */
             };
 
             var doc = $(document);
@@ -242,7 +242,10 @@
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
                 var drop_zone = priv.find_drop_zone_beneath(_elt, _ev);
-                var recent = data.recent_drop_zone_containers;
+
+                var recent = data.recent_drop_zone_containers = [
+                    data.recent_drop_zone_containers[1], drop_zone
+                ];
 
                 /* Move element */
                 data.drag_element.offset({
@@ -251,15 +254,28 @@
                 });
 
                 priv.clear_highlight(drop_zone, data);
-                data.recent_drop_zone_containers = [ recent[1], drop_zone ];
-
-                if (recent[0] != recent[1]) {
-                    priv.stop_autoscroll(_elt);
-                }
 
                 if (drop_zone) {
+
+                    /* Special autoscrolling case:
+                        The pointer moved from one drop zone to another,
+                        directly and without any events in-between the two.
+                        Switch out the autoscroll element directly, and
+                        recalculate the scroll direction. We can't stop
+                        and then start scrolling here, because the timeout
+                        handler won't get a chance to run between the
+                        two calls, and thus autoscrolling won't restart. */
+
+                    if (recent[0] && recent[0] != recent[1]) {
+                        data.autoscroll_elt = drop_zone.container_elt[0];
+                        priv.calculate_autoscroll_direction(
+                            _elt, _ev, drop_zone
+                        );
+                    }
+
                     priv.set_highlight(drop_zone, data);
                     priv.start_autoscroll(_elt, drop_zone);
+
                 } else {
                     priv.stop_autoscroll(_elt);
                 }
@@ -277,7 +293,7 @@
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var scroll_axes = _drop_zone.autoscroll_axes;
+                var scroll_axes = data.autoscroll_axes;
                 var options = data.options;
 
                 if (data.is_autoscrolling) {
@@ -291,7 +307,6 @@
 
                 data.is_autoscrolling = true;
                 data.autoscroll_elt = _drop_zone.container_elt[0];
-
                 priv.handle_autoscroll_timeout(_elt, _drop_zone);
             },
 
@@ -309,7 +324,7 @@
                     return false;
                 }
 
-                /* The timeout functoin is still scheduled:
+                /* The timeout function is still scheduled:
                     Clear the auto-scroll element; the timeout function
                     will set is_autoscrolling to false when it's invoked. */
 
@@ -327,8 +342,8 @@
                 var data = priv.instance_data_for(_elt);
 
                 var options = data.options;
-                var scroll_axes = _drop_zone.autoscroll_axes;
-                var container_elt = _drop_zone.container_elt;
+                var scroll_axes = data.autoscroll_axes;
+                var autoscroll_elt = $(data.autoscroll_elt);
 
                 /* Stop scrolling?
                     Stop if neither axis is active, or if we're
@@ -347,13 +362,13 @@
 
                 if (data.has_scrolled_recently) {
 
-                    container_elt.scrollLeft(
-                        container_elt.scrollLeft() +
+                    autoscroll_elt.scrollLeft(
+                        autoscroll_elt.scrollLeft() +
                             scroll_axes.x * options.scrollDelta
                     );
 
-                    container_elt.scrollTop(
-                        container_elt.scrollTop() +
+                    autoscroll_elt.scrollTop(
+                        autoscroll_elt.scrollTop() +
                             scroll_axes.y * options.scrollDelta
                     );
                 }
@@ -365,7 +380,7 @@
                     this avoids accidental scrolling during a drag/drop. */
 
                 var callback_fn = function () {
-                    return priv.handle_autoscroll_timeout(_elt, _drop_zone);
+                    priv.handle_autoscroll_timeout(_elt, _drop_zone);
                 };
 
                 var timeout = (
@@ -615,32 +630,50 @@
                 if (overlapping_zones.length <= 0) {
                     return null;
                 }
+                
+                var rv = priv.find_topmost_drop_zone(overlapping_zones);
+
+                return priv.calculate_autoscroll_direction(
+                    _elt, _ev, priv.find_topmost_drop_zone(overlapping_zones)
+                );
+            },
+
+            /**
+             * Fill the {autoscroll_axes} member of {_elt}'s private data
+             * with directional information for the autoscrolling code.
+             */
+             calculate_autoscroll_direction: function (_elt, _ev, _zone) {
+
+                var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data_for(_elt);
 
                 /* Support for auto-scrolling:
                     Determine if we're hovering over one or more edges
-                    of the drop zone's container. If so, set the sign
-                    bit of the appropriate member of rv.autoscroll_axes. */
+                    of the drop zone's container. If so, set the sign bit
+                    of the appropriate member of zone.autoscroll_axes. */
+
+                var x = _ev.pageX;
+                var y = _ev.pageY;
 
                 var scroll_axes = { x: 0, y: 0 };
                 var scroll_edge = data.options.scrollEdgeExtent;
-                var rv = priv.find_topmost_drop_zone(overlapping_zones);
 
                 /* Auto-scroll: x-axis */
-                if (x > rv.x[0] && x < rv.x[0] + scroll_edge) {
+                if (x > _zone.x[0] && x < _zone.x[0] + scroll_edge) {
                     scroll_axes.x = -1;
-                } else if (x < rv.x[1] && x > rv.x[1] - scroll_edge) {
+                } else if (x < _zone.x[1] && x > _zone.x[1] - scroll_edge) {
                     scroll_axes.x = 1;
                 }
 
                 /* Auto-scroll: y-axis */
-                if (y > rv.y[0] && y < rv.y[0] + scroll_edge) {
+                if (y > _zone.y[0] && y < _zone.y[0] + scroll_edge) {
                     scroll_axes.y = -1;
-                } else if (y < rv.y[1] && y > rv.y[1] - scroll_edge) {
+                } else if (y < _zone.y[1] && y > _zone.y[1] - scroll_edge) {
                     scroll_axes.y = 1;
                 }
 
-                rv.autoscroll_axes = scroll_axes;
-                return rv;
+                data.autoscroll_axes = scroll_axes;
+                return _zone;
             },
 
             /**
