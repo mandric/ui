@@ -362,15 +362,36 @@
 
                 if (data.has_scrolled_recently) {
 
-                    autoscroll_elt.scrollLeft(
-                        autoscroll_elt.scrollLeft() +
-                            scroll_axes.x * options.scrollDelta
-                    );
+                    /* Requested distance to scroll, in pixels */
+                    var dx = scroll_axes.x * options.scrollDelta;
+                    var dy = scroll_axes.y * options.scrollDelta;
 
-                    autoscroll_elt.scrollTop(
-                        autoscroll_elt.scrollTop() +
-                            scroll_axes.y * options.scrollDelta
-                    );
+                    var scroll = {
+                        x: autoscroll_elt.scrollLeft(),
+                        y: autoscroll_elt.scrollTop()
+                    }
+
+                    autoscroll_elt.scrollLeft(scroll.x + dx);
+                    autoscroll_elt.scrollTop(scroll.y + dy);
+
+                    /* Actual distance scrolled, in pixels */
+                    dx = autoscroll_elt.scrollLeft() - scroll.x;
+                    dy = autoscroll_elt.scrollTop() - scroll.y;
+
+                    /* Special case:
+                        Autoscrolling element is the browser window; adjust
+                        {drag_elt} by {scrollDelta} to keep it stationary. */
+
+                    if (autoscroll_elt && autoscroll_elt[0] == window) {
+
+                        var drag_elt = data.drag_element;
+                        var drag_offset = drag_elt.offset();
+
+                        drag_elt.offset({
+                            top: drag_offset.top + dy,
+                            left: drag_offset.left + dx
+                        });
+                    }
                 }
 
                 /* Re-invoke:
@@ -641,13 +662,14 @@
 
                 for (var i = 0, len = drop_zones.length; i < len; ++i) {
                     var zone = drop_zones[i];
+                    var container_elt = zone.container_elt;
 
                     /* Special case:
                         Scrolling container is the browser window. */
 
-                    if (priv.drop_zone_contained_by_window(zone)) {
-                        x -= zone.container_elt.scrollLeft();
-                        y -= zone.container_elt.scrollTop();
+                    if (container_elt && container_elt[0] == window) {
+                        x -= container_elt.scrollLeft();
+                        y -= container_elt.scrollTop();
                     }
 
                     /* Containment */
@@ -684,6 +706,7 @@
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
+                var container_elt = _zone.container_elt;
 
                 /* Support for auto-scrolling:
                     Determine if we're hovering over one or more edges
@@ -699,9 +722,9 @@
                 /* Special case:
                     Scrolling container is the browser window. */
 
-                if (priv.drop_zone_contained_by_window(_zone)) {
-                    x -= _zone.container_elt.scrollLeft();
-                    y -= _zone.container_elt.scrollTop();
+                if (container_elt && container_elt[0] == window) {
+                    x -= container_elt.scrollLeft();
+                    y -= container_elt.scrollTop();
                 }
 
                 /* Auto-scroll: x-axis */
@@ -848,17 +871,6 @@
                         }
                     }
                 });
-            },
-
-            /**
-             * Returns true if the drop zone {_zone} uses the {window}
-             * element as a container element (i.e. for scrolling the
-             * {document} object it contains); false otherwise.
-             */
-
-            drop_zone_contained_by_window: function (_zone) {
-                var container_elt = _zone.container_elt;
-                return (container_elt && container_elt[0] == window);
             },
 
             /**
