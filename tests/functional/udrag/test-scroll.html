@@ -78,14 +78,6 @@
                 </div>
             </div>
         </div>
-        <script type="text/javascript">
-            jQuery(function ($) {
-                $('.drag').uDrag('create', {
-                    container: '.scroll',
-                    drop: [ $('.drop'), $('.drop-zone') ]
-                });
-            });
-        </script>
         <div class="scroll">
             <div class="outer">
                 <div id="d3" class="tall drop">
@@ -106,5 +98,13 @@
                 </div>
             </div>
         </div>
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('.drag').uDrag('create', {
+                    drop: $('.drop'),
+                    container: '.scroll'
+                });
+            });
+        </script>
     </body>
 </html>

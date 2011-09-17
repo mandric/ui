@@ -454,10 +454,32 @@
                 var priv = $.uDrag.impl.priv;
                 var drop_option = (_options.drop || []);
                 var container_option = (_options.container || false);
+                var container_callback = null;
+
+                /* Container locator callback:
+                    The container element is a special ancestor of the drop
+                    element, and is used for auto-scrolling features. If a
+                    callback is provided, we use it to locate the container
+                    element for each drop element. Otherwise, we substitute
+                    a default implementation: it treats container_option as
+                    a selector, and selects the closest matching ancestor.
+                    If that fails, {drop_elt} is used as the container. */
+
+                if ($.isFunction(container_option)) {
+                    container_callback = container_option;
+                } else {
+                    container_callback = function (_drop_elt) {
+                        return (
+                            container_option ?
+                                _drop_elt.parents(container_option).first() :
+                                    _drop_elt
+                        );
+                    };
+                }
 
                 priv.create_instance_data(_elt, _options);
 
-                /* Array-ize */
+                /* Array-ize a non-array argument */
                 if (!$.isArray(drop_option)) {
                     drop_option = [ drop_option ];
                 }
@@ -472,21 +494,16 @@
                             or the same as the drop zone element otherwise. */
 
                         drop_elt = $(drop_elt);
+                        var container_elt = container_callback(drop_elt);
 
-                        var container_elt = (
-                            container_option ?
-                                drop_elt.parents(container_option).first() :
-                                    drop_elt
-                        );
-
-                        if (!container_elt[0]) {
+                        if (!container_elt || !container_elt[0]) {
                             container_elt = drop_elt;
                         }
 
                         /* Find ancestors of drop zone:
                             We bind to the scroll event for these elements;
                             this ultimately invokes recalculate_drop_zones to
-                            recalculate the position of all drop targets. */
+                            recalculate the position of drop targets inside. */
 
                         var ancestors = [ container_elt[0] ].concat(
                             container_elt.parentsUntil('body').toArray()
@@ -556,13 +573,24 @@
 
                 var container_elt = _zone.container_elt;
 
-                var offset = (
-                    container_elt.offset() || { left: 0, top: 0 }
+                var container_is_toplevel = (
+                    container_elt[0] == document
+                        || container_elt[0] == window
                 );
 
-                var size = {
-                    x: container_elt.outerWidth(),
-                    y: container_elt.outerHeight()
+                var size = { x: 0, y: 0 };
+                var offset = (container_elt.offset() || { left: 0, top: 0 });
+
+                if (container_is_toplevel) {
+                    size = {
+                        x: container_elt.width(),
+                        y: container_elt.height()
+                    };
+                } else {
+                    size = {
+                        x: container_elt.outerWidth(),
+                        y: container_elt.outerHeight()
+                    };
                 }
 
                 _zone.x = [ offset.left, offset.left + size.x ];
@@ -612,16 +640,26 @@
                     or more drop zone containers, save them in an array. */
 
                 for (var i = 0, len = drop_zones.length; i < len; ++i) {
-                    var drop = drop_zones[i];
+                    var zone = drop_zones[i];
+
+                    /* Special case:
+                        Scrolling container is the browser window. */
+
+                    if (priv.drop_zone_contained_by_window(zone)) {
+                        x -= zone.container_elt.scrollLeft();
+                        y -= zone.container_elt.scrollTop();
+                    }
 
                     /* Containment */
-                    if (x < drop.x[0] || x > drop.x[1])
+                    if (x < zone.x[0] || x > zone.x[1]) {
                         continue;
+                    }
 
-                    if (y < drop.y[0] || y > drop.y[1])
+                    if (y < zone.y[0] || y > zone.y[1]) {
                         continue;
+                    }
 
-                    overlapping_zones.push(drop);
+                    overlapping_zones.push(zone);
                 }
 
                 /* No drop zones under pointer?
@@ -657,6 +695,14 @@
 
                 var scroll_axes = { x: 0, y: 0 };
                 var scroll_edge = data.options.scrollEdgeExtent;
+
+                /* Special case:
+                    Scrolling container is the browser window. */
+
+                if (priv.drop_zone_contained_by_window(_zone)) {
+                    x -= _zone.container_elt.scrollLeft();
+                    y -= _zone.container_elt.scrollTop();
+                }
 
                 /* Auto-scroll: x-axis */
                 if (x > _zone.x[0] && x < _zone.x[0] + scroll_edge) {
@@ -802,6 +848,17 @@
                         }
                     }
                 });
+            },
+
+            /**
+             * Returns true if the drop zone {_zone} uses the {window}
+             * element as a container element (i.e. for scrolling the
+             * {document} object it contains); false otherwise.
+             */
+
+            drop_zone_contained_by_window: function (_zone) {
+                var container_elt = _zone.container_elt;
+                return (container_elt && container_elt[0] == window);
             },
 
             /**

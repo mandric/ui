@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet"
+            href="../../../styles/jquery.udrag.css" />
+        <script type="text/javascript"
+            src="../../../scripts/contrib/jquery-1.4.2.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/jquery.udrag.js">
+        </script>
+        <style type="text/css">
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                height: 100em;
+            }
+            .drag {
+                max-width: 10em;
+                border: solid 7px #00f;
+                background-color: #f04;
+            }
+            .hover {
+                border: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="test-instructions">
+        </div>
+        <div class="drag">
+            This is a test.<br />
+            This is a test.<br />
+            This is a test.<br />
+            This is a test.
+        </div>
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('.drag').uDrag('create', {
+                    drop: $('body'),
+                    container: function (_drop_elt) {
+                        return $(window);
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>
