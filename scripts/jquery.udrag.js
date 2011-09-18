@@ -40,6 +40,165 @@
  * assist our design and construction of open-source mobile health software.
  */
 
+
+/**
+ * uDrag.AreaIndex:
+ *  A list of elements, organized to be searchable by physical area
+ *  (i.e. offset and dimensions). The {find_beneath} operation returns
+ *  the subset of elements that overlap a specific point on the page.
+ */
+
+uDrag = {};
+uDrag.AreaIndex = function () {};
+
+uDrag.AreaIndex.prototype = {
+
+    /**
+     * Instance-specific data for uDrag.AreaIndex.
+     */
+    _zones: [],
+
+    /**
+     * Start tracking the area of the page occupied by {_elt}.
+     * Optionally, {_zone} is an object containing supplemental
+     * data, which will be stored along with {_elt}.
+     */
+    track: function (_elt, _zone) {
+
+        zone = (_zone || {});
+        zone.elt = _elt;
+
+        this._zones.push(zone);
+        this.recalculate_one(zone);
+
+        return zone;
+    },
+
+    /**
+     * Recalculates position and extent information for
+     * the {drop_zones} structure. This structure is used to
+     * map page coordinates to specific drop zone elements.
+     */
+    recalculate_all: function (_elt) {
+
+        var zones = this._zones;
+
+        for (var i = 0, len = zones.length; i < len; ++i) {
+            this.recalculate_one(zones[i]);
+        }
+
+        return _elt;
+    },
+
+    /*
+     * Recalculates position and extent information for a single
+     * member of the {drop_zones} structure, specified in {_zone}.
+     * These structures are used to map page coordinates to specific
+     * drop zone elements.
+     */
+    recalculate_one: function (_zone) {
+
+        var size = { x: 0, y: 0 };
+        var container_elt = _zone.container_elt;
+        var offset = (container_elt.offset() || { left: 0, top: 0 });
+
+        if (container_elt && container_elt[0] == window) {
+            size = {
+                x: container_elt.width(),
+                y: container_elt.height()
+            };
+        } else {
+            size = {
+                x: container_elt.outerWidth(),
+                y: container_elt.outerHeight()
+            };
+        }
+
+        _zone.x = [ offset.left, offset.left + size.x ];
+        _zone.y = [ offset.top, offset.top + size.y ];
+
+        return _zone;
+    },
+
+    /**
+     * Returns the set of drop elements that lie directly
+     * underneath the mouse pointer (position specified in _ev).
+     */
+    find_topmost: function (_zones) {
+
+        var rv = null, rvz = null;
+
+        for (var i = 0, len = _zones.length; i < len; ++i) {
+            var zone = _zones[i];
+            var z = parseInt(zone.elt.css('z-index'), 10);
+
+            if (!rv || z > rvz) {
+                rv = zone;
+                rvz = z;
+            }
+        }
+
+        return rv;
+    },
+
+    /**
+     * Returns the set of drop zones that lie directly beneath
+     * the mouse pointer. The position is taken from the pageX
+     * and pageY values of the supplied event object {_ev}.
+     */
+    find_beneath: function (_elt, _ev) {
+
+        var zones = this._zones;
+        var overlapping_zones = [];
+
+        var x = _ev.pageX;
+        var y = _ev.pageY;
+
+        /* Hit detection:
+            If the mouse pointer is currently positioned over one
+            or more drop zone containers, save them in an array. */
+
+        for (var i = 0, len = zones.length; i < len; ++i) {
+            var zone = zones[i];
+            var container_elt = zone.container_elt;
+
+            /* Special case:
+                Scrolling container is the browser window. */
+
+            if (container_elt && container_elt[0] == window) {
+                x -= container_elt.scrollLeft();
+                y -= container_elt.scrollTop();
+            }
+
+            /* Require containment along x-xais */
+            if (x < zone.x[0] || x > zone.x[1]) {
+                continue;
+            }
+
+            /* Require containment along y-xais */
+            if (y < zone.y[0] || y > zone.y[1]) {
+                continue;
+            }
+
+            overlapping_zones.push(zone);
+        }
+
+        /* No drop zones under pointer?
+            Skip the autoscroll calculations, and return nothing. */
+
+        if (overlapping_zones.length <= 0) {
+            return null;
+        }
+
+        return this.find_topmost(overlapping_zones);
+    }
+};
+
+
+/**
+ * $.uDrag:
+ */
+
 (function ($) {
 
     $.uDrag = {};
@@ -89,7 +248,6 @@
                 );
 
                 priv.bind_drop_zones(elt, options);
-                priv.recalculate_drop_zones(elt);
             });
 
             return this;
@@ -183,7 +341,7 @@
                     y: _ev.pageY - data.delta.y
                 };
 
-                priv.recalculate_drop_zones(_elt);
+                data.drop_zones.recalculate_all(_elt);
                 priv.update_position(_elt, _ev);
             },
 
@@ -194,7 +352,7 @@
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var drop_zone = priv.find_drop_zone_beneath(_elt, _ev);
+                var drop_zone = data.drop_zones.find_beneath(_elt, _ev);
 
                 priv.clear_highlight(null, data);
 
@@ -241,7 +399,7 @@
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var drop_zone = priv.find_drop_zone_beneath(_elt, _ev);
+                var drop_zone = data.drop_zones.find_beneath(_elt, _ev);
 
                 var recent = data.recent_drop_zone_containers = [
                     data.recent_drop_zone_containers[1], drop_zone
@@ -254,6 +412,7 @@
                 });
 
                 priv.clear_highlight(drop_zone, data);
+                priv.calculate_autoscroll_direction(_elt, _ev, drop_zone);
 
                 if (drop_zone) {
 
@@ -451,18 +610,20 @@
              * must be called before any drop zones can be modified.
              */
             create_instance_data: function (_elt, _options) {
-                return _elt.data(
+                _elt.data(
                     'udrag', {
-                        drop_zones: [],
                         options: _options,
                         previous_highlight_zone: null,
                         is_autoscrolling: false,
                         autoscroll_elt: null,
                         has_scrolled_recently: false,
                         autoscroll_axes: { x: 0, y: 0 },
-                        recent_drop_zone_containers: []
+                        recent_drop_zone_containers: [],
+                        drop_zones: new uDrag.AreaIndex()
                     }
                 );
+
+                return _elt.data('udrag');
             },
 
             /**
@@ -474,10 +635,10 @@
 
                 var priv = $.uDrag.impl.priv;
                 var drop_option = (_options.drop || []);
+                var data = priv.create_instance_data(_elt, _options);
+
                 var container_option = (_options.container || false);
                 var container_callback = null;
-
-                priv.create_instance_data(_elt, _options);
 
                 /* Array-ize a non-array argument */
                 if (!$.isArray(drop_option)) {
@@ -557,8 +718,7 @@
                             This fills in details about the drop zone,
                             and prepares it for fast indexed retrieval. */
 
-                        priv.cache_drop_zone(_elt, {
-                            elt: drop_elt,
+                        data.drop_zones.track(drop_elt, {
                             container_elt: container_elt,
                             ancestor_elts: ancestors
                         });
@@ -566,150 +726,6 @@
                 }
 
                 return _elt;
-            },
-
-            /**
-             *
-             */
-            cache_drop_zone: function (_elt, _zone) {
-
-                var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data_for(_elt);
-
-                priv.recalculate_drop_zone(_zone);
-                data.drop_zones.push(_zone);
-
-                return _zone;
-            },
-
-            /**
-             * Recalculates position and extent information for
-             * the {drop_zones} structure. This structure is used to
-             * map page coordinates to specific drop zone elements.
-             */
-            recalculate_drop_zones: function (_elt) {
-
-                var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data_for(_elt);
-                var drop_zones = data.drop_zones;
-
-                for (var i = 0, len = drop_zones.length; i < len; ++i) {
-                    priv.recalculate_drop_zone(drop_zones[i]);
-                }
-
-                return _elt;
-            },
-
-            /*
-             * Recalculates position and extent information for a single
-             * member of the {drop_zones} structure, specified in {_zone}.
-             * These structures are used to map page coordinates to specific
-             * drop zone elements.
-             */
-            recalculate_drop_zone: function (_zone) {
-
-                var container_elt = _zone.container_elt;
-
-                var container_is_toplevel = (
-                    container_elt[0] == document
-                        || container_elt[0] == window
-                );
-
-                var size = { x: 0, y: 0 };
-                var offset = (container_elt.offset() || { left: 0, top: 0 });
-
-                if (container_is_toplevel) {
-                    size = {
-                        x: container_elt.width(),
-                        y: container_elt.height()
-                    };
-                } else {
-                    size = {
-                        x: container_elt.outerWidth(),
-                        y: container_elt.outerHeight()
-                    };
-                }
-
-                _zone.x = [ offset.left, offset.left + size.x ];
-                _zone.y = [ offset.top, offset.top + size.y ];
-
-                return _zone;
-            },
-
-            /**
-             * Returns the set of drop elements that lie directly
-             * underneath the mouse pointer (position specified in _ev).
-             */
-            find_topmost_drop_zone: function (_drop_zones) {
-
-                var rv = null, z_rv = null;
-
-                for (var i = 0, len = _drop_zones.length; i < len; ++i) {
-                    var zone = _drop_zones[i];
-                    var z = parseInt(zone.elt.css('z-index'), 10);
-
-                    if (!rv || z > z_rv) {
-                        rv = zone;
-                        z_rv = z;
-                    }
-                }
-
-                return rv;
-            },
-
-            /**
-             * Returns the set of drop zones that lie directly beneath
-             * the mouse pointer. The position is taken from the pageX
-             * and pageY values of the supplied event object {_ev}.
-             */
-            find_drop_zone_beneath: function (_elt, _ev) {
-
-                var overlapping_zones = [];
-                var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data_for(_elt);
-                var drop_zones = data.drop_zones;
-
-                var x = _ev.pageX;
-                var y = _ev.pageY;
-
-                /* Hit detection:
-                    If the mouse pointer is currently positioned over one
-                    or more drop zone containers, save them in an array. */
-
-                for (var i = 0, len = drop_zones.length; i < len; ++i) {
-                    var zone = drop_zones[i];
-                    var container_elt = zone.container_elt;
-
-                    /* Special case:
-                        Scrolling container is the browser window. */
-
-                    if (container_elt && container_elt[0] == window) {
-                        x -= container_elt.scrollLeft();
-                        y -= container_elt.scrollTop();
-                    }
-
-                    /* Containment */
-                    if (x < zone.x[0] || x > zone.x[1]) {
-                        continue;
-                    }
-
-                    if (y < zone.y[0] || y > zone.y[1]) {
-                        continue;
-                    }
-
-                    overlapping_zones.push(zone);
-                }
-
-                /* No drop zones under pointer?
-                    Skip the autoscroll calculations, and return nothing. */
-
-                if (overlapping_zones.length <= 0) {
-                    return null;
-                }
-
-                return priv.calculate_autoscroll_direction(
-                    _elt, _ev, priv.find_topmost_drop_zone(overlapping_zones)
-                );
             },
 
             /**
@@ -923,8 +939,9 @@
             handle_document_resize: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data_for(this);
 
-                priv.recalculate_drop_zones($(this));
+                data.drop_zones.recalculate_all($(this));
                 return false;
             },
 
@@ -951,8 +968,10 @@
             handle_ancestor_scroll: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data_for(this);
 
-                priv.recalculate_drop_zones(this);
+                data.drop_zones.recalculate_all($(this));
+                return false;
             }
 
         }
