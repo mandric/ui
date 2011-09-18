@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet"
+            href="../../../styles/jquery.udrag.css" />
+        <script type="text/javascript"
+            src="../../../scripts/contrib/jquery-1.4.2.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/jquery.udrag.js">
+        </script>
+        <style type="text/css">
+            html, body {
+                margin: 0;
+                padding: 1em;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            .outer {
+                height: 65%;
+                width: 65%;
+                overflow-x: scroll;
+                overflow-y: scroll;
+                border: solid 1px #ccc;
+            }
+            .inner {
+                margin: 1em;
+                height: 100em;
+                width: 100em;
+            }
+            .drag {
+                border: solid 7px #00f;
+                background-color: #f04;
+            }
+            .hover {
+                border: solid 2px #f00;;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="outer">
+        <div>
+            <div class="inner drop">
+                <div class="test-instructions">
+                </div>
+                <div class="drag" style="width: 10%; height: 10%;">
+                </div>
+            </div>
+        </div>
+        </div>
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('.drag').uDrag('create', {
+                    drop: [ $('.drop') ],
+                    container: '.outer'
+                });
+            });
+        </script>
+    </body>
+</html>
