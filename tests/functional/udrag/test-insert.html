@@ -18,11 +18,12 @@
                 overflow: hidden;
             }
             .outer {
-                height: 65%;
-                width: 65%;
+                height: 16em;
+                width: 16em;
                 overflow-x: scroll;
                 overflow-y: scroll;
                 border: solid 1px #ccc;
+                margin: 1em;
             }
             .inner {
                 margin: 1em;
@@ -30,11 +31,20 @@
                 width: 100em;
             }
             .drag {
+                width: 2em;
+                height: 2em;
                 border: solid 7px #00f;
                 background-color: #f04;
             }
             .hover {
                 border: solid 2px #f00;;
+            }
+            .inner .move-to, .inner .move-from {
+                border: solid 1px #ccc;
+                width: 10em;
+                height: 4em;
+                margin: 1em;
+                padding: 1em;
             }
         </style>
     </head>
@@ -44,16 +54,41 @@
             <div class="inner drop">
                 <div class="test-instructions">
                 </div>
-                <div class="drag" style="width: 10%; height: 10%;">
+                <div class="move-from">
+                    <div class="drag">
+                    </div>
+                </div>
+                <div class="move-to">
+                </div>
+            </div>
+        </div>
+        </div>
+        <div class="outer">
+        <div>
+            <div class="inner drop">
+                <div class="test-instructions">
+                </div>
+                <div class="move-from">
+                </div>
+                <div class="move-to">
                 </div>
             </div>
         </div>
         </div>
         <script type="text/javascript">
+            var state = 0;
             jQuery(function ($) {
                 $('.drag').uDrag('create', {
                     drop: [ $('.drop') ],
-                    container: '.outer'
+                    container: '.outer',
+                    insertElement: function (_elt, _drop_elt) {
+                        _drop_elt.find(
+                            state++ % 2 == 0 ? '.move-to' : '.move-from'
+                        ).append(_elt);
+                    },
+                    positionElement: function (_elt, _drop_elt, _offset) {
+                        return;
+                    }
                 });
             });
         </script>

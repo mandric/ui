@@ -360,14 +360,37 @@ uDrag.AreaIndex.prototype = {
 
                     var drop_elt = drop_zone.elt;
 
-                    var position_callback = (
-                        data.options.positionElement ||
-                            priv.default_position_element
+                    var offset = priv.relative_drop_offset(
+                        _elt, drop_elt, _ev
                     );
 
-                    position_callback(
-                        _elt, priv.relative_drop_offset(_elt, drop_elt, _ev)
+                    var insert_callback = (
+                        data.options.insertElement ||
+                            priv.default_insert_callback
                     );
+                    var position_callback = (
+                        data.options.positionElement ||
+                            priv.default_position_callback
+                    );
+                    var drop_callback = (
+                        data.options.onDrop ||
+                            priv.default_drop_callback
+                    )
+
+                    /* Reparent element:
+                        Default to the first child in {drop_elt}. Note that
+                        {positionElement} can override this by moving it. */
+
+                    insert_callback(_elt, drop_elt);
+
+                    /* Reposition element:
+                        This can be overridden to position differently. */
+
+                    position_callback(_elt, drop_elt, offset);
+                    drop_callback(_elt, drop_elt, offset);
+
+                    /* Start animating:
+                        Animate {_elt} toward its new position. */
 
                     priv.move_element(_elt, drop_elt, _ev);
                 }
@@ -376,26 +399,12 @@ uDrag.AreaIndex.prototype = {
                 priv.stop_autoscroll(_elt);
                 priv.return_to_original_position(_elt);
             },
-           
-            /**
-             * The default implementation of the positionElement callback.
-             * If not overridden, this will use relative positioning to
-             * maintain the exact coordinates of the dropped element.
-             */
-            default_position_element: function (_elt, _offset) {
-
-                _elt.css('position', 'relative');
-                _elt.css('top', _offset.y + 'px');
-                _elt.css('left', _offset.x + 'px');
-
-                return _elt;
-            },
-
+          
             /**
              * Update the apparent position of the element being dragged,
              * so that it is appears at the coordinates specified in {_ev}.
              */
-            update_position: function (_elt, _ev) {
+            update_position: function (_elt, _ev, _skip_events) {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
@@ -405,6 +414,11 @@ uDrag.AreaIndex.prototype = {
                     data.recent_drop_zone_containers[1], drop_zone
                 ];
 
+                var hover_callback = (
+                    data.options.onHover ||
+                        priv.default_hover_callback
+                );
+
                 /* Move element */
                 data.drag_element.offset({
                     top: _ev.pageY - data.delta.y,
@@ -412,9 +426,10 @@ uDrag.AreaIndex.prototype = {
                 });
 
                 priv.clear_highlight(drop_zone, data);
-                priv.calculate_autoscroll_direction(_elt, _ev, drop_zone);
 
                 if (drop_zone) {
+
+                    var drop_elt = drop_zone.elt;
 
                     /* Special autoscrolling case:
                         The pointer moved from one drop zone to another,
@@ -427,19 +442,59 @@ uDrag.AreaIndex.prototype = {
 
                     if (recent[0] && recent[0] != recent[1]) {
                         data.autoscroll_elt = drop_zone.container_elt[0];
-                        priv.calculate_autoscroll_direction(
-                            _elt, _ev, drop_zone
-                        );
                     }
 
+                    priv.calculate_autoscroll_direction(_elt, _ev, drop_zone);
                     priv.set_highlight(drop_zone, data);
                     priv.start_autoscroll(_elt, drop_zone);
+                    
+                    if (!_skip_events) {
+                        hover_callback(
+                            _elt, drop_elt,
+                            priv.relative_drop_offset(_elt, drop_elt, _ev)
+                        );
+                    }
 
                 } else {
                     priv.stop_autoscroll(_elt);
                 }
 
                 return _elt;
+            },
+ 
+            /**
+             * The default implementation of the positionElement callback.
+             * If not overridden, this will use relative positioning to
+             * (visually) maintain the dropped element's position.
+             */
+            default_position_callback: function (_elt, _drop_elt, _offset) {
+
+                _elt.css('position', 'relative');
+                _elt.css('top', _offset.y + 'px');
+                _elt.css('left', _offset.x + 'px');
+
+                return _elt;
+            },
+           
+            /**
+             * The default implementation of the onDrop event callback.
+             */
+            default_drop_callback: function (_elt, _drop_elt, _offset) {
+                return true;
+            },
+           
+            /**
+             * The default implementation of the insertElement callback.
+             */
+            default_insert_callback: function (_elt, _drop_elt) {
+                _drop_elt.prepend(_elt);
+            },
+            
+            /**
+             * The default implementation of the onHover callback.
+             */
+            default_hover_callback: function (_elt, _drop_elt) {
+                return;
             },
 
             /**
@@ -847,7 +902,7 @@ uDrag.AreaIndex.prototype = {
                 drag_elt.height(_elt.innerHeight());
 
                 $('body').append(drag_elt);
-                priv.update_position(_elt, _ev);
+                priv.update_position(_elt, _ev, true);
 
                 drag_elt.css('visibility', 'visible');
                 _elt.css('visibility', 'hidden');
@@ -864,13 +919,11 @@ uDrag.AreaIndex.prototype = {
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
 
-                /* Move element */
-                _new_parent_elt.prepend(_elt);
-                var offset = _elt.offset();
-
                 /* Set new "initial" position:
                     The return_to_original_position function will use
                     this when it's called, effectively moving the element. */
+
+                var offset = _elt.offset();
 
                 data.initial_position = { x: offset.left, y: offset.top };
                 data.delta.x = data.delta.y = 0;
