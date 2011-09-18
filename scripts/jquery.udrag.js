@@ -477,32 +477,48 @@
                 var container_option = (_options.container || false);
                 var container_callback = null;
 
-                /* Container locator callback:
-                    The container element is a special ancestor of the drop
-                    element, and is used for auto-scrolling features. If a
-                    callback is provided, we use it to locate the container
-                    element for each drop element. Otherwise, we substitute
-                    a default implementation: it treats container_option as
-                    a selector, and selects the closest matching ancestor.
-                    If that fails, {drop_elt} is used as the container. */
-
-                if ($.isFunction(container_option)) {
-                    container_callback = container_option;
-                } else {
-                    container_callback = function (_drop_elt) {
-                        return (
-                            container_option ?
-                                _drop_elt.parents(container_option).first() :
-                                    _drop_elt
-                        );
-                    };
-                }
-
                 priv.create_instance_data(_elt, _options);
 
                 /* Array-ize a non-array argument */
                 if (!$.isArray(drop_option)) {
                     drop_option = [ drop_option ];
+                }
+                
+                /* Base implementation of container locator function:
+                    This function treats container_option as a jQuery selector
+                    if possible, and selects the closest matching ancestor.
+                    If that fails, {drop_elt} is used as the container. */
+
+                var locate_container_element = (
+                    function (_drop_elt, _container) {
+                        switch (typeof(_container)) {
+                            case 'string':
+                                return _drop_elt.parents(_container).first();
+                            case 'object':
+                                return $(_container);
+                            default:
+                                return _drop_elt;
+                        }
+                    }
+                );
+
+                /* Container locator callback:
+                    The container element is a special ancestor of the drop
+                    element, and is used for auto-scrolling features. If a
+                    callback is provided, we use it to locate the container
+                    element for each drop element. If not, apply the default
+                    callback to the option (or the appropriate array item). */
+
+                if ($.isFunction(container_option)) {
+                    container_callback = container_option;
+                } else {
+                    container_callback = function (_drop_elt, _i) {
+                        return locate_container_element(
+                            _drop_elt,
+                            ($.isArray(container_option) ?
+                                container_option[_i] : container_option)
+                        )
+                    }
                 }
 
                 /* Traverse array of jQuery collection objects */
@@ -515,7 +531,7 @@
                             or the same as the drop zone element otherwise. */
 
                         drop_elt = $(drop_elt);
-                        var container_elt = container_callback(drop_elt);
+                        var container_elt = container_callback(drop_elt, i);
 
                         if (!container_elt || !container_elt[0]) {
                             container_elt = drop_elt;
@@ -690,8 +706,6 @@
                 if (overlapping_zones.length <= 0) {
                     return null;
                 }
-                
-                var rv = priv.find_topmost_drop_zone(overlapping_zones);
 
                 return priv.calculate_autoscroll_direction(
                     _elt, _ev, priv.find_topmost_drop_zone(overlapping_zones)

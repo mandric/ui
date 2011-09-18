@@ -15,6 +15,7 @@
                 padding: 1em;
                 overflow-x: hidden;
                 overflow-y: scroll;
+                height: 250em;
             }
             .outer {
                 margin: 0.5em;
@@ -25,7 +26,7 @@
                 border: solid 7px #00f;
                 background-color: #f04;
             }
-            .scroll {
+            .scroll, .another-scroll {
                 width: 45%;
                 height: 10em;
                 overflow: scroll;
@@ -78,9 +79,9 @@
                 </div>
             </div>
         </div>
-        <div class="scroll">
+        <div class="another-scroll">
             <div class="outer">
-                <div id="d3" class="tall drop">
+                <div id="d3" class="tall another-drop">
                     <div class="drag">
                         This is a test.<br />
                         This is a test.<br />
@@ -101,8 +102,8 @@
         <script type="text/javascript">
             jQuery(function ($) {
                 $('.drag').uDrag('create', {
-                    drop: $('.drop'),
-                    container: '.scroll'
+                    drop: [ $('.drop'), '.another-drop', 'body' ],
+                    container: [ '.scroll', '.another-scroll', window ]
                 });
             });
         </script>

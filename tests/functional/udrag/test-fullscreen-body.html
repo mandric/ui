@@ -39,10 +39,8 @@
         <script type="text/javascript">
             jQuery(function ($) {
                 $('.drag').uDrag('create', {
-                    drop: $('body'),
-                    container: function (_drop_elt) {
-                        return $(window);
-                    }
+                    drop: 'body',
+                    container: window
                 });
             });
         </script>
