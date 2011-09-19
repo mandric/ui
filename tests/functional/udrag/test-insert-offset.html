@@ -86,7 +86,9 @@
                 $('.hover').each(function (i, elt) {
                     areas.track(elt);
                 });
-
+                $('.outer').scroll(function (_ev) {
+                    areas.recalculate_all();
+                });
                 $('.drag').uDrag('create', {
                     drop: '.drop', container: '.outer',
                     positionElement: uDrag.EmptyFunction,

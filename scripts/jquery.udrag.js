@@ -41,7 +41,7 @@
  */
 
 /**
- * uDrag
+ * uDrag:
  */
 
 uDrag = {};
@@ -67,21 +67,16 @@ uDrag.AreaIndex = function () {
 uDrag.AreaIndex.prototype = {
 
     /**
-     * Instance-specific data for uDrag.AreaIndex.
-     */
-    _zones: [],
-
-    /**
      * Start tracking the area of the page occupied by {_elt}.
      * Optionally, {_data} is an object containing supplemental data,
      * which will be stored along with {_elt} and {_container_elt}.
      */
-    track: function (_elt, _container_elt, _data) {
+    track: function (_elt, _data) {
 
         var zone = (_data || {});
 
         zone.elt = $(_elt);
-        zone.container_elt = $(_container_elt || _elt);
+        zone.container_elt = $(zone.container_elt || _elt);
 
         this._zones.push(zone);
         this.recalculate_one(zone);
@@ -114,6 +109,7 @@ uDrag.AreaIndex.prototype = {
     recalculate_one: function (_zone) {
 
         var size = { x: 0, y: 0 };
+        var relative_elt = _zone.relative_elt;
         var container_elt = _zone.container_elt;
         var offset = (container_elt.offset() || { left: 0, top: 0 });
 
@@ -215,6 +211,24 @@ uDrag.AreaIndex.prototype = {
  */
 
 (function ($) {
+
+    /**
+     *  uDrag: Key Terms
+     *
+     *  Drag element: The {drag element} is an element that can
+     *      be moved around by the user by clicking and dragging.
+     *
+     *  Drop element: The drop element is an element upon which
+     *      the drag element can be successfully released; this
+     *      results in the drag element becoming a descendant of
+     *      the drop element.
+     *
+     *  Container element: The container element is the closest 
+     *      scrolling ancestor to the drop element (i.e. having
+     *      the {overflow: scroll} CSS property). This is used
+     *      to provide auto-scrolling functionality when hovering.
+     *      
+     */
 
     $.uDrag = {};
     $.uDrag.impl = {
@@ -800,7 +814,8 @@ uDrag.AreaIndex.prototype = {
                             This fills in details about the drop zone,
                             and prepares it for fast indexed retrieval. */
 
-                        data.drop_zones.track(drop_elt, container_elt, {
+                        data.drop_zones.track(drop_elt, {
+                            container_elt: container_elt,
                             ancestor_elts: ancestors
                         });
                     });
