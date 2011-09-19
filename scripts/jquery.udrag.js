@@ -73,13 +73,15 @@ uDrag.AreaIndex.prototype = {
 
     /**
      * Start tracking the area of the page occupied by {_elt}.
-     * Optionally, {_zone} is an object containing supplemental
-     * data, which will be stored along with {_elt}.
+     * Optionally, {_data} is an object containing supplemental data,
+     * which will be stored along with {_elt} and {_container_elt}.
      */
-    track: function (_elt, _zone) {
+    track: function (_elt, _container_elt, _data) {
 
-        var zone = (_zone || {});
+        var zone = (_data || {});
+
         zone.elt = $(_elt);
+        zone.container_elt = $(_container_elt || _elt);
 
         this._zones.push(zone);
         this.recalculate_one(zone);
@@ -492,11 +494,11 @@ uDrag.AreaIndex.prototype = {
              * If not overridden, this will use relative positioning to
              * (visually) maintain the dropped element's position.
              */
-            default_position_callback: function (_elt, _drop_elt, _offset) {
+            default_position_callback: function (_elt, _drop_elt, _offsets) {
 
                 _elt.css('position', 'relative');
-                _elt.css('top', _offset.y + 'px');
-                _elt.css('left', _offset.x + 'px');
+                _elt.css('top', _offsets.relative.y + 'px');
+                _elt.css('left', _offsets.relative.x + 'px');
 
                 return _elt;
             },
@@ -798,8 +800,7 @@ uDrag.AreaIndex.prototype = {
                             This fills in details about the drop zone,
                             and prepares it for fast indexed retrieval. */
 
-                        data.drop_zones.track(drop_elt, {
-                            container_elt: container_elt,
+                        data.drop_zones.track(drop_elt, container_elt, {
                             ancestor_elts: ancestors
                         });
                     });
