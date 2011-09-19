@@ -18,9 +18,9 @@
                 overflow: hidden;
             }
             .outer {
-                height: 16em;
+                height: 32em;
                 width: 16em;
-                overflow-x: scroll;
+                overflow-x: hidden;
                 overflow-y: scroll;
                 border: solid 1px #ccc;
                 margin: 1em;
@@ -28,23 +28,22 @@
             .inner {
                 margin: 1em;
                 height: 100em;
-                width: 100em;
             }
             .drag {
-                width: 2em;
-                height: 2em;
-                border: solid 7px #00f;
+                width: 1em;
+                height: 1em;
+                border: solid 6px #00f;
+                margin: 2px auto;
                 background-color: #f04;
             }
             .hover {
-                border: solid 2px #f00;;
+                border: solid 1px #f00;;
             }
-            .inner .move-to, .inner .move-from {
+            .inner .hover {
                 border: solid 1px #ccc;
-                width: 10em;
-                height: 4em;
-                margin: 1em;
-                padding: 1em;
+                width: 14em;
+                margin: 1em 0;
+                height: 2em;
             }
             .right {
                 float: right;
@@ -53,30 +52,32 @@
         </style>
     </head>
     <body>
-        <div class="right">
-            <div class="outer">
-            <div>
-                <div class="inner drop">
-                    <div class="test-instructions">
-                    </div>
-                    <div class="move-from">
-                    </div>
-                    <div class="move-to">
-                    </div>
-                </div>
-            </div>
-            </div>
+        <div class="test-instructions">
         </div>
         <div class="outer">
         <div>
             <div class="inner drop">
-                <div class="test-instructions">
-                </div>
-                <div class="move-from">
+                <div class="hover">
                     <div class="drag">
                     </div>
                 </div>
-                <div class="move-to">
+                <div class="hover">
+                </div>
+                <div class="hover">
+                </div>
+                <div class="hover">
+                </div>
+                <div class="hover">
+                </div>
+                <div class="hover">
+                </div>
+                <div class="hover">
+                </div>
+                <div class="hover">
+                </div>
+                <div class="hover">
+                </div>
+                <div class="hover">
                 </div>
             </div>
         </div>
@@ -87,13 +88,9 @@
                 $('.drag').uDrag('create', {
                     drop: [ $('.drop') ],
                     container: '.outer',
-                    insertElement: function (_elt, _drop_elt) {
-                        _drop_elt.find(
-                            (state++ % 2) ? '.move-from' : '.move-to'
-                        ).append(_elt);
-                    },
-                    positionElement: function (_elt, _drop_elt, _offset) {
-                        return;
+                    positionElement: uDrag.EmptyFunction,
+                    insertElement: function (_elt, _drop_elt, _offset) {
+                        console.log(_offset);
                     }
                 });
             });

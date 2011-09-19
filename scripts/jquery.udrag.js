@@ -40,6 +40,13 @@
  * assist our design and construction of open-source mobile health software.
  */
 
+/**
+ * uDrag
+ */
+
+uDrag = {};
+uDrag.EmptyFunction = function () {};
+
 
 /**
  * uDrag.AreaIndex:
@@ -48,8 +55,14 @@
  *  the subset of elements that overlap a specific point on the page.
  */
 
-uDrag = {};
-uDrag.AreaIndex = function () {};
+uDrag.AreaIndex = function () {
+
+    /**
+     * Instance-specific data for uDrag.AreaIndex.
+     */
+
+    this._zones = [];
+};
 
 uDrag.AreaIndex.prototype = {
 
@@ -65,8 +78,8 @@ uDrag.AreaIndex.prototype = {
      */
     track: function (_elt, _zone) {
 
-        zone = (_zone || {});
-        zone.elt = _elt;
+        var zone = (_zone || {});
+        zone.elt = $(_elt);
 
         this._zones.push(zone);
         this.recalculate_one(zone);
@@ -146,13 +159,13 @@ uDrag.AreaIndex.prototype = {
      * the mouse pointer. The position is taken from the pageX
      * and pageY values of the supplied event object {_ev}.
      */
-    find_beneath: function (_elt, _ev) {
+    find_beneath: function (_offset) {
 
         var zones = this._zones;
         var overlapping_zones = [];
 
-        var x = _ev.pageX;
-        var y = _ev.pageY;
+        var x = _offset.x;
+        var y = _offset.y;
 
         /* Hit detection:
             If the mouse pointer is currently positioned over one
@@ -352,17 +365,24 @@ uDrag.AreaIndex.prototype = {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var drop_zone = data.drop_zones.find_beneath(_elt, _ev);
+
+                var drop_zone = data.drop_zones.find_beneath(
+                    { x: _ev.pageX, y: _ev.pageY }
+                );
 
                 priv.clear_highlight(null, data);
 
                 if (drop_zone) {
 
                     var drop_elt = drop_zone.elt;
+                    var absolute_offset = { x: _ev.pageX, y: _ev.pageY };
 
-                    var offset = priv.relative_drop_offset(
-                        _elt, drop_elt, _ev
-                    );
+                    var offsets = {
+                        absolute: absolute_offset,
+                        relative: priv.relative_drop_offset(
+                            _elt, drop_elt, absolute_offset
+                        )
+                    };
 
                     var insert_callback = (
                         data.options.insertElement ||
@@ -376,18 +396,18 @@ uDrag.AreaIndex.prototype = {
                         data.options.onDrop ||
                             priv.default_drop_callback
                     )
-
+                    
                     /* Reparent element:
                         Default to the first child in {drop_elt}. Note that
                         {positionElement} can override this by moving it. */
 
-                    insert_callback(_elt, drop_elt);
+                    insert_callback(_elt, drop_elt, offsets);
 
                     /* Reposition element:
                         This can be overridden to position differently. */
 
-                    position_callback(_elt, drop_elt, offset);
-                    drop_callback(_elt, drop_elt, offset);
+                    position_callback(_elt, drop_elt, offsets);
+                    drop_callback(_elt, drop_elt, offsets);
 
                     /* Start animating:
                         Animate {_elt} toward its new position. */
@@ -408,7 +428,10 @@ uDrag.AreaIndex.prototype = {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var drop_zone = data.drop_zones.find_beneath(_elt, _ev);
+
+                var drop_zone = data.drop_zones.find_beneath(
+                    { x: _ev.pageX, y: _ev.pageY }
+                );
 
                 var recent = data.recent_drop_zone_containers = [
                     data.recent_drop_zone_containers[1], drop_zone
@@ -451,7 +474,9 @@ uDrag.AreaIndex.prototype = {
                     if (!_skip_events) {
                         hover_callback(
                             _elt, drop_elt,
-                            priv.relative_drop_offset(_elt, drop_elt, _ev)
+                            priv.relative_drop_offset(
+                                _elt, drop_elt, { x: _ev.pageX, y: _ev.pageY }
+                            )
                         );
                     }
 
@@ -831,17 +856,20 @@ uDrag.AreaIndex.prototype = {
             },
 
             /**
-             * Given an event object _ev that contains page coordinates
-             * {pageX} and {pageY}, calculate and return a version of
-             * the coordinates that is relative to _elt.
+             * Given an offset {_offset} that contains page coordinates
+             * {x} and {y}, calculate and return a relative version of the
+             * coordinates (i.e. coordinates specified relative to {_elt}).
              */
-            relative_drop_offset: function (_elt, _drop_elt, _ev) {
+            relative_drop_offset: function (_elt, _drop_elt, _offset) {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
 
                 var offset = _drop_elt.offset();
                 var is_body = (_drop_elt[0] == document.body);
+
+                var x = _offset.x;
+                var y = _offset.y;
 
                 var scroll = {
                     x: (is_body ? 0 : _drop_elt.scrollLeft()),
@@ -856,14 +884,14 @@ uDrag.AreaIndex.prototype = {
                 var rv = {
                     x: Math.min(
                         Math.max(
-                            (_ev.pageX - offset.left -
+                            (x - offset.left -
                                 data.delta.x + scroll.x - data.margin.x), 0
                         ),
                         (drop_extent.x - data.extent.x - data.margin.x)
                     ),
                     y: Math.min(
                         Math.max(
-                            (_ev.pageY - offset.top -
+                            (y - offset.top -
                                 data.delta.y + scroll.y - data.margin.y), 0
                         ),
                         (drop_extent.y - data.extent.y - data.margin.y)
@@ -1034,8 +1062,8 @@ uDrag.AreaIndex.prototype = {
     $.fn.uDrag = function (/* const */_method /* , ... */) {
 
         /* Dispatch to appropriate method handler:
-            Note that the `method` argument should always be a constant.
-            Never allow user-provided input to be used for the argument. */
+            Note that the `method` argument should always be a constant;
+            never allow user-provided input to be used for the argument. */
 
         if (_method === 'priv') {
             return null;
