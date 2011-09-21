@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <link rel="stylesheet"
-            href="../../../styles/jquery.udrag.css" />
         <script type="text/javascript"
             src="../../../scripts/contrib/jquery-1.4.2.js">
         </script>
         <script type="text/javascript"
             src="../../../scripts/jquery.udrag.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/jquery.usort.js">
         </script>
         <style type="text/css">
             html, body {
@@ -52,61 +53,43 @@
         </div>
         <div class="outer">
             <div class="inner drop">
-                <div class="drag hover">
+                <div id="s1" class="drag hover">
                     <div class="number">1</div>
                 </div>
-                <div class="drag hover">
+                <div id="s2" class="drag hover">
                     <div class="number">2</div>
                 </div>
-                <div class="drag hover">
+                <div id="s3" class="drag hover">
                     <div class="number">3</div>
                 </div>
-                <div class="drag hover">
+                <div id="s4" class="drag hover">
                     <div class="number">4</div>
                 </div>
-                <div class="drag hover">
+                <div id="s5" class="drag hover">
                     <div class="number">5</div>
                 </div>
-                <div class="drag hover">
+                <div id="s6" class="drag hover">
                     <div class="number">6</div>
                 </div>
-                <div class="drag hover">
+                <div id="s7" class="drag hover">
                     <div class="number">7</div>
                 </div>
-                <div class="drag hover">
+                <div id="s8" class="drag hover">
                     <div class="number">8</div>
                 </div>
-                <div class="drag hover">
+                <div id="s9" class="drag hover">
                     <div class="number">9</div>
                 </div>
-                <div class="drag hover">
+                <div id="s10" class="drag hover">
                     <div class="number">10</div>
                 </div>
             </div>
         </div>
         <script type="text/javascript">
-            areas = new uDrag.AreaIndex();
             jQuery(function ($) {
-                $('.hover').each(function (i, elt) {
-                    areas.track(elt, {
-                        scroll_elt: $('.outer')
-                    });
-                });
-                $('.drag').uDrag('create', {
-                    drop: '.drop',
-                    container: '.outer',
-                    onPositionElement: false,
-                    onRecalculate: function (_elt) {
-                        areas.recalculate_all();
-                    },
-                    onHover: function (_elt, _drop_elt, _offsets) {
-                    },
-                    onInsertElement: function (_elt, _drop_elt, _offsets) {
-                        var current = areas.find_beneath(_offsets.absolute);
-                        if (current && !current.elt.hasClass('placeholder')) {
-                            _elt.insertAfter(current.elt);
-                        }
-                    }
+                $('.drop').uSort('create', {
+                    items: '.drag',
+                    container: '.outer'
                 });
             });
         </script>

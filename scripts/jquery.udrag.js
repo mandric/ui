@@ -74,7 +74,12 @@ uDrag.AreaIndex.prototype = {
         var zone = (_data || {});
 
         zone.elt = $(_elt);
+        zone.index = this._zones.length;
         zone.container_elt = $(zone.container_elt || _elt);
+
+        zone.elt.data('udrag.zone', {
+            index: zone.index
+        });
 
         this._zones.push(zone);
         this.recalculate_one(zone);
@@ -129,6 +134,33 @@ uDrag.AreaIndex.prototype = {
         return this;
     },
 
+    /*
+     * Recalculate all of the zones in {this._zones}, that lie between the
+     * index of {_first_zone} and the index of {_second_zone}, inclusively.
+     * This function also updates the indexes in each affected zone, in case
+     * any zones in the specified range have been moved.
+     */
+    recalculate_between: function (_first_elt, _final_elt) {
+
+        var elts = [ _first_elt, _final_elt ].concat(
+            _first_elt.nextUntil(_final_elt)
+        );
+
+        for (var i = 0, len = elts.length; i < len; ++i) {
+            this.recalculate_one(this.element_to_zone(elts[i]));
+        }
+
+        return this;
+    },
+
+    /*
+     * Retrieve the zone object that describes {_elt}.
+     */
+    element_to_zone: function (_elt) {
+
+        var data = ($(_elt).data('udrag.zone') || {});
+        return this._zones[data.index];
+    },
 
     /**
      * Returns the single drop zone that lies directly beneath

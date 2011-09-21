@@ -1,7 +1,8 @@
 
-all: submodules upopup udrag
+all: submodules upopup udrag usort
 upopup: minify_upopup compress_upopup
 udrag: minify_udrag compress_udrag
+usort: minify_usort compress_usort
 
 submodules:
 	git submodule update --init --recursive
@@ -28,3 +29,13 @@ minify_udrag:
 compress_udrag:
 	gzip -9 -cf 'build/output/jquery.udrag.min.js' \
 		> 'build/output/jquery.udrag.min.js.gz'
+
+minify_usort:
+	echo '/* uSort: License at http://github.com/browndav/ui */' \
+		> 'build/output/jquery.usort.min.js' && \
+	node build/tools/minify-usort.js \
+		>> 'build/output/jquery.usort.min.js'
+
+compress_usort:
+	gzip -9 -cf 'build/output/jquery.usort.min.js' \
+		> 'build/output/jquery.usort.min.js.gz'
