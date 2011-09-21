@@ -107,7 +107,6 @@ uDrag.AreaIndex.prototype = {
     recalculate_one: function (_zone) {
 
         var size = { x: 0, y: 0 };
-        var relative_elt = _zone.relative_elt;
         var container_elt = _zone.container_elt;
         var offset = (container_elt.offset() || { left: 0, top: 0 });
 
@@ -125,6 +124,7 @@ uDrag.AreaIndex.prototype = {
 
         _zone.x = [ offset.left, offset.left + size.x ];
         _zone.y = [ offset.top, offset.top + size.y ];
+        _zone.initial_scroll = this._cumulative_scroll(container_elt);
 
         return this;
     },
@@ -135,27 +135,31 @@ uDrag.AreaIndex.prototype = {
      * the mouse pointer. The position is taken from the pageX
      * and pageY values of the supplied event object {_ev}.
      */
-    find_beneath: function (_offset, _exclude_list) {
+    find_beneath: function (_offset) {
 
         var zones = this._zones;
         var overlapping_zones = [];
-        var exclude_list = (_exclude_list || []);
-
-        var x = _offset.x;
-        var y = _offset.y;
 
         /* Hit detection:
             If the mouse pointer is currently positioned over one
             or more drop zone containers, save them in an array. */
 
         for (var i = 0, len = zones.length; i < len; ++i) {
-            var zone = zones[i];
-            var container_elt = zone.container_elt;
 
-            /* Ignore elements in the exclude list */
-            if (exclude_list.indexOf(zone.elt) >= 0) {
-                continue;
-            }
+            var x = _offset.x;
+            var y = _offset.y;
+
+            var zone = zones[i];
+            var scroll_elt = zone.scroll_elt;
+            var container_elt = zone.container_elt;
+            var current_scroll = this._cumulative_scroll(zone.container_elt);
+
+            /* Adjust for scrolling of ancestors:
+                The naive approach would be to just recalculate all of
+                the zones, but that can be costly with large area sets. */
+
+            x += (current_scroll.x - zone.initial_scroll.x);
+            y += (current_scroll.y - zone.initial_scroll.y);
 
             /* Special case:
                 Scrolling container is the browser window. */
@@ -165,7 +169,7 @@ uDrag.AreaIndex.prototype = {
                 y -= container_elt.scrollTop();
             }
 
-            /* Require containment along x-xais */
+            /* Require containment along x-axis */
             if (x < zone.x[0] || x > zone.x[1]) {
                 continue;
             }
@@ -208,6 +212,20 @@ uDrag.AreaIndex.prototype = {
 
         return rv;
     },
+
+    _cumulative_scroll: function (_elt) {
+
+        var rv = { x: 0, y: 0 };
+        var ancestors = _elt.parentsUntil('body');
+
+        for (var i = 0, len = ancestors.length; i < len; ++i) {
+            var ancestor = $(ancestors[i]);
+            rv.x += ancestor.scrollLeft();
+            rv.y += ancestor.scrollTop();
+        }
+
+        return rv;
+    }
 };
 
 
@@ -248,7 +266,7 @@ uDrag.AreaIndex.prototype = {
                 scrollDelta: 32, /* px */
                 scrollDelay: 512, /* ms */
                 scrollInterval: 96, /* ms */
-                scrollEdgeExtent: 32 /* px, per side */
+                scrollEdgeExtent: 48 /* px, per side */
             };
 
             var doc = $(document);
@@ -807,29 +825,12 @@ uDrag.AreaIndex.prototype = {
                             container_elt = drop_elt;
                         }
 
-                        /* Find ancestors of drop zone:
-                            We bind to the scroll event for these elements;
-                            this ultimately invokes recalculate_drop_zones to
-                            recalculate the position of drop targets inside. */
-
-                        var ancestors = [ container_elt[0] ].concat(
-                            container_elt.parentsUntil('body').toArray()
-                        );
-
-                        for (var k = 0, l = ancestors.length; k < l; ++k) {
-                            $(ancestors[k]).bind(
-                                'scroll.udrag',
-                                $.proxy(priv.handle_ancestor_scroll, _elt)
-                            );
-                        }
-
                         /* Cache a single drop zone:
                             This fills in details about the drop zone,
                             and prepares it for fast indexed retrieval. */
 
                         data.drop_zones.track(drop_elt, {
-                            container_elt: container_elt,
-                            ancestor_elts: ancestors
+                            container_elt: container_elt
                         });
                     });
                 }
@@ -1032,12 +1033,15 @@ uDrag.AreaIndex.prototype = {
                             }
                         )
                     ];
-                    if (handler) {
-                        handler.apply(null, _arguments);
+                    if (handler !== undefined) {
+                        if (handler) {
+                            handler.apply(null, _arguments);
+                        }
+                        return true;
                     }
-                } else {
-                    _default_callback_fn.apply(null, _arguments);
                 }
+
+                _default_callback.apply(null, _arguments);
             },
 
             /**
@@ -1095,19 +1099,6 @@ uDrag.AreaIndex.prototype = {
                 }
 
                 priv.start_dragging($(this), _ev);
-                return false;
-            },
-
-            /**
-             * Event handler for scrolling on a drop zone's container,
-             * on on one of the container's ancestors.
-             */
-            handle_ancestor_scroll: function (_ev) {
-
-                var priv = $.uDrag.impl.priv;
-                var data = priv.instance_data_for(this);
-
-                priv.recalculate_all(this);
                 return false;
             },
 
