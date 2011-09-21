@@ -406,7 +406,7 @@ uDrag.AreaIndex.prototype = {
 
                 var drop_zone = data.drop_zones.find_beneath(
                     { x: _ev.pageX, y: _ev.pageY },
-                        [ data.cloned_drag_elt ]
+                        [ data.placeholder_elt ]
                 );
 
                 priv.clear_highlight(null, data);
@@ -465,7 +465,7 @@ uDrag.AreaIndex.prototype = {
 
                 var drop_zone = data.drop_zones.find_beneath(
                     { x: _ev.pageX, y: _ev.pageY },
-                        [ data.cloned_drag_elt ]
+                        [ data.placeholder_elt ]
                 );
 
                 var recent = data.recent_drop_zone_containers = [
@@ -473,7 +473,7 @@ uDrag.AreaIndex.prototype = {
                 ];
 
                 /* Move element */
-                data.cloned_drag_elt.offset({
+                data.placeholder_elt.offset({
                     top: _ev.pageY - data.delta.y,
                     left: _ev.pageX - data.delta.x
                 });
@@ -668,7 +668,7 @@ uDrag.AreaIndex.prototype = {
 
                     if (autoscroll_elt && autoscroll_elt[0] == window) {
 
-                        var drag_elt = data.cloned_drag_elt;
+                        var drag_elt = data.placeholder_elt;
                         var drag_offset = drag_elt.offset();
 
                         drag_elt.offset({
@@ -740,7 +740,7 @@ uDrag.AreaIndex.prototype = {
                         elt: null,
                         options: _options,
                         autoscroll_elt: null,
-                        cloned_drag_elt: null,
+                        placeholder_elt: null,
                         previous_highlight_zone: null,
                         is_autoscrolling: false,
                         has_scrolled_recently: false,
@@ -951,7 +951,7 @@ uDrag.AreaIndex.prototype = {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var drag_elt = data.cloned_drag_elt = _elt.clone(true);
+                var drag_elt = data.placeholder_elt = _elt.clone(true);
 
                 drag_elt.css('position', 'absolute');
                 drag_elt.css('visibility', 'hidden');
@@ -962,8 +962,10 @@ uDrag.AreaIndex.prototype = {
                 $('body').append(drag_elt);
                 priv.update_position(_elt, _ev, true);
 
-                drag_elt.css('visibility', 'visible');
+                _elt.addClass('placeholder');
                 _elt.css('visibility', 'hidden');
+
+                drag_elt.css('visibility', 'visible');
 
                 return drag_elt;
             },
@@ -997,15 +999,16 @@ uDrag.AreaIndex.prototype = {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var drag_elt = data.cloned_drag_elt;
+                var drag_elt = data.placeholder_elt;
 
                 drag_elt.animate({
                     top: data.initial_position.y - data.margin.y,
                     left: data.initial_position.x - data.margin.x
                 }, {
                     complete: function () {
-                        _elt.css('visibility', 'visible');
                         drag_elt.remove();
+                        _elt.css('visibility', 'visible');
+                        _elt.removeClass('placeholder');
 
                         if (_callback) {
                             _callback.call(_elt);

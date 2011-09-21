@@ -103,10 +103,8 @@
                     },
                     onInsertElement: function (_elt, _drop_elt, _offsets) {
                         var current = areas.find_beneath(_offsets.absolute);
-                        if (current) {
-                            if (current.elt.css('visibility') != 'hidden') {
-                                _elt.insertAfter(current.elt);
-                            }
+                        if (current && !current.elt.hasClass('placeholder')) {
+                            _elt.insertAfter(current.elt);
                         }
                     }
                 });
