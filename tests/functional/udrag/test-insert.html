@@ -87,12 +87,12 @@
                 $('.drag').uDrag('create', {
                     drop: [ $('.drop') ],
                     container: '.outer',
-                    insertElement: function (_elt, _drop_elt) {
+                    onInsertElement: function (_elt, _drop_elt) {
                         _drop_elt.find(
                             (state++ % 2) ? '.move-from' : '.move-to'
                         ).append(_elt);
                     },
-                    positionElement: function (_elt, _drop_elt, _offset) {
+                    onPositionElement: function (_elt, _drop_elt, _offset) {
                         return;
                     }
                 });

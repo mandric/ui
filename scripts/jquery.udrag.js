@@ -45,8 +45,6 @@
  */
 
 uDrag = {};
-uDrag.EmptyFunction = function () {};
-
 
 /**
  * uDrag.AreaIndex:
@@ -81,7 +79,7 @@ uDrag.AreaIndex.prototype = {
         this._zones.push(zone);
         this.recalculate_one(zone);
 
-        return zone;
+        return this;
     },
 
     /**
@@ -89,7 +87,7 @@ uDrag.AreaIndex.prototype = {
      * the {drop_zones} structure. This structure is used to
      * map page coordinates to specific drop zone elements.
      */
-    recalculate_all: function (_elt) {
+    recalculate_all: function () {
 
         var zones = this._zones;
 
@@ -97,7 +95,7 @@ uDrag.AreaIndex.prototype = {
             this.recalculate_one(zones[i]);
         }
 
-        return _elt;
+        return this;
     },
 
     /*
@@ -128,14 +126,73 @@ uDrag.AreaIndex.prototype = {
         _zone.x = [ offset.left, offset.left + size.x ];
         _zone.y = [ offset.top, offset.top + size.y ];
 
-        return _zone;
+        return this;
+    },
+
+
+    /**
+     * Returns the single drop zone that lies directly beneath
+     * the mouse pointer. The position is taken from the pageX
+     * and pageY values of the supplied event object {_ev}.
+     */
+    find_beneath: function (_offset, _exclude_list) {
+
+        var zones = this._zones;
+        var overlapping_zones = [];
+        var exclude_list = (_exclude_list || []);
+
+        var x = _offset.x;
+        var y = _offset.y;
+
+        /* Hit detection:
+            If the mouse pointer is currently positioned over one
+            or more drop zone containers, save them in an array. */
+
+        for (var i = 0, len = zones.length; i < len; ++i) {
+            var zone = zones[i];
+            var container_elt = zone.container_elt;
+
+            /* Ignore elements in the exclude list */
+            if (exclude_list.indexOf(zone.elt) >= 0) {
+                continue;
+            }
+
+            /* Special case:
+                Scrolling container is the browser window. */
+
+            if (container_elt && container_elt[0] == window) {
+                x -= container_elt.scrollLeft();
+                y -= container_elt.scrollTop();
+            }
+
+            /* Require containment along x-xais */
+            if (x < zone.x[0] || x > zone.x[1]) {
+                continue;
+            }
+
+            /* Require containment along y-axis */
+            if (y < zone.y[0] || y > zone.y[1]) {
+                continue;
+            }
+
+            overlapping_zones.push(zone);
+        }
+
+        /* No drop zones under pointer?
+            Skip the autoscroll calculations, and return nothing. */
+
+        if (overlapping_zones.length <= 0) {
+            return null;
+        }
+
+        return this._find_topmost_zone(overlapping_zones);
     },
 
     /**
      * Returns the set of drop elements that lie directly
      * underneath the mouse pointer (position specified in _ev).
      */
-    find_topmost: function (_zones) {
+    _find_topmost_zone: function (_zones) {
 
         var rv = null, rvz = null;
 
@@ -151,58 +208,6 @@ uDrag.AreaIndex.prototype = {
 
         return rv;
     },
-
-    /**
-     * Returns the set of drop zones that lie directly beneath
-     * the mouse pointer. The position is taken from the pageX
-     * and pageY values of the supplied event object {_ev}.
-     */
-    find_beneath: function (_offset) {
-
-        var zones = this._zones;
-        var overlapping_zones = [];
-
-        var x = _offset.x;
-        var y = _offset.y;
-
-        /* Hit detection:
-            If the mouse pointer is currently positioned over one
-            or more drop zone containers, save them in an array. */
-
-        for (var i = 0, len = zones.length; i < len; ++i) {
-            var zone = zones[i];
-            var container_elt = zone.container_elt;
-
-            /* Special case:
-                Scrolling container is the browser window. */
-
-            if (container_elt && container_elt[0] == window) {
-                x -= container_elt.scrollLeft();
-                y -= container_elt.scrollTop();
-            }
-
-            /* Require containment along x-xais */
-            if (x < zone.x[0] || x > zone.x[1]) {
-                continue;
-            }
-
-            /* Require containment along y-xais */
-            if (y < zone.y[0] || y > zone.y[1]) {
-                continue;
-            }
-
-            overlapping_zones.push(zone);
-        }
-
-        /* No drop zones under pointer?
-            Skip the autoscroll calculations, and return nothing. */
-
-        if (overlapping_zones.length <= 0) {
-            return null;
-        }
-
-        return this.find_topmost(overlapping_zones);
-    }
 };
 
 
@@ -241,9 +246,9 @@ uDrag.AreaIndex.prototype = {
 
             var default_options = {
                 scrollDelta: 32, /* px */
-                scrollDelay: 256, /* ms */
-                scrollInterval: 64, /* ms */
-                scrollEdgeExtent: 48 /* px, per side */
+                scrollDelay: 512, /* ms */
+                scrollInterval: 96, /* ms */
+                scrollEdgeExtent: 32 /* px, per side */
             };
 
             var doc = $(document);
@@ -370,7 +375,6 @@ uDrag.AreaIndex.prototype = {
                     y: _ev.pageY - data.delta.y
                 };
 
-                data.drop_zones.recalculate_all(_elt);
                 priv.update_position(_elt, _ev);
             },
 
@@ -383,13 +387,15 @@ uDrag.AreaIndex.prototype = {
                 var data = priv.instance_data_for(_elt);
 
                 var drop_zone = data.drop_zones.find_beneath(
-                    { x: _ev.pageX, y: _ev.pageY }
+                    { x: _ev.pageX, y: _ev.pageY },
+                        [ data.cloned_drag_elt ]
                 );
 
                 priv.clear_highlight(null, data);
 
                 if (drop_zone) {
 
+                    var options = data.options;
                     var drop_elt = drop_zone.elt;
                     var absolute_offset = { x: _ev.pageX, y: _ev.pageY };
 
@@ -400,35 +406,29 @@ uDrag.AreaIndex.prototype = {
                         )
                     };
 
-                    var insert_callback = (
-                        data.options.insertElement ||
-                            priv.default_insert_callback
-                    );
-                    var position_callback = (
-                        data.options.positionElement ||
-                            priv.default_position_callback
-                    );
-                    var drop_callback = (
-                        data.options.onDrop ||
-                            priv.default_drop_callback
-                    )
-                    
-                    /* Reparent element:
-                        Default to the first child in {drop_elt}. Note that
-                        {positionElement} can override this by moving it. */
+                    /* Trigger Events:
+                        The default {position_element} event is responsible
+                        for moving {_elt} to the appropriate parent; overriding
+                        the event allows you to change the placement policy. */
 
-                    insert_callback(_elt, drop_elt, offsets);
+                    var events = {
+                        drop: priv.default_drop_callback,
+                        insert_element: priv.default_insert_callback,
+                        position_element: priv.default_position_callback
+                    };
 
-                    /* Reposition element:
-                        This can be overridden to position differently. */
+                    for (var k in events) {
+                        priv.trigger_event(
+                            k, events[k], _elt, data.options,
+                            [ _elt, drop_elt, offsets ]
+                        );
+                    }
 
-                    position_callback(_elt, drop_elt, offsets);
-                    drop_callback(_elt, drop_elt, offsets);
-
-                    /* Start animating:
-                        Animate {_elt} toward its new position. */
+                    /* Start animation:
+                        Asynchronously move {_elt} back toward the origin. */
 
                     priv.move_element(_elt, drop_elt, _ev);
+                    priv.recalculate_all(_elt);
                 }
 
                 data.is_dragging = false;
@@ -446,20 +446,16 @@ uDrag.AreaIndex.prototype = {
                 var data = priv.instance_data_for(_elt);
 
                 var drop_zone = data.drop_zones.find_beneath(
-                    { x: _ev.pageX, y: _ev.pageY }
+                    { x: _ev.pageX, y: _ev.pageY },
+                        [ data.cloned_drag_elt ]
                 );
 
                 var recent = data.recent_drop_zone_containers = [
                     data.recent_drop_zone_containers[1], drop_zone
                 ];
 
-                var hover_callback = (
-                    data.options.onHover ||
-                        priv.default_hover_callback
-                );
-
                 /* Move element */
-                data.drag_element.offset({
+                data.cloned_drag_elt.offset({
                     top: _ev.pageY - data.delta.y,
                     left: _ev.pageX - data.delta.x
                 });
@@ -488,11 +484,19 @@ uDrag.AreaIndex.prototype = {
                     priv.start_autoscroll(_elt, drop_zone);
                     
                     if (!_skip_events) {
-                        hover_callback(
-                            _elt, drop_elt,
-                            priv.relative_drop_offset(
-                                _elt, drop_elt, { x: _ev.pageX, y: _ev.pageY }
-                            )
+                        var absolute_offset = {
+                            x: _ev.pageX, y: _ev.pageY
+                        };
+                        priv.trigger_event(
+                            'hover', priv.default_hover_callback,
+                            _elt, data.options, [
+                                _elt, drop_elt, {
+                                    absolute: absolute_offset,
+                                    relative: priv.relative_drop_offset(
+                                        _elt, drop_elt, absolute_offset
+                                    )
+                                }
+                            ]
                         );
                     }
 
@@ -535,7 +539,14 @@ uDrag.AreaIndex.prototype = {
              * The default implementation of the onHover callback.
              */
             default_hover_callback: function (_elt, _drop_elt) {
-                return;
+                return true;
+            },
+            
+            /**
+             * The default implementation of the onRecalculate callback.
+             */
+            default_recalculate_callback: function (_drop_elt) {
+                return true;
             },
 
             /**
@@ -639,7 +650,7 @@ uDrag.AreaIndex.prototype = {
 
                     if (autoscroll_elt && autoscroll_elt[0] == window) {
 
-                        var drag_elt = data.drag_element;
+                        var drag_elt = data.cloned_drag_elt;
                         var drag_offset = drag_elt.offset();
 
                         drag_elt.offset({
@@ -708,10 +719,12 @@ uDrag.AreaIndex.prototype = {
             create_instance_data: function (_elt, _options) {
                 _elt.data(
                     'udrag', {
+                        elt: null,
                         options: _options,
+                        autoscroll_elt: null,
+                        cloned_drag_elt: null,
                         previous_highlight_zone: null,
                         is_autoscrolling: false,
-                        autoscroll_elt: null,
                         has_scrolled_recently: false,
                         autoscroll_axes: { x: 0, y: 0 },
                         recent_drop_zone_containers: [],
@@ -937,7 +950,7 @@ uDrag.AreaIndex.prototype = {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var drag_elt = data.drag_element = _elt.clone(true);
+                var drag_elt = data.cloned_drag_elt = _elt.clone(true);
 
                 drag_elt.css('position', 'absolute');
                 drag_elt.css('visibility', 'hidden');
@@ -983,7 +996,7 @@ uDrag.AreaIndex.prototype = {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var drag_elt = data.drag_element;
+                var drag_elt = data.cloned_drag_elt;
 
                 drag_elt.animate({
                     top: data.initial_position.y - data.margin.y,
@@ -998,6 +1011,33 @@ uDrag.AreaIndex.prototype = {
                         }
                     }
                 });
+            },
+
+            /**
+             * Trigger an event, using either a callback,
+             * a dynamic event, or both.
+             */
+            trigger_event: function (_name, _default_callback,
+                                     _elt, _options, _arguments) {
+
+                if (_elt) {
+                    _elt.trigger('udrag:' + _name);
+                }
+
+                if (_options) {
+                    var handler = _options[
+                        'on' + _name.replace(
+                            /(?:^|_)(\w)/g, function (s, x) {
+                                return x.toUpperCase();
+                            }
+                        )
+                    ];
+                    if (handler) {
+                        handler.apply(null, _arguments);
+                    }
+                } else {
+                    _default_callback_fn.apply(null, _arguments);
+                }
             },
 
             /**
@@ -1038,7 +1078,7 @@ uDrag.AreaIndex.prototype = {
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(this);
 
-                data.drop_zones.recalculate_all($(this));
+                priv.recalculate_all(this);
                 return false;
             },
 
@@ -1067,8 +1107,28 @@ uDrag.AreaIndex.prototype = {
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(this);
 
-                data.drop_zones.recalculate_all($(this));
+                priv.recalculate_all(this);
                 return false;
+            },
+
+            /**
+             * Recalculate the AreaIndex used by this drag/drop component,
+             * and invoke any event listeners or callbacks required.
+             */
+            recalculate_all: function (_elt) {
+
+                var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data_for(_elt);
+
+                data.drop_zones.recalculate_all();
+
+                priv.trigger_event(
+                    'recalculate',
+                    priv.default_recalculate_callback,
+                    _elt, data.options, [ (data.container_elt || _elt) ]
+                );
+
+                return true;
             }
 
         }

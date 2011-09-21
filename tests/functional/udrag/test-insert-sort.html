@@ -26,15 +26,14 @@
                 margin: 1em;
                 height: 100em;
             }
-            .drag {
-                width: 1em;
-                height: 1em;
-                border: solid 6px #00f;
-                margin: 2px auto;
-                background-color: #f04;
+            .number {
+                color: #aaa;
+                font-weight: bold;
+                padding: 0.5em;
             }
             .hover {
                 border: solid 1px #f00;
+                text-align: center;
             }
             .inner .hover {
                 border: solid 1px #ccc;
@@ -54,48 +53,60 @@
         <div class="outer">
         <div>
             <div class="inner drop">
-                <div class="hover">
-                    <div class="drag">
-                    </div>
+                <div class="drag hover">
+                    <div class="number">1</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">2</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">3</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">4</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">5</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">6</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">7</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">8</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">9</div>
                 </div>
-                <div class="hover">
+                <div class="drag hover">
+                    <div class="number">10</div>
                 </div>
             </div>
         </div>
         </div>
         <script type="text/javascript">
             jQuery(function ($) {
-                var current_elt = null;
                 var areas = new uDrag.AreaIndex();
                 $('.hover').each(function (i, elt) {
                     areas.track(elt);
                 });
                 $('.drag').uDrag('create', {
-                    drop: '.drop', container: '.outer',
+                    drop: '.drop',
+                    container: '.outer',
                     onPositionElement: null,
                     onRecalculate: function (_elt) {
                         areas.recalculate_all();
                     },
+                    onHover: function (_elt, _drop_elt, _offsets) {
+                    },
                     onInsertElement: function (_elt, _drop_elt, _offsets) {
-                        var inner = areas.find_beneath(_offsets.absolute);
-                        if (inner) {
-                            inner.elt.append(_elt);
+                        var current = areas.find_beneath(_offsets.absolute);
+                        if (current) {
+                            if (current.elt.css('visibility') != 'hidden') {
+                                _elt.insertAfter(current.elt);
+                            }
                         }
                     }
                 });
