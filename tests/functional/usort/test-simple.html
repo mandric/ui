@@ -39,8 +39,10 @@
             .inner .hover {
                 border: solid 1px #ccc;
                 width: 100%;
-                margin: 1em 0;
                 height: 2em;
+            }
+            .drag {
+                margin: 0.5em;
             }
             .right {
                 float: right;
@@ -53,43 +55,114 @@
         </div>
         <div class="outer">
             <div class="inner drop">
-                <div id="s1" class="drag hover">
-                    <div class="number">1</div>
+                <div id="s1" class="drag">
+                    <div class="hover">
+                        <div class="number">1</div>
+                    </div>
                 </div>
-                <div id="s2" class="drag hover">
-                    <div class="number">2</div>
+                <div id="s2" class="drag">
+                    <div class="hover">
+                        <div class="number">2</div>
+                    </div>
                 </div>
-                <div id="s3" class="drag hover">
-                    <div class="number">3</div>
+                <div id="s3" class="drag">
+                    <div class="hover">
+                        <div class="number">3</div>
+                    </div>
                 </div>
-                <div id="s4" class="drag hover">
-                    <div class="number">4</div>
+                <div id="s4" class="drag">
+                    <div class="hover">
+                        <div class="number">4</div>
+                    </div>
                 </div>
-                <div id="s5" class="drag hover">
-                    <div class="number">5</div>
+                <div id="s5" class="drag">
+                    <div class="hover">
+                        <div class="number">5</div>
+                    </div>
                 </div>
-                <div id="s6" class="drag hover">
-                    <div class="number">6</div>
+                <div id="s6" class="drag">
+                    <div class="hover">
+                        <div class="number">6</div>
+                    </div>
                 </div>
-                <div id="s7" class="drag hover">
-                    <div class="number">7</div>
+                <div id="s7" class="drag">
+                    <div class="hover">
+                        <div class="number">7</div>
+                    </div>
                 </div>
-                <div id="s8" class="drag hover">
-                    <div class="number">8</div>
+                <div id="s8" class="drag">
+                    <div class="hover">
+                        <div class="number">8</div>
+                    </div>
                 </div>
-                <div id="s9" class="drag hover">
-                    <div class="number">9</div>
+                <div id="s9" class="drag">
+                    <div class="hover">
+                        <div class="number">9</div>
+                    </div>
                 </div>
-                <div id="s10" class="drag hover">
-                    <div class="number">10</div>
+                <div id="s10" class="drag">
+                    <div class="hover">
+                        <div class="number">10</div>
+                    </div>
                 </div>
+               <div id="s11" class="drag">
+                    <div class="hover">
+                        <div class="number">11</div>
+                    </div>
+                </div>
+                <div id="s12" class="drag">
+                    <div class="hover">
+                        <div class="number">12</div>
+                    </div>
+                </div>
+                <div id="s13" class="drag">
+                    <div class="hover">
+                        <div class="number">13</div>
+                    </div>
+                </div>
+                <div id="s14" class="drag">
+                    <div class="hover">
+                        <div class="number">14</div>
+                    </div>
+                </div>
+                <div id="s15" class="drag">
+                    <div class="hover">
+                        <div class="number">15</div>
+                    </div>
+                </div>
+                <div id="s16" class="drag">
+                    <div class="hover">
+                        <div class="number">16</div>
+                    </div>
+                </div>
+                <div id="s17" class="drag">
+                    <div class="hover">
+                        <div class="number">17</div>
+                    </div>
+                </div>
+                <div id="s18" class="drag">
+                    <div class="hover">
+                        <div class="number">18</div>
+                    </div>
+                </div>
+                <div id="s19" class="drag">
+                    <div class="hover">
+                        <div class="number">19</div>
+                    </div>
+                </div>
+                <div id="s20" class="drag">
+                    <div class="hover">
+                        <div class="number">20</div>
+                    </div>
+                </div>
+
             </div>
         </div>
         <script type="text/javascript">
             jQuery(function ($) {
                 $('.drop').uSort('create', {
-                    items: '.drag',
-                    container: '.outer'
+                    animate: true,
+                    container: '.outer', items: '.drag'
                 });
             });
         </script>
