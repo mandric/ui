@@ -135,33 +135,6 @@ uDrag.AreaIndex.prototype = {
     },
 
     /*
-     * Recalculate all of the zones in {this._zones}, that lie between the
-     * index of {_first_zone} and the index of {_second_zone}, inclusively.
-     * This function also updates the indexes in each affected zone, in case
-     * any zones in the specified range have been moved.
-     */
-    recalculate_between: function (_first_elt, _final_elt) {
-
-        var p = _first_elt;
-
-        for (;;) {
-            var zone = this.element_to_zone(p);
-
-            if (zone) {
-                this.recalculate_one(zone);
-            }
-
-            if (!p[0] || p[0] == _final_elt[0]) {
-                break;
-            }
-            
-            p = p.next();
-        }
-
-        return this;
-    },
-
-    /*
      * Retrieve the unique index of {_elt} in the internal
      * {_zones} collection.
      */

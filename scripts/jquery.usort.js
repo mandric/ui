@@ -231,7 +231,7 @@
 
                         top_elt.slideDown(0, function () {
                             top_elt.slideUp(
-                                options.duration || 200, function () {
+                                options.duration || 300, function () {
                                     if (data.active_animations[index]) {
                                         _elt.slideDown(0);
                                         top_elt.remove();
@@ -244,7 +244,7 @@
                         });
 
                         bottom_elt.slideUp(0, function () {
-                            bottom_elt.slideDown(options.duration || 200);
+                            bottom_elt.slideDown(options.duration || 300);
                         });
                     }
 
