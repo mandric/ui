@@ -48,6 +48,8 @@
 (function ($) {
 
     $.uSort = {};
+    $.uSort.key = 'usort';
+
     $.uSort.impl = {
 
         /**
@@ -61,6 +63,7 @@
             var options = $.extend(default_options, _options || {});
             var data = priv.create_instance_data(this, options);
 
+            var sortable_elt = this;
             var items = options.items;
 
             switch (typeof(items)) {
@@ -77,8 +80,11 @@
             };
 
             data.udrag = items.uDrag('create', {
-                drop: this,
-                onInsertElement: false,
+                drop: sortable_elt,
+                onInsertElement: function (_elt, _drop_elt) {
+                    priv.cancel_other_animations(sortable_elt, false);
+                    _elt.css('display', null);
+                },
                 onPositionElement: false,
                 container: options.container,
                 onHover: $.proxy(priv.handle_drag_hover, this),
@@ -114,7 +120,7 @@
              */
             instance_data_for: function (_elt, _v) {
 
-                var key = 'usort';
+                var key = $.uSort.key;
                 var elt = $(_elt);
                 var data = elt.data(key);
 
@@ -136,7 +142,7 @@
              */
             create_instance_data: function (_sortable_elt, _options) {
                 _sortable_elt.data(
-                    'usort', {
+                    $.uSort.key, {
                         elt: null,
                         udrag: null,
                         active_animations: {},
@@ -160,20 +166,16 @@
                 var priv = $.uSort.impl.priv;
                 var data = priv.instance_data_for(_sortable_elt);
                 var options = data.options;
-                
+
                 var areas = data.area_index;
-                var drag_index = _elt.prevAll().length;
-                var drop_index = _target_elt.prevAll().length;
-                var in_negative_direction = (drop_index < drag_index);
+                var index = areas.element_to_index(_target_elt);
 
-                var stop_elt = $(
-                    _elt.next(':not(.placeholder)')[0] || _elt[0]
-                );
-                var start_elt = $(
-                    _elt.prev(':not(.placeholder)')[0] || _target_elt[0]
-                );
+                var i_elt = _elt.prevAll(':not(.animation)').length;
+                var i_dst = _target_elt.prevAll(':not(.animation)').length;
+                var in_negative_direction = (i_dst < i_elt);
 
-                var invoke_insert = function () {
+                /* Base element insertion function */
+                var insert_element_common = function () {
                     if (in_negative_direction) {
                         _elt.insertBefore(_target_elt);
                     } else {
@@ -181,79 +183,137 @@
                     }
                 };
 
-                var invoke_recalculate = function () {
-                    areas.recalculate_all();
+                /* Callback invocation function */
+                var invoke_callback = function () {
                     if (_callback) {
                         _callback.apply(_sortable_elt, arguments);
                     }
                 }
 
-                if (data.options.animate) {
-                
-                    var index = areas.element_index(_target_elt);
-                    var animations = data.active_animations;
+                /* One animation at a time:
+                    Acquire lock on animations around {_target_elt}. */
 
-                    _elt.slideUp(0);
+                if (options.animate) {
+                    if (data.active_animations[index]) {
+                        return true;
+                    }
+                    priv.cancel_other_animations(_sortable_elt, index);
+                }
 
-                    /* One animation at a time:
-                        Acquire lock on animations around {_target_elt}. */
+                /* Determine recalculation range:
+                    A move operation affects the position of all
+                    elements between {_elt} and {_target_elt}; store
+                    these in a list and recalculate their position later. */
 
-                    if (!data.active_animations[index]) {
+                var recalculate_elts = priv.find_elements_between.apply(
+                    null, (in_negative_direction ?
+                        [ _target_elt, _elt ] : [ _elt, _target_elt ])
+                );
 
-                        for (var i in animations) {
-                            if (i != index) {
-                                for (var j in animations[i]) {
-                                    animations[i][j].stop().remove();
-                                }
-                                delete animations[i];
-                            }
-                        }
+                if (options.animate) {
 
-                        var top_elt = _target_elt.clone(true);
-                        var bottom_elt = _target_elt.clone(true);
+                    _elt.css('display', 'none');
 
-                        top_elt.css('visibility', 'hidden');
-                        bottom_elt.css('visibility', 'hidden');
+                    /* Produce two {_elt} clones:
+                        These are used as animated placeholders. */
 
-                        data.active_animations[index] = [
-                            top_elt, bottom_elt
-                        ];
+                    var shrink_elt = _target_elt.clone(true);
+                    var grow_elt = _target_elt.clone(true);
 
-                        if (in_negative_direction) {
-                            top_elt.insertBefore(_elt);
-                            bottom_elt.insertBefore(_target_elt);
-                        } else {
-                            top_elt.insertAfter(_elt);
-                            bottom_elt.insertAfter(_target_elt);
-                        }
+                    shrink_elt.addClass('animation');
+                    grow_elt.addClass('animation');
 
-                        invoke_insert();
+                    shrink_elt.css('visibility', 'hidden');
+                    grow_elt.css('visibility', 'hidden');
 
-                        top_elt.slideDown(0, function () {
-                            top_elt.slideUp(
-                                options.duration || 300, function () {
-                                    if (data.active_animations[index]) {
-                                        _elt.slideDown(0);
-                                        top_elt.remove();
-                                        bottom_elt.remove();
-                                        delete data.active_animations[index];
-                                        invoke_recalculate();
-                                    }
-                                }
-                            );
-                        });
+                    data.active_animations[index] = [
+                        shrink_elt, grow_elt
+                    ];
 
-                        bottom_elt.slideUp(0, function () {
-                            bottom_elt.slideDown(options.duration || 300);
-                        });
+                    /* Insert placeholder elements:
+                        One element will start with a extent of zero and
+                        grow to its natural extent, one will start at its
+                        natural extent and shrink to an extent of zero. */
+
+                    if (in_negative_direction) {
+                        shrink_elt.insertBefore(_elt);
+                        grow_elt.insertBefore(_target_elt);
+                    } else {
+                        shrink_elt.insertAfter(_elt);
+                        grow_elt.insertAfter(_target_elt);
                     }
 
+                    insert_element_common();
+
+                    var after_animation = function () {
+                        _elt.css('display', null);
+                        shrink_elt.remove();
+                        grow_elt.remove();
+                        areas.recalculate_element_zones(recalculate_elts);
+                        invoke_callback();
+                        delete data.active_animations[index];
+                    };
+
+                    var duration = (options.duration || 250);
+
+                    shrink_elt.slideDown(0, function () {
+                        shrink_elt.slideUp(duration)
+                    });
+
+                    grow_elt.slideUp(0, function () {
+                        grow_elt.slideDown(duration, after_animation);
+                    });
+
                 } else {
-                    invoke_insert();
-                    invoke_recalculate();
+
+                    insert_element_common();
+                    areas.recalculate_element_zones(recalculate_elts);
+                    invoke_callback();
                 }
 
                 return true;
+            },
+
+            /**
+             * Stop all in-progress animations, except for those 
+             * with a {uDrag.AreaIndex} ordinal offset of {_index}.
+             * If {_index} is non-numeric, calcel all animations.
+             */
+            cancel_other_animations: function (_sortable_elt, _index)
+            {
+                var priv = $.uSort.impl.priv;
+                var data = priv.instance_data_for(_sortable_elt);
+
+                var animations = data.active_animations;
+
+                for (var i in animations) {
+                    if (i !== _index) {
+                        for (var j in animations[i]) {
+                            animations[i][j].stop(false, true).remove();
+                        }
+                        delete animations[i];
+                    }
+                }
+            },
+
+            /**
+             * Return an array containing {_start_elt}, {_end_elt},
+             * and all of the sibling elements located between the two.
+             */
+            find_elements_between: function (_start_elt, _end_elt) {
+
+                var rv = [];
+                var p = $(_start_elt);
+
+                while (p[0]) {
+                    rv.push(p[0]);
+                    if (p[0] === _end_elt[0]) {
+                        break;
+                    }
+                    p = p.next();
+                }
+
+                return rv;
             },
 
             /**

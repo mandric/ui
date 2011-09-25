@@ -77,7 +77,7 @@ uDrag.AreaIndex.prototype = {
         zone.index = this._zones.length;
         zone.container_elt = $(zone.container_elt || _elt);
 
-        zone.elt.data('udrag.zone', {
+        zone.elt.data($.uDrag.key + '.zone', {
             index: zone.index
         });
 
@@ -102,6 +102,7 @@ uDrag.AreaIndex.prototype = {
 
         return this;
     },
+
 
     /*
      * Recalculates position and extent information for a single
@@ -134,13 +135,24 @@ uDrag.AreaIndex.prototype = {
         return this;
     },
 
+    /**
+     */
+    recalculate_element_zones: function (_elts) {
+
+        for (var i = 0, len = _elts.length; i < len; ++i) {
+            this.recalculate_one(
+                this.element_to_zone(_elts[i])
+            );
+        };
+    },
+
     /*
      * Retrieve the unique index of {_elt} in the internal
      * {_zones} collection.
      */
-    element_index: function (_elt) {
+    element_to_index: function (_elt) {
 
-        var data = ($(_elt).data('udrag.zone') || {});
+        var data = ($(_elt).data($.uDrag.key + '.zone') || {});
         return data.index;
     },
 
@@ -149,7 +161,7 @@ uDrag.AreaIndex.prototype = {
      */
     element_to_zone: function (_elt) {
 
-        return this._zones[this.element_index(_elt)];
+        return this._zones[this.element_to_index(_elt)];
     },
 
     /**
@@ -276,6 +288,8 @@ uDrag.AreaIndex.prototype = {
      */
 
     $.uDrag = {};
+    $.uDrag.key = 'udrag';
+
     $.uDrag.impl = {
 
         /**
@@ -304,21 +318,21 @@ uDrag.AreaIndex.prototype = {
 
                 doc.bind(
                     'mousemove.udrag',
-                    $.proxy(priv.handle_document_mousemove, elt)
+                    $.proxy(priv._handle_document_mousemove, elt)
                 );
 
                 doc.bind(
                     'mouseup.udrag',
-                    $.proxy(priv.handle_document_mouseup, elt)
+                    $.proxy(priv._handle_document_mouseup, elt)
                 );
 
                 $(window).bind(
                     'resize.udrag',
-                    $.proxy(priv.handle_document_resize, elt)
+                    $.proxy(priv._handle_document_resize, elt)
                 );
 
                 elt.bind(
-                    'mousedown.udrag', priv.handle_drag_mousedown
+                    'mousedown.udrag', priv._handle_drag_mousedown
                 );
 
                 priv.bind_drop_zones(elt, options);
@@ -341,7 +355,7 @@ uDrag.AreaIndex.prototype = {
                 var data = priv.instance_data_for(elt);
 
                 elt.unbind('.udrag');
-                elt.data('udrag', null);
+                elt.data($.uDrag.key, null);
             });
 
             return this;
@@ -359,8 +373,8 @@ uDrag.AreaIndex.prototype = {
              */
             instance_data_for: function (_elt, _v) {
 
-                var key = 'udrag';
                 var elt = $(_elt);
+                var key = $.uDrag.key;
                 var data = elt.data(key);
 
                 if (!data) {
@@ -485,6 +499,12 @@ uDrag.AreaIndex.prototype = {
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
 
+                if (_ev) {
+                    data.last_positioning_event = _ev;
+                } else {
+                    _ev = data.last_positioning_event;
+                }
+
                 var drop_zone = data.drop_zones.find_beneath(
                     { x: _ev.pageX, y: _ev.pageY },
                         [ data.placeholder_elt ]
@@ -493,6 +513,7 @@ uDrag.AreaIndex.prototype = {
                 var recent = data.recent_drop_zone_containers = [
                     data.recent_drop_zone_containers[1], drop_zone
                 ];
+
 
                 /* Move element */
                 data.placeholder_elt.offset({
@@ -508,7 +529,7 @@ uDrag.AreaIndex.prototype = {
 
                     /* Special autoscrolling case:
                         The pointer moved from one drop zone to another,
-                        directly and without any events in-between the two.
+                        directly and without any events between the two.
                         Switch out the autoscroll element directly, and
                         recalculate the scroll direction. We can't stop
                         and then start scrolling here, because the timeout
@@ -613,7 +634,7 @@ uDrag.AreaIndex.prototype = {
 
                 data.is_autoscrolling = true;
                 data.autoscroll_elt = _drop_zone.container_elt[0];
-                priv.handle_autoscroll_timeout(_elt, _drop_zone);
+                priv._handle_autoscroll_timeout(_elt, _drop_zone);
             },
 
             /**
@@ -642,7 +663,7 @@ uDrag.AreaIndex.prototype = {
              * If the {autoscroll_elt} private storage field is set,
              * this function reschedules itself to run again.
              */
-            handle_autoscroll_timeout: function (_elt, _drop_zone) {
+            _handle_autoscroll_timeout: function (_elt, _drop_zone) {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
@@ -677,13 +698,13 @@ uDrag.AreaIndex.prototype = {
                         y: autoscroll_elt.scrollTop()
                     }
 
+                    /* Scroll the container element */
                     autoscroll_elt.scrollLeft(scroll.x + dx);
                     autoscroll_elt.scrollTop(scroll.y + dy);
 
-                    /* Actual distance scrolled, in pixels */
-                    dx = autoscroll_elt.scrollLeft() - scroll.x;
-                    dy = autoscroll_elt.scrollTop() - scroll.y;
-
+                    /* Treat this like normal mouse movement */
+                    priv.update_position(_elt);
+                    
                     /* Special case:
                         Autoscrolling element is the browser window; adjust
                         {drag_elt} by {scrollDelta} to keep it stationary. */
@@ -692,6 +713,10 @@ uDrag.AreaIndex.prototype = {
 
                         var drag_elt = data.placeholder_elt;
                         var drag_offset = drag_elt.offset();
+
+                        /* Calculate actual distance scrolled, in pixels */
+                        dx = autoscroll_elt.scrollLeft() - scroll.x;
+                        dy = autoscroll_elt.scrollTop() - scroll.y;
 
                         drag_elt.offset({
                             top: drag_offset.top + dy,
@@ -707,7 +732,7 @@ uDrag.AreaIndex.prototype = {
                     this avoids accidental scrolling during a drag/drop. */
 
                 var callback_fn = function () {
-                    priv.handle_autoscroll_timeout(_elt, _drop_zone);
+                    priv._handle_autoscroll_timeout(_elt, _drop_zone);
                 };
 
                 var timeout = (
@@ -758,11 +783,12 @@ uDrag.AreaIndex.prototype = {
              */
             create_instance_data: function (_elt, _options) {
                 _elt.data(
-                    'udrag', {
+                    $.uDrag.key, {
                         elt: null,
                         options: _options,
                         autoscroll_elt: null,
                         placeholder_elt: null,
+                        last_positioning_event: null,
                         previous_highlight_zone: null,
                         is_autoscrolling: false,
                         has_scrolled_recently: false,
@@ -772,7 +798,7 @@ uDrag.AreaIndex.prototype = {
                     }
                 );
 
-                return _elt.data('udrag');
+                return _elt.data($.uDrag.key);
             },
 
             /**
@@ -847,12 +873,24 @@ uDrag.AreaIndex.prototype = {
                             container_elt = drop_elt;
                         }
 
+                        var ancestor_elts = [ container_elt ].concat(
+                            container_elt.parentsUntil('body').toArray()
+                        );
+
+                        for (var i = 0, l = ancestor_elts.length; i < l; ++i) {
+                            ancestor_elts[i].bind(
+                                'scroll.udrag',
+                                $.proxy(priv._handle_ancestor_scroll, _elt)
+                            );
+                        }
+
                         /* Cache a single drop zone:
                             This fills in details about the drop zone,
                             and prepares it for fast indexed retrieval. */
 
                         data.drop_zones.track(drop_elt, {
-                            container_elt: container_elt
+                            container_elt: container_elt,
+                            ancestor_elts: ancestor_elts
                         });
                     });
                 }
@@ -1072,7 +1110,7 @@ uDrag.AreaIndex.prototype = {
             /**
              * Event handler for document's mouse-up event.
              */
-            handle_document_mouseup: function (_ev) {
+            _handle_document_mouseup: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(this);
@@ -1087,7 +1125,7 @@ uDrag.AreaIndex.prototype = {
             /**
              * Event handler for document's mouse-move event.
              */
-            handle_document_mousemove: function (_ev) {
+            _handle_document_mousemove: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(this);
@@ -1102,7 +1140,7 @@ uDrag.AreaIndex.prototype = {
             /**
              * Event handler for document's mouse-move event.
              */
-            handle_document_resize: function (_ev) {
+            _handle_document_resize: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(this);
@@ -1114,7 +1152,7 @@ uDrag.AreaIndex.prototype = {
             /**
              * Event handler for drag element's mouse-down event.
              */
-            handle_drag_mousedown: function (_ev) {
+            _handle_drag_mousedown: function (_ev) {
 
                 var priv = $.uDrag.impl.priv;
 
@@ -1124,6 +1162,22 @@ uDrag.AreaIndex.prototype = {
                 }
 
                 priv.start_dragging($(this), _ev);
+                return false;
+            },
+
+            /**
+             * Event handler for the scroll event of {container_elt}
+             * and its ancestors.
+             */
+            _handle_ancestor_scroll: function (_ev) {
+
+                var priv = $.uDrag.impl.priv;
+                var data = priv.instance_data_for(this);
+
+                if (data.is_dragging) {
+                    priv.update_position($(this));
+                }
+
                 return false;
             },
 
