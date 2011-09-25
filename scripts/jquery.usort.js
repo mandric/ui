@@ -134,48 +134,147 @@
              * all private fields to their original default values. This
              * must be called before any sortables can be modified.
              */
-            create_instance_data: function (_elt, _options) {
-                _elt.data(
+            create_instance_data: function (_sortable_elt, _options) {
+                _sortable_elt.data(
                     'usort', {
                         elt: null,
                         udrag: null,
+                        active_animations: {},
                         options: _options,
                         area_index: new uDrag.AreaIndex()
                     }
                 );
 
-                return _elt.data('usort');
+                return _sortable_elt.data('usort');
+            },
+
+            /*
+             * Insert {_elt} either before or after {_target_elt},
+             * depending upon {_elt}'s original position. Recalculate
+             * areas for any affected elements. If animation is enabled,
+             * this function will be run asynchronously.
+             */
+            insert_element: function (_sortable_elt, _elt,
+                                      _target_elt, _callback) {
+                
+                var priv = $.uSort.impl.priv;
+                var data = priv.instance_data_for(_sortable_elt);
+                var options = data.options;
+                
+                var areas = data.area_index;
+                var drag_index = _elt.prevAll().length;
+                var drop_index = _target_elt.prevAll().length;
+                var in_negative_direction = (drop_index < drag_index);
+
+                var stop_elt = $(
+                    _elt.next(':not(.placeholder)')[0] || _elt[0]
+                );
+                var start_elt = $(
+                    _elt.prev(':not(.placeholder)')[0] || _target_elt[0]
+                );
+
+                var invoke_insert = function () {
+                    if (in_negative_direction) {
+                        _elt.insertBefore(_target_elt);
+                    } else {
+                        _elt.insertAfter(_target_elt);
+                    }
+                };
+
+                var invoke_recalculate = function () {
+                    areas.recalculate_all();
+                    if (_callback) {
+                        _callback.apply(_sortable_elt, arguments);
+                    }
+                }
+
+                if (data.options.animate) {
+                
+                    var index = areas.element_index(_target_elt);
+                    var animations = data.active_animations;
+
+                    _elt.slideUp(0);
+
+                    /* One animation at a time:
+                        Acquire lock on animations around {_target_elt}. */
+
+                    if (!data.active_animations[index]) {
+
+                        for (var i in animations) {
+                            if (i != index) {
+                                for (var j in animations[i]) {
+                                    animations[i][j].stop().remove();
+                                }
+                                delete animations[i];
+                            }
+                        }
+
+                        var top_elt = _target_elt.clone(true);
+                        var bottom_elt = _target_elt.clone(true);
+
+                        top_elt.css('visibility', 'hidden');
+                        bottom_elt.css('visibility', 'hidden');
+
+                        data.active_animations[index] = [
+                            top_elt, bottom_elt
+                        ];
+
+                        if (in_negative_direction) {
+                            top_elt.insertBefore(_elt);
+                            bottom_elt.insertBefore(_target_elt);
+                        } else {
+                            top_elt.insertAfter(_elt);
+                            bottom_elt.insertAfter(_target_elt);
+                        }
+
+                        invoke_insert();
+
+                        top_elt.slideDown(0, function () {
+                            top_elt.slideUp(
+                                options.duration || 200, function () {
+                                    if (data.active_animations[index]) {
+                                        _elt.slideDown(0);
+                                        top_elt.remove();
+                                        bottom_elt.remove();
+                                        delete data.active_animations[index];
+                                        invoke_recalculate();
+                                    }
+                                }
+                            );
+                        });
+
+                        bottom_elt.slideUp(0, function () {
+                            bottom_elt.slideDown(options.duration || 200);
+                        });
+                    }
+
+                } else {
+                    invoke_insert();
+                    invoke_recalculate();
+                }
+
+                return true;
             },
 
             /**
-             * Event handler for uDrag-initiated hover events.
+             * Event handler for uDrag-initiated {hover} events.
              */
             handle_drag_hover: function (_elt, _drop_elt, _offsets) {
 
                 var priv = $.uSort.impl.priv;
                 var data = priv.instance_data_for(this);
-
-                var area_index = data.area_index;
-                var area = area_index.find_beneath(_offsets.absolute);
+                var area = data.area_index.find_beneath(_offsets.absolute);
 
                 if (area && !area.elt.hasClass('placeholder')) {
-                    var drop_index = area.elt.prevAll().length;
-                    var drag_index = _elt.prevAll().length;
-
-                    if (drop_index < drag_index) {
-                        var stop_elt = _elt.prev();
-                        _elt.insertBefore(area.elt);
-                        area_index.recalculate_between(_elt, stop_elt);
-                    } else {
-                        var start_elt = _elt.next();
-                        _elt.insertAfter(area.elt);
-                        area_index.recalculate_between(start_elt, _elt);
-                    }
+                    priv.insert_element(this, _elt, area.elt);
                 }
 
                 return false;
             },
 
+            /**
+             * Event handler for uDrag-initiated {recalculate} events.
+             */
             handle_drag_recalculate: function (_elt) {
             
                 var priv = $.uSort.impl.priv;

@@ -142,15 +142,33 @@ uDrag.AreaIndex.prototype = {
      */
     recalculate_between: function (_first_elt, _final_elt) {
 
-        var elts = [ _first_elt, _final_elt ].concat(
-            _first_elt.nextUntil(_final_elt)
-        );
+        var p = _first_elt;
 
-        for (var i = 0, len = elts.length; i < len; ++i) {
-            this.recalculate_one(this.element_to_zone(elts[i]));
+        for (;;) {
+            var zone = this.element_to_zone(p);
+
+            if (zone) {
+                this.recalculate_one(zone);
+            }
+
+            if (!p[0] || p[0] == _final_elt[0]) {
+                break;
+            }
+            
+            p = p.next();
         }
 
         return this;
+    },
+
+    /*
+     * Retrieve the unique index of {_elt} in the internal
+     * {_zones} collection.
+     */
+    element_index: function (_elt) {
+
+        var data = ($(_elt).data('udrag.zone') || {});
+        return data.index;
     },
 
     /*
@@ -158,8 +176,7 @@ uDrag.AreaIndex.prototype = {
      */
     element_to_zone: function (_elt) {
 
-        var data = ($(_elt).data('udrag.zone') || {});
-        return this._zones[data.index];
+        return this._zones[this.element_index(_elt)];
     },
 
     /**
