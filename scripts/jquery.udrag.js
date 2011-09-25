@@ -393,9 +393,10 @@ uDrag.AreaIndex.prototype = {
              */
             start_dragging: function (_elt, _ev) {
 
+                var elt = $(_elt);
                 var priv = $.uDrag.impl.priv;
                 var data = priv.instance_data_for(_elt);
-                var offset = _elt.offset();
+                var offset = elt.offset();
 
                 if (data.is_dragging) {
                     return false;
@@ -407,7 +408,7 @@ uDrag.AreaIndex.prototype = {
                 };
 
                 data.is_dragging = true;
-                var drag_elt = priv.create_overlay(_elt, _ev);
+                var drag_elt = priv.create_overlay(elt, _ev);
 
                 data.extent = {
                     x: drag_elt.outerWidth(),
@@ -429,7 +430,7 @@ uDrag.AreaIndex.prototype = {
                     y: _ev.pageY - data.delta.y
                 };
 
-                priv.update_position(_elt, _ev);
+                priv.update_position(elt, _ev);
             },
 
             /**
@@ -874,7 +875,7 @@ uDrag.AreaIndex.prototype = {
                         }
 
                         var ancestor_elts = [ container_elt ].concat(
-                            container_elt.parentsUntil('body').toArray()
+                            container_elt.parentsUntil('body')
                         );
 
                         for (var i = 0, l = ancestor_elts.length; i < l; ++i) {
@@ -1131,7 +1132,7 @@ uDrag.AreaIndex.prototype = {
                 var data = priv.instance_data_for(this);
 
                 if (data.is_dragging) {
-                    priv.update_position($(this), _ev);
+                    priv.update_position(this, _ev);
                 }
 
                 return false;
@@ -1161,7 +1162,7 @@ uDrag.AreaIndex.prototype = {
                     return false;
                 }
 
-                priv.start_dragging($(this), _ev);
+                priv.start_dragging(this, _ev);
                 return false;
             },
 
@@ -1175,7 +1176,7 @@ uDrag.AreaIndex.prototype = {
                 var data = priv.instance_data_for(this);
 
                 if (data.is_dragging) {
-                    priv.update_position($(this));
+                    priv.update_position(this);
                 }
 
                 return false;
