@@ -58,7 +58,10 @@
          */
         create: function (_options) {
 
-            var default_options = {};
+            var default_options = {
+                direction: 'vertical'
+            };
+
             var priv = $.uSort.impl.priv;
             var options = $.extend(default_options, _options || {});
             var data = priv.create_instance_data(this, options);
@@ -81,12 +84,12 @@
 
             data.udrag = items.uDrag('create', {
                 drop: sortable_elt,
+                container: options.container,
                 onInsertElement: function (_elt, _drop_elt) {
                     priv.cancel_other_animations(sortable_elt, false);
                     _elt.css('display', null);
                 },
                 onPositionElement: false,
-                container: options.container,
                 onHover: $.proxy(priv.handle_drag_hover, this),
                 onRecalculate: $.proxy(priv.handle_drag_recalculate, this)
             });
@@ -146,8 +149,12 @@
                         elt: null,
                         udrag: null,
                         active_animations: {},
-                        options: _options,
-                        area_index: new uDrag.AreaIndex()
+                        area_index: new uDrag.AreaIndex(),
+                        animate: !!(_options.animate),
+                        duration: (_options.duration || 250),
+                        is_horizontal: !!(
+                            (_options.direction || '').match(/^h/)
+                        )
                     }
                 );
 
@@ -165,7 +172,6 @@
                 
                 var priv = $.uSort.impl.priv;
                 var data = priv.instance_data_for(_sortable_elt);
-                var options = data.options;
 
                 var areas = data.area_index;
                 var index = areas.element_to_index(_target_elt);
@@ -193,7 +199,7 @@
                 /* One animation at a time:
                     Acquire lock on animations around {_target_elt}. */
 
-                if (options.animate) {
+                if (data.animate) {
                     if (data.active_animations[index]) {
                         return true;
                     }
@@ -210,7 +216,7 @@
                         [ _target_elt, _elt ] : [ _elt, _target_elt ])
                 );
 
-                if (options.animate) {
+                if (data.animate) {
 
                     _elt.css('display', 'none');
 
@@ -261,14 +267,14 @@
                         delete data.active_animations[index];
                     };
 
-                    var duration = (options.duration || 250);
-
-                    shrink_elt.slideDown(0, function () {
-                        shrink_elt.slideUp(duration)
+                    priv.slide_open(data, shrink_elt, 0, function () {
+                        priv.slide_closed(data, shrink_elt, data.duration)
                     });
 
-                    grow_elt.slideUp(0, function () {
-                        grow_elt.slideDown(duration, after_animation);
+                    priv.slide_closed(data, grow_elt, 0, function () {
+                        priv.slide_open(
+                            data, grow_elt, data.duration, after_animation
+                        );
                     });
 
                 } else {
@@ -297,6 +303,39 @@
 
                 return [ _elts, _attrs, rv ];
             },
+
+            /**
+             * A helper for {insert_element}'s animation support: animate
+             * {_elt} down to either zero width or zero height, depending
+             * upon the uSort {orientation} option.
+             */
+            slide_closed: function (_options, _elt, _duration, _callback) {
+
+                if (_options.is_horizontal) {
+                    _elt.animate(
+                        { width: 'hide' }, _duration, _callback
+                    );
+                } else {
+                    _elt.slideUp(_duration, _callback);
+                }
+            },
+
+            /**
+             * A helper for {insert_element}'s animation support: animate
+             * {_elt} up to its original width or height, depending upon
+             * the uSort {orientation} option.
+             */
+            slide_open: function (_options, _elt, _duration, _callback) {
+
+                if (_options.is_horizontal) {
+                    _elt.animate(
+                        { width: 'show' }, _duration, _callback
+                    );
+                } else {
+                    _elt.slideDown(_duration, _callback);
+                }
+            },
+
 
             /**
              * Stop all in-progress animations, except for those 
