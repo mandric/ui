@@ -227,7 +227,9 @@
 
                     var saved_margin = priv.bulk_css(
                         [ _elt, _target_elt ],
-                        [ 'margin-top', 'margin-bottom' ], [ 0, 0 ]
+                        (data.is_horizontal ?
+                            [ 'margin-left', 'margin-right' ]
+                            : [ 'margin-top', 'margin-bottom' ]), [ 0, 0 ]
                     );
 
                     shrink_elt.addClass('animation');
