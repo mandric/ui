@@ -186,11 +186,13 @@ uDrag.AreaIndex.prototype = {
             var zone = zones[i];
             var scroll_elt = zone.scroll_elt;
             var container_elt = zone.container_elt;
-            var current_scroll = this._cumulative_scroll(zone.container_elt);
+
+            var current_scroll =
+                this._cumulative_scroll(zone.container_elt);
 
             /* Adjust for scrolling of ancestors:
                 The naive approach would be to just recalculate all of
-                the zones, but that can be costly with large area sets. */
+                the zones, but that approach is costly with large sets. */
 
             x += (current_scroll.x - zone.initial_scroll.x);
             y += (current_scroll.y - zone.initial_scroll.y);

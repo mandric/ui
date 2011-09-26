@@ -216,9 +216,13 @@
 
                     /* Produce two {_elt} clones:
                         These are used as animated placeholders. */
-
                     var shrink_elt = _target_elt.clone(true);
                     var grow_elt = _target_elt.clone(true);
+
+                    var saved_margin = priv.bulk_css(
+                        [ _elt, _target_elt ],
+                        [ 'margin-top', 'margin-bottom' ], [ 0, 0 ]
+                    );
 
                     shrink_elt.addClass('animation');
                     grow_elt.addClass('animation');
@@ -246,10 +250,13 @@
                     insert_element_common();
 
                     var after_animation = function () {
-                        _elt.css('display', null);
-                        shrink_elt.remove();
                         grow_elt.remove();
+                        shrink_elt.remove();
+                        _elt.css('display', null);
+
+                        priv.bulk_css.apply(null, saved_margin);
                         areas.recalculate_element_zones(recalculate_elts);
+
                         invoke_callback();
                         delete data.active_animations[index];
                     };
@@ -272,6 +279,23 @@
                 }
 
                 return true;
+            },
+
+            /**
+             * A simple bulk save/restore interface for CSS attributes.
+             */
+            bulk_css: function (_elts, _attrs, _values) {
+
+                var rv = [ ];
+
+                for (var i in _elts) {
+                    for (var j in _attrs) {
+                        rv.push(_elts[i].css(_attrs[j]));
+                        _elts[i].css(_attrs[j], _values[j]);
+                    }
+                }
+
+                return [ _elts, _attrs, rv ];
             },
 
             /**
