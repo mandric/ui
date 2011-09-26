@@ -220,7 +220,7 @@
          */
         create: function (_target_elts, _options) {
 
-            var priv = $.uPopup.impl.priv;
+            var priv = $.uPopup.priv;
             var options = (_options || {});
             var target_elts = priv.listify(_target_elts);
 
@@ -310,7 +310,7 @@
          * in the `create` method, or by disabling jQuery's effects.
          */
         show: function () {
-            var priv = $.uPopup.impl.priv;
+            var priv = $.uPopup.priv;
 
             $(this).each(function (i, popup_elt) {
                 var state = priv.instance_data_for(popup_elt);
@@ -326,7 +326,7 @@
          * in the `create` method, or by disabling jQuery's effects.
          */
         hide: function (_callback) {
-            var priv = $.uPopup.impl.priv;
+            var priv = $.uPopup.priv;
 
             $(this).each(function (i, popup_elt) {
                 var state = priv.instance_data_for(popup_elt);
@@ -341,13 +341,14 @@
          * selected element(s), hiding the popup first if necessary.
          */
         destroy: function () {
-            $.uPopup.impl.priv.toggle.call(
+            $.uPopup.priv.toggle.call(
                 this, false, function (_wrapper_elt) {
                     _wrapper_elt.remove();
                     delete _wrapper_elt;
                 }
             );
             $(this).each(function (i, popup_elt) {
+                popup_elt = $(popup_elt);
                 popup_elt.unbind('.upopup');
                 popup_elt.data('upopup', null);
             });
@@ -358,7 +359,7 @@
          * returns a list of the 'wrapper' elements currently in use.
          */
         elements: function () {
-            var priv = $.uPopup.impl.priv;
+            var priv = $.uPopup.priv;
 
             return $(
                 $(this).map(function (i, popup_elt) {
@@ -370,444 +371,445 @@
                     return !wrapper_elt;
                 })
             );
+        }
+    };
+
+    /**
+     * A namespace that contains private functions, each
+     * used internally as part of uPopup's implementation.
+     * Please don't call these from outside of $.uPopup.impl.
+     */
+    $.uPopup.priv = {
+
+        /**
+         * Local variables:
+         *  We provide a monotonically-increasing z-index for the
+         *  popups we create, so as to ensure that newer popups
+         *  always appear above older popups. This method imposes an
+         *  artificial limit on the number of popups per page load,
+         *  but it's far higher than any real-world use case.
+         */
+        _serial_number: 0,
+        _zindex_base: 16384,
+
+        /**
+         * Make `_v` an array if it isn't already an array.
+         */
+        listify: function (_v) {
+            return ($.isArray(_v) ? _v : [ _v ]);
         },
 
         /**
-         * A namespace that contains private functions, each
-         * used internally as part of uPopup's implementation.
-         * Please don't call these from outside of $.uPopup.impl.
+         * Returns the uPopup-private storage attached to `_elt`.
          */
-        priv: {
-            /**
-             * Local variables:
-             *  We provide a monotonically-increasing z-index for the
-             *  popups we create, so as to ensure that newer popups
-             *  always appear above older popups. This method imposes an
-             *  artificial limit on the number of popups per page load,
-             *  but it's far higher than any real-world use case.
-             */
-            _serial_number: 0,
-            _zindex_base: 16384,
+        instance_data_for: function (_elt) {
+            return ($(_elt).data('upopup') || {});
+        },
 
-            /**
-             * Make `_v` an array if it isn't already an array.
-             */
-            listify: function (_v) {
-                return ($.isArray(_v) ? _v : [ _v ]);
-            },
-
-            /**
-             * Returns the uPopup-private storage attached to `_elt`.
-             */
-            instance_data_for: function (_elt) {
-                return ($(_elt).data('upopup') || {});
-            },
-
-            /**
-             * Returns the array offset (i.e. index) that contains the
-             * largest value in the array.
-             */
-            index_of_max: function (a) {
-                var rv, max;
-                for (var i = 0, len = a.length; i < len; ++i) {
-                    if (!max || a[i] > max) {
-                        max = a[i]; rv = i;
-                    }
+        /**
+         * Returns the array offset (i.e. index) that contains the
+         * largest value in the array.
+         */
+        index_of_max: function (a) {
+            var rv, max;
+            for (var i = 0, len = a.length; i < len; ++i) {
+                if (!max || a[i] > max) {
+                    max = a[i]; rv = i;
                 }
-                return rv;
-            },
+            }
+            return rv;
+        },
 
-            /**
-             * Returns a new DOM element, consisting of _popup_elt wrapped
-             * inside of uPopup-specific elements. Values in _options
-             * are used to control the appearance and layout of the wrapper.
-             */
-            wrap: function (_popup_elt, _options) {
+        /**
+         * Returns a new DOM element, consisting of _popup_elt wrapped
+         * inside of uPopup-specific elements. Values in _options
+         * are used to control the appearance and layout of the wrapper.
+         */
+        wrap: function (_popup_elt, _options) {
 
-                var options = (_options || {});
+            var options = (_options || {});
 
-                var wrap_elt = $(
-                    '<div class="upopup">' +
-                        '<div class="direction">' +
-                            '<div class="arrow first-arrow" />' +
-                            '<div class="border">' +
-                                '<div class="inner" />' +
-                            '</div>' +
-                            '<div class="arrow last-arrow" />' +
-                            '<div class="clear" />' +
+            var wrap_elt = $(
+                '<div class="upopup">' +
+                    '<div class="direction">' +
+                        '<div class="arrow first-arrow" />' +
+                        '<div class="border">' +
+                            '<div class="inner" />' +
                         '</div>' +
-                    '</div>'
-                );
+                        '<div class="arrow last-arrow" />' +
+                        '<div class="clear" />' +
+                    '</div>' +
+                '</div>'
+            );
 
-                $('.inner', wrap_elt).append(_popup_elt);
-                return wrap_elt;
-            },
+            $('.inner', wrap_elt).append(_popup_elt);
+            return wrap_elt;
+        },
 
-            /**
-             * Places a wrapped uPopup element inside of the DOM.
-             * Values inside of the _options object are used to
-             * control position and placement.
-             */
-            insert: function (_wrapper_elt,
-                              _popup_elt, _target_elt, _options) {
+        /**
+         * Places a wrapped uPopup element inside of the DOM.
+         * Values inside of the _options object are used to
+         * control position and placement.
+         */
+        insert: function (_wrapper_elt,
+                          _popup_elt, _target_elt, _options) {
 
-                var options = (_options || {});
-                var priv = $.uPopup.impl.priv;
+            var options = (_options || {});
+            var priv = $.uPopup.priv;
 
-                _wrapper_elt.css(
-                    'z-index',
-                    (priv._zindex_base + priv._serial_number++)
-                );
+            _wrapper_elt.css(
+                'z-index',
+                (priv._zindex_base + priv._serial_number++)
+            );
 
-                _wrapper_elt.css('display', 'none');
-                _wrapper_elt.prependTo('body');
-            },
+            _wrapper_elt.css('display', 'none');
+            _wrapper_elt.prependTo('body');
+        },
 
-            /**
-             * Shows or hides a currently-visible popup instance. To remove
-             * an instance altogether, and discard the element, see the
-             * destroy function. To create a new instance, use `create`.
-             * This is the backend for impl.show and impl.hide.
-             */
-            toggle: function (_is_show, _callback) {
+        /**
+         * Shows or hides a currently-visible popup instance. To remove
+         * an instance altogether, and discard the element, see the
+         * destroy function. To create a new instance, use `create`.
+         * This is the backend for impl.show and impl.hide.
+         */
+        toggle: function (_is_show, _callback) {
 
-                var priv = $.uPopup.impl.priv;
+            var priv = $.uPopup.priv;
 
-                /* Multiple elements are allowed */
-                $(this).each(function (i, popup_elt) {
+            /* Multiple elements are allowed */
+            $(this).each(function (i, popup_elt) {
 
-                    /* Retrieve instance state data */
-                    var state = priv.instance_data_for(popup_elt);
-                    var options = (state.options || {});
-                    var wrapper_elt = state.elt;
+                /* Retrieve instance state data */
+                var state = priv.instance_data_for(popup_elt);
+                var options = (state.options || {});
+                var wrapper_elt = state.elt;
 
-                    /* Build callback */
-                    var callback = function () {
-                        if (_callback) {
-                            _callback.call(popup_elt, wrapper_elt);
-                        }
-                    };
+                /* Build callback */
+                var callback = function () {
+                    if (_callback) {
+                        _callback.call(popup_elt, wrapper_elt);
+                    }
+                };
 
-                    /* Invoke action */
-                    if (options.fx !== false) {
-                        if (_is_show) {
-                            wrapper_elt.fadeIn(null, callback);
-                        } else {
-                            wrapper_elt.fadeOut(null, callback);
-                        }
+                /* Invoke action */
+                if (options.fx !== false) {
+                    if (_is_show) {
+                        wrapper_elt.fadeIn(null, callback);
                     } else {
-                        if (_is_show) {
-                            wrapper_elt.show();
-                        } else {
-                            wrapper_elt.hide();
-                        }
-                        callback.call(this);
+                        wrapper_elt.fadeOut(null, callback);
                     }
-                });
-
-                return this;
-            },
-
-            /**
-             * The popup dialog automatic repositioning algorithm. Places
-             * `wrapper_elt` on the side of `target_elt` that has the most
-             * available screen space, in each of two dimensions.
-             */
-            autoposition: function (_wrapper_elt,
-                                    _popup_elt, _target_elt, _options) {
-                var avail = {};
-                var priv = $.uPopup.impl.priv;
-                var options = (_options || {});
-
-                var ev = options.eventData;
-                var container_elt = $(document);
-
-                /* Precompute sizes, offsets:
-                    These figures are used in the placement algorithm. */
-                    
-                var target_offset = _target_elt.offset();
-
-                var container_size = {
-                    x: container_elt.width(),
-                    y: container_elt.height()
-                };
-                var target_size = {
-                    x: _target_elt.outerWidth(true),
-                    y: _target_elt.outerHeight(true)
-                };
-
-                /* Available space on each side of target:
-                    { x: [ left, right ], y: [ top, bottom ] } */
-                
-                if (ev) {
-
-                    /* Event object provided:
-                        This tells us where the pointer currently is.
-                        We can use this instead of the target's corners. */
-
-                    var pt = priv.event_to_point(
-                        ev, priv.instance_data_for(_popup_elt),
-                            target_offset, target_size
-                    );
-
-                    avail = {
-                        x: [ pt.x, container_size.x - pt.x ],
-                        y: [ pt.y, container_size.y - pt.y ]
-                    };
-
                 } else {
-
-                    /* No event object:
-                        Compute space relative to `target_elt`'s corners. */
-
-                    avail = {
-                        x: [
-                            target_offset.left,
-                            container_size.x -
-                                target_offset.left - target_size.x
-                        ],
-                        y: [
-                            target_offset.top,
-                            container_size.y -
-                                target_offset.top - target_size.y
-                        ]
-                    };
+                    if (_is_show) {
+                        wrapper_elt.show();
+                    } else {
+                        wrapper_elt.hide();
+                    }
+                    callback.call(this);
                 }
+            });
 
-                /* Placement relative to viewport:
-                    If the viewport option has been set, then
-                    only count space that's immediately visible. */
+            return this;
+        },
 
-                if (options.useViewport !== false) {
+        /**
+         * The popup dialog automatic repositioning algorithm. Places
+         * `wrapper_elt` on the side of `target_elt` that has the most
+         * available screen space, in each of two dimensions.
+         */
+        autoposition: function (_wrapper_elt,
+                                _popup_elt, _target_elt, _options) {
+            var avail = {};
+            var priv = $.uPopup.priv;
+            var options = (_options || {});
 
-                    var window_elt = $(window);
+            var ev = options.eventData;
+            var container_elt = $(document);
 
-                    var window_offset = {
-                        y: window_elt.scrollTop(),
-                        x: window_elt.scrollLeft()
-                    };
+            /* Precompute sizes, offsets:
+                These figures are used in the placement algorithm. */
+                
+            var target_offset = _target_elt.offset();
 
-                    avail.x[0] -= window_offset.x;
-                    avail.x[1] -= (
+            var container_size = {
+                x: container_elt.width(),
+                y: container_elt.height()
+            };
+            var target_size = {
+                x: _target_elt.outerWidth(true),
+                y: _target_elt.outerHeight(true)
+            };
+
+            /* Available space on each side of target:
+                { x: [ left, right ], y: [ top, bottom ] } */
+            
+            if (ev) {
+
+                /* Event object provided:
+                    This tells us where the pointer currently is.
+                    We can use this instead of the target's corners. */
+
+                var pt = priv.event_to_point(
+                    ev, priv.instance_data_for(_popup_elt),
+                        target_offset, target_size
+                );
+
+                avail = {
+                    x: [ pt.x, container_size.x - pt.x ],
+                    y: [ pt.y, container_size.y - pt.y ]
+                };
+
+            } else {
+
+                /* No event object:
+                    Compute space relative to `target_elt`'s corners. */
+
+                avail = {
+                    x: [
+                        target_offset.left,
                         container_size.x -
-                            (window_offset.x + window_elt.width())
-                    );
-                    avail.y[0] -= window_offset.y;
-                    avail.y[1] -= (
+                            target_offset.left - target_size.x
+                    ],
+                    y: [
+                        target_offset.top,
                         container_size.y -
-                            (window_offset.y + window_elt.height())
-                    );
-
-                }
-                
-                /* Indices:
-                    Each value is an index for `avail` and `offsets`. */
-
-                var indices = {
-                    x: priv.index_of_max(avail.x),
-                    y: priv.index_of_max(avail.y)
+                            target_offset.top - target_size.y
+                    ]
                 };
-
-                return priv.reposition(
-                    _wrapper_elt, _popup_elt,
-                        _target_elt, indices.x, indices.y, _options
-                );
-            },
-
-            /**
-             * This is the core repositioning function. This is used as the
-             * back-end of auto_position, and may be called directly to
-             * force a popup to appear facing a certain direction. The
-             * {_target_elt} is the element that the popup should point
-             * to; {_wrapper_elt} is the return value obtained from calling
-             * {priv.wrap}; _x and _y are boolean values denoting left/right
-             * and top/bottom (each zero/one or false/true, respectively).
-             */
-            reposition: function (_wrapper_elt, _popup_elt,
-                                  _target_elt, _x, _y, _options) {
-                var offsets;
-                var priv = $.uPopup.impl.priv;
-                var options = (_options || {});
-
-                var ev = options.eventData;
-                var inner_elt = _wrapper_elt.closestChild('.direction');
-                var arrow_elt = inner_elt.closestChild('.arrow');
-
-                /* Precompute sizes:
-                    These figures are used in the placement algorithm. */
-                        
-                var target_offset = _target_elt.offset();
-
-                var wrapper_size = {
-                    x: _wrapper_elt.outerWidth(true),
-                    y: _wrapper_elt.outerHeight(true)
-                };
-                var target_size = {
-                    x: _target_elt.outerWidth(true),
-                    y: _target_elt.outerHeight(true)
-                };
-                var padding_size = {
-                    x: (wrapper_size.x - inner_elt.width()) / 2,
-                    y: (wrapper_size.y - inner_elt.height()) / 2
-                };
-                var arrow_size = {
-                    x: arrow_elt.outerWidth(),
-                    y: arrow_elt.outerHeight()
-                };
-
-                /* Delta value:
-                    Distance between popup's edge and arrow's edge. */
-
-                var d = priv.calculate_arrow_delta(_wrapper_elt);
-
-                /* Coefficients:
-                    Arrow size, adjust width/x, adjust height/y */
-
-                var c = (
-                    options.vertical ? [ -1, 1, 0 ] : [ 1, 0, 1 ]
-                );
-
-                if (ev) {
-
-                    /* Event object provided:
-                        This tells us where the pointer currently is.
-                        We can use this instead of the target's corners
-                        to determine the list of possible placements. */
-
-                    var pt = priv.event_to_point(
-                        ev, priv.instance_data_for(_popup_elt),
-                            target_offset, target_size
-                    );
-
-                    offsets = {
-                        x: [
-                            pt.x - wrapper_size.x - c[0] * arrow_size.x / 2
-                                + c[1] * d.x,
-                            pt.x + c[0] * arrow_size.x / 2 - c[1] * d.x
-                        ],
-                        y: [
-                            pt.y - wrapper_size.y + c[0] * arrow_size.y / 2
-                                + c[2] * d.y,
-                            pt.y - c[0] * arrow_size.y / 2 - c[2] * d.y
-                        ]
-                    };
-
-                } else {
-
-                    /* No event object:
-                        Possible offsets are the target's four corners. */
-
-                    offsets = {
-                        x: [
-                            target_offset.left - wrapper_size.x + c[1] * d.x
-                                + padding_size.x - c[0] * arrow_size.x / 2,
-                            target_offset.left + target_size.x - c[1] * d.x
-                                - padding_size.x + c[0] * arrow_size.x / 2
-                        ],
-                        y: [
-                            target_offset.top - wrapper_size.y + c[2] * d.y
-                                + padding_size.y + c[0] * arrow_size.y / 2,
-                            target_offset.top + target_size.y - c[2] * d.y
-                                - padding_size.y - c[0] * arrow_size.y / 2
-                        ]
-                    };
-                }
-
-                /* Use center of target, instead of its corner:
-                    The center of `target_elt` is always toward zero (i.e.
-                    pointed away from the maximal edge of the available
-                    space). Due to this fact, the following steps never
-                    yield less room for dialog placement -- always more. */
-
-                if (!options.eventData) {
-                    if (options.center || options.centerX) {
-                        var dx = target_size.x / 2;
-                        offsets.x[0] += dx;
-                        offsets.x[1] -= dx;
-                    }
-                    if (options.center || options.centerY) {
-                        var dy = target_size.y / 2;
-                        offsets.y[0] += dy;
-                        offsets.y[1] -= dy;
-                    }
-                }
-
-                /* Position arrow:
-                    We place the arrow on the corner of the popup that
-                    is closest to the near corner of the target element. */
-
-                var classes = (
-                    options.vertical ?
-                        [ [ 'se', 'ne' ], [ 's', 'n' ] ]
-                        : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
-                );
-
-                inner_elt.removeClass('se ne s n ese e wsw w');
-                inner_elt.addClass(classes[_x][_y]);
-
-                /* Finally, reposition:
-                    Write the actual style change to the DOM element. */
-
-                _wrapper_elt.offset({
-                    top: offsets.y[_y],
-                    left: offsets.x[_x]
-                });
-            },
-
-            /**
-             * Use an invisible <div> to determine the number of additional
-             * pixels needed to shift to the arrow element's exact point.
-             * This is required due to the use of absolute positioning --
-             * we don't have a solid way to determine the offset-from-edge
-             * in pixels using position data alone.
-             */
-            calculate_arrow_delta: function (_wrapper_elt)
-            {
-                var adjust_div = $('<div />').addClass('adjust');
-                _wrapper_elt.append(adjust_div)
-
-                var delta = {
-                    x: adjust_div.width(),
-                    y: adjust_div.height()
-                };
-
-                adjust_div.remove();
-                return delta;
-            },
-
-            /*
-             * Given a jQuery event object (containing both pageX and
-             * pageY coordinates), extract the coordinates and apply any
-             * necessary transformations.
-             */
-            event_to_point: function (ev, state, offset, size) {
-
-                var x = ev.pageX, y = ev.pageY;
-
-                if (state.ratio) {
-
-                    /* Do we have a offset-to-size ratio?
-                        If so, adjust x and y before returning. */
-
-                    x = offset.left + state.ratio.x * size.x;
-                    y = offset.top + state.ratio.y * size.y;
-                }
-
-                /* Save offset-to-size ratio:
-                    If the target element is resized, then we'll use 
-                    this ratio to adjust the event coordinates later. */
-
-                if (!state.ratio) {
-                    state.ratio = {
-                        x: (x - offset.left) / size.x,
-                        y: (y - offset.top) / size.y
-                    };
-                }
-
-                return { x: x, y: y };
             }
 
+            /* Placement relative to viewport:
+                If the viewport option has been set, then
+                only count space that's immediately visible. */
+
+            if (options.useViewport !== false) {
+
+                var window_elt = $(window);
+
+                var window_offset = {
+                    y: window_elt.scrollTop(),
+                    x: window_elt.scrollLeft()
+                };
+
+                avail.x[0] -= window_offset.x;
+                avail.x[1] -= (
+                    container_size.x -
+                        (window_offset.x + window_elt.width())
+                );
+                avail.y[0] -= window_offset.y;
+                avail.y[1] -= (
+                    container_size.y -
+                        (window_offset.y + window_elt.height())
+                );
+
+            }
+            
+            /* Indices:
+                Each value is an index for `avail` and `offsets`. */
+
+            var indices = {
+                x: priv.index_of_max(avail.x),
+                y: priv.index_of_max(avail.y)
+            };
+
+            return priv.reposition(
+                _wrapper_elt, _popup_elt,
+                    _target_elt, indices.x, indices.y, _options
+            );
+        },
+
+        /**
+         * This is the core repositioning function. This is used as the
+         * back-end of auto_position, and may be called directly to
+         * force a popup to appear facing a certain direction. The
+         * {_target_elt} is the element that the popup should point
+         * to; {_wrapper_elt} is the return value obtained from calling
+         * {priv.wrap}; _x and _y are boolean values denoting left/right
+         * and top/bottom (each zero/one or false/true, respectively).
+         */
+        reposition: function (_wrapper_elt, _popup_elt,
+                              _target_elt, _x, _y, _options) {
+            var offsets;
+            var priv = $.uPopup.priv;
+            var options = (_options || {});
+
+            var ev = options.eventData;
+            var inner_elt = _wrapper_elt.closestChild('.direction');
+            var arrow_elt = inner_elt.closestChild('.arrow');
+
+            /* Precompute sizes:
+                These figures are used in the placement algorithm. */
+                    
+            var target_offset = _target_elt.offset();
+
+            var wrapper_size = {
+                x: _wrapper_elt.outerWidth(true),
+                y: _wrapper_elt.outerHeight(true)
+            };
+            var target_size = {
+                x: _target_elt.outerWidth(true),
+                y: _target_elt.outerHeight(true)
+            };
+            var padding_size = {
+                x: (wrapper_size.x - inner_elt.width()) / 2,
+                y: (wrapper_size.y - inner_elt.height()) / 2
+            };
+            var arrow_size = {
+                x: arrow_elt.outerWidth(),
+                y: arrow_elt.outerHeight()
+            };
+
+            /* Delta value:
+                Distance between popup's edge and arrow's edge. */
+
+            var d = priv.calculate_arrow_delta(_wrapper_elt);
+
+            /* Coefficients:
+                Arrow size, adjust width/x, adjust height/y */
+
+            var c = (
+                options.vertical ? [ -1, 1, 0 ] : [ 1, 0, 1 ]
+            );
+
+            if (ev) {
+
+                /* Event object provided:
+                    This tells us where the pointer currently is.
+                    We can use this instead of the target's corners
+                    to determine the list of possible placements. */
+
+                var pt = priv.event_to_point(
+                    ev, priv.instance_data_for(_popup_elt),
+                        target_offset, target_size
+                );
+
+                offsets = {
+                    x: [
+                        pt.x - wrapper_size.x - c[0] * arrow_size.x / 2
+                            + c[1] * d.x,
+                        pt.x + c[0] * arrow_size.x / 2 - c[1] * d.x
+                    ],
+                    y: [
+                        pt.y - wrapper_size.y + c[0] * arrow_size.y / 2
+                            + c[2] * d.y,
+                        pt.y - c[0] * arrow_size.y / 2 - c[2] * d.y
+                    ]
+                };
+
+            } else {
+
+                /* No event object:
+                    Possible offsets are the target's four corners. */
+
+                offsets = {
+                    x: [
+                        target_offset.left - wrapper_size.x + c[1] * d.x
+                            + padding_size.x - c[0] * arrow_size.x / 2,
+                        target_offset.left + target_size.x - c[1] * d.x
+                            - padding_size.x + c[0] * arrow_size.x / 2
+                    ],
+                    y: [
+                        target_offset.top - wrapper_size.y + c[2] * d.y
+                            + padding_size.y + c[0] * arrow_size.y / 2,
+                        target_offset.top + target_size.y - c[2] * d.y
+                            - padding_size.y - c[0] * arrow_size.y / 2
+                    ]
+                };
+            }
+
+            /* Use center of target, instead of its corner:
+                The center of `target_elt` is always toward zero (i.e.
+                pointed away from the maximal edge of the available
+                space). Due to this fact, the following steps never
+                yield less room for dialog placement -- always more. */
+
+            if (!options.eventData) {
+                if (options.center || options.centerX) {
+                    var dx = target_size.x / 2;
+                    offsets.x[0] += dx;
+                    offsets.x[1] -= dx;
+                }
+                if (options.center || options.centerY) {
+                    var dy = target_size.y / 2;
+                    offsets.y[0] += dy;
+                    offsets.y[1] -= dy;
+                }
+            }
+
+            /* Position arrow:
+                We place the arrow on the corner of the popup that
+                is closest to the near corner of the target element. */
+
+            var classes = (
+                options.vertical ?
+                    [ [ 'se', 'ne' ], [ 's', 'n' ] ]
+                    : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
+            );
+
+            inner_elt.removeClass('se ne s n ese e wsw w');
+            inner_elt.addClass(classes[_x][_y]);
+
+            /* Finally, reposition:
+                Write the actual style change to the DOM element. */
+
+            _wrapper_elt.offset({
+                top: offsets.y[_y],
+                left: offsets.x[_x]
+            });
+        },
+
+        /**
+         * Use an invisible <div> to determine the number of additional
+         * pixels needed to shift to the arrow element's exact point.
+         * This is required due to the use of absolute positioning --
+         * we don't have a solid way to determine the offset-from-edge
+         * in pixels using position data alone.
+         */
+        calculate_arrow_delta: function (_wrapper_elt)
+        {
+            var adjust_div = $('<div />').addClass('adjust');
+            _wrapper_elt.append(adjust_div)
+
+            var delta = {
+                x: adjust_div.width(),
+                y: adjust_div.height()
+            };
+
+            adjust_div.remove();
+            return delta;
+        },
+
+        /*
+         * Given a jQuery event object (containing both pageX and
+         * pageY coordinates), extract the coordinates and apply any
+         * necessary transformations.
+         */
+        event_to_point: function (ev, state, offset, size) {
+
+            var x = ev.pageX, y = ev.pageY;
+
+            if (state.ratio) {
+
+                /* Do we have a offset-to-size ratio?
+                    If so, adjust x and y before returning. */
+
+                x = offset.left + state.ratio.x * size.x;
+                y = offset.top + state.ratio.y * size.y;
+            }
+
+            /* Save offset-to-size ratio:
+                If the target element is resized, then we'll use 
+                this ratio to adjust the event coordinates later. */
+
+            if (!state.ratio) {
+                state.ratio = {
+                    x: (x - offset.left) / size.x,
+                    y: (y - offset.top) / size.y
+                };
+            }
+
+            return { x: x, y: y };
         }
+
     };
 
     $.fn.uPopup = function (/* const */_method /* , ... */) {
@@ -815,10 +817,6 @@
         /* Dispatch to appropriate method handler:
             Note that the `method` argument should always be a constant.
             Never allow user-provided input to be used for the argument. */
-
-        if (_method == 'priv') {
-            return null;
-        }
 
         return $.uPopup.impl[_method].apply(
             this, Array.prototype.slice.call(arguments, 1)
