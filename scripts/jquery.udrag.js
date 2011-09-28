@@ -712,6 +712,10 @@
                 /* Treat this like normal mouse movement */
                 priv.update_position(_elt);
                 
+                /* Calculate actual distance scrolled, in pixels */
+                dx = autoscroll_elt.scrollLeft() - scroll.x;
+                dy = autoscroll_elt.scrollTop() - scroll.y;
+
                 /* Special case:
                     Autoscrolling element is the browser window; adjust
                     {drag_elt} by {scrollDelta} to keep it stationary. */
@@ -721,14 +725,17 @@
                     var drag_elt = data.placeholder_elt;
                     var drag_offset = drag_elt.offset();
 
-                    /* Calculate actual distance scrolled, in pixels */
-                    dx = autoscroll_elt.scrollLeft() - scroll.x;
-                    dy = autoscroll_elt.scrollTop() - scroll.y;
-
                     drag_elt.offset({
                         top: drag_offset.top + dy,
                         left: drag_offset.left + dx
                     });
+              
+                    var ev = data.last_positioning_event;
+                    ev.pageX += dx; ev.pageY += dy;
+
+                    priv.calculate_autoscroll_direction(
+                        _elt, ev, _drop_area
+                    );
                 }
             }
 
@@ -955,14 +962,15 @@
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
             var container_elt = _area.container_elt;
+            var ev = (_ev || data.last_positioning_event);
 
             /* Support for auto-scrolling:
                 Determine if we're hovering over one or more edges
                 of the drop area's container. If so, set the sign bit
                 of the appropriate member of area.autoscroll_axes. */
 
-            var x = _ev.pageX;
-            var y = _ev.pageY;
+            var x = ev.pageX;
+            var y = ev.pageY;
 
             var scroll_axes = { x: 0, y: 0 };
             var scroll_edge = data.options.scrollEdgeExtent;
