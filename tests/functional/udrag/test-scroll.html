@@ -102,6 +102,7 @@
         <script type="text/javascript">
             jQuery(function ($) {
                 $('.drag').uDrag('create', {
+                    scroll: $(window),
                     drop: [ $('.drop'), '.another-drop' ],
                     container: [ '.scroll', '.another-scroll' ]
                 });

@@ -38,25 +38,25 @@ exports.compress = function (_path, _callback) {
  */
 exports.squeeze = function (_data) {
     return (
-        _data.replace(/impl/g, 'z')
+        _data.replace(/impl/g, 'y')
              .replace(/priv/g, 'z')
              .replace(/jQuery/g, '$')
              .replace(/\s*\/>/g, '/>')
              /* Symbols: uDrag */
-             .replace(/recalculate_drop_zones/g, 'z')
-             .replace(/recalculate_drop_zone/g, 'y')
+             .replace(/bind_drop_areas/g, 'z')
+             .replace(/recalculate_drop_area/g, 'y')
              .replace(/stop_autoscroll/g, 'x')
              .replace(/start_autoscroll/g, 'w')
              .replace(/update_position/g, 'v')
-             .replace(/find_drop_zone_beneath/g, 'u')
+             .replace(/calculate_autoscroll_direction/g, 'u')
              .replace(/return_to_original_position/g, 't')
              .replace(/handle_autoscroll_timeout/g, 's')
-             .replace(/recent_drop_zone_containers/g, 'r')
+             .replace(/recent_drop_area_containers/g, 'r')
              .replace(/default_hover_callback/g, 'q')
-             .replace(/default_recalculate_callback/g, 'o')
+             .replace(/default_recalculate_callback/g, 'p')
              .replace(/default_insert_callback/g, 'o')
              .replace(/default_drop_callback/g, 'n')
-             .replace(/calculate_autoscroll_direction/g, 'm')
+             .replace(/handle_ancestor_scroll/g, 'm')
              .replace(/handle_document_mouseup/g, 'l')
              .replace(/handle_document_mousemove/g, 'k')
              .replace(/handle_drag_mousedown/g, 'j')
@@ -70,14 +70,15 @@ exports.squeeze = function (_data) {
              .replace(/move_element/g, 'b')
              .replace(/create_overlay/g, 'a')
              /* Symbols: uDrag.AreaIndex */
-             .replace(/_find_topmost_zone/g, 'z')
+             .replace(/_find_topmost_area/g, 'z')
              .replace(/_cumulative_scroll/g, 'y')
              .replace(/instance_data_for/g, 'x')
              .replace(/create_instance_data/g, 'w')
+             .replace(/find_beneath/g, 'v')
              /* Symbols uDrag.priv */
-             .replace(/drop_zones/g, 'z')
+             .replace(/drop_areas/g, 'z')
              .replace(/is_autoscrolling/g, 'y')
-             .replace(/previous_highlight_zone/g, 'x')
+             .replace(/previous_highlight_area/g, 'x')
              .replace(/autoscroll_axes/g, 'w')
              .replace(/container_elt/g, 'v')
              .replace(/autoscroll_elt/g, 'u')
@@ -85,9 +86,10 @@ exports.squeeze = function (_data) {
              .replace(/placeholder_elt/g, 's')
              .replace(/initial_position/g, 'r')
              .replace(/initial_scroll/g, 'q')
+             .replace(/last_positioning_event/g, 'p')
              /* Symbols: uDrag.data */
-             .replace(/is_dragging/g, 'zy')
-             .replace(/_zones/g, 'zz')
+             .replace(/is_dragging/g, 'y')
+             .replace(/\._areas/g, 'z')
     );
 };
 

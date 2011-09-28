@@ -38,12 +38,12 @@ exports.compress = function (_path, _callback) {
  */
 exports.squeeze = function (_data) {
     return (
-        _data.replace(/impl/g, 'z')
+        _data.replace(/impl/g, '_')
              .replace(/priv/g, 'z')
              .replace(/jQuery/g, '$')
              .replace(/\s*\/>/g, '/>')
              /* Symbols: uSort */
-             .replace(/handle_drag_hover/g, 'z')
+             .replace(/handle_drag_hover/g, 'y')
              .replace(/handle_drag_recalculate/g, 'z')
              /* Symbols: uSort.priv */
              .replace(/instance_data_for/g, 'z')

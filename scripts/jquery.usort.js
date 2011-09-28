@@ -153,8 +153,9 @@
                     area_index: new $.uDrag.AreaIndex(),
                     animate: !!(_options.animate),
                     duration: (_options.duration || 250),
-                    is_horizontal: !!(
-                        (_options.direction || '').match(/^h/)
+                    is_vertical: !(
+                        (_options.direction ||
+                            _options.orientation || '').match(/^h/)
                     )
                 }
             );
@@ -228,9 +229,9 @@
 
                 var saved_margin = priv.bulk_css(
                     [ _elt, _target_elt ],
-                    (data.is_horizontal ?
-                        [ 'margin-left', 'margin-right' ]
-                        : [ 'margin-top', 'margin-bottom' ]), [ 0, 0 ]
+                    (data.is_vertical ?
+                        [ 'margin-top', 'margin-bottom' ]
+                        : [ 'margin-left', 'margin-right' ]), [ 0, 0 ]
                 );
 
                 shrink_elt.addClass('animation');
@@ -264,7 +265,7 @@
                     _elt.css('display', null);
 
                     priv.bulk_css.apply(null, saved_margin);
-                    areas.recalculate_element_zones(recalculate_elts);
+                    areas.recalculate_element_areas(recalculate_elts);
 
                     invoke_callback();
                     delete data.active_animations[index];
@@ -283,7 +284,7 @@
             } else {
 
                 insert_element_common();
-                areas.recalculate_element_zones(recalculate_elts);
+                areas.recalculate_element_areas(recalculate_elts);
                 invoke_callback();
             }
 
@@ -314,12 +315,12 @@
          */
         slide_closed: function (_options, _elt, _duration, _callback) {
 
-            if (_options.is_horizontal) {
+            if (_options.is_vertical) {
+                _elt.slideUp(_duration, _callback);
+            } else {
                 _elt.animate(
                     { width: 'hide' }, _duration, _callback
                 );
-            } else {
-                _elt.slideUp(_duration, _callback);
             }
         },
 
@@ -330,12 +331,12 @@
          */
         slide_open: function (_options, _elt, _duration, _callback) {
 
-            if (_options.is_horizontal) {
+            if (_options.is_vertical) {
+                _elt.slideDown(_duration, _callback);
+            } else {
                 _elt.animate(
                     { width: 'show' }, _duration, _callback
                 );
-            } else {
-                _elt.slideDown(_duration, _callback);
             }
         },
 

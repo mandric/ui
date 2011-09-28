@@ -80,7 +80,7 @@
          * Instance-specific data for uDrag.AreaIndex.
          */
 
-        this._zones = [];
+        this._areas = [];
     };
 
     $.uDrag.AreaIndex.prototype = {
@@ -92,33 +92,33 @@
          */
         track: function (_elt, _data) {
 
-            var zone = (_data || {});
+            var area = (_data || {});
 
-            zone.elt = $(_elt);
-            zone.index = this._zones.length;
-            zone.container_elt = $(zone.container_elt || _elt);
+            area.elt = $(_elt);
+            area.index = this._areas.length;
+            area.container_elt = $(area.container_elt || _elt);
 
-            zone.elt.data($.uDrag.key + '.zone', {
-                index: zone.index
+            area.elt.data($.uDrag.key + '.area', {
+                index: area.index
             });
 
-            this._zones.push(zone);
-            this.recalculate_one(zone);
+            this._areas.push(area);
+            this.recalculate_one(area);
 
             return this;
         },
 
         /**
          * Recalculates position and extent information for
-         * the {drop_zones} structure. This structure is used to
-         * map page coordinates to specific drop zone elements.
+         * the {drop_areas} structure. This structure is used to
+         * map page coordinates to specific drop area elements.
          */
         recalculate_all: function () {
 
-            var zones = this._zones;
+            var areas = this._areas;
 
-            for (var i = 0, len = zones.length; i < len; ++i) {
-                this.recalculate_one(zones[i]);
+            for (var i = 0, len = areas.length; i < len; ++i) {
+                this.recalculate_one(areas[i]);
             }
 
             return this;
@@ -126,14 +126,14 @@
 
         /*
          * Recalculates position and extent information for a single
-         * member of the {drop_zones} structure, specified in {_zone}.
+         * member of the {drop_areas} structure, specified in {_area}.
          * These structures are used to map page coordinates to specific
-         * drop zone elements.
+         * drop area elements.
          */
-        recalculate_one: function (_zone) {
+        recalculate_one: function (_area) {
 
             var size = { x: 0, y: 0 };
-            var container_elt = _zone.container_elt;
+            var container_elt = _area.container_elt;
             var offset = (container_elt.offset() || { left: 0, top: 0 });
 
             if (container_elt && container_elt[0] == window) {
@@ -148,74 +148,74 @@
                 };
             }
 
-            _zone.x = [ offset.left, offset.left + size.x ];
-            _zone.y = [ offset.top, offset.top + size.y ];
-            _zone.initial_scroll = this._cumulative_scroll(container_elt);
+            _area.x = [ offset.left, offset.left + size.x ];
+            _area.y = [ offset.top, offset.top + size.y ];
+            _area.initial_scroll = this._cumulative_scroll(container_elt);
 
             return this;
         },
 
         /**
          */
-        recalculate_element_zones: function (_elts) {
+        recalculate_element_areas: function (_elts) {
 
             for (var i = 0, len = _elts.length; i < len; ++i) {
                 this.recalculate_one(
-                    this.element_to_zone(_elts[i])
+                    this.element_to_area(_elts[i])
                 );
             };
         },
 
         /*
          * Retrieve the unique index of {_elt} in the internal
-         * {_zones} collection.
+         * {_areas} collection.
          */
         element_to_index: function (_elt) {
 
-            var data = ($(_elt).data($.uDrag.key + '.zone') || {});
+            var data = ($(_elt).data($.uDrag.key + '.area') || {});
             return data.index;
         },
 
         /*
-         * Retrieve the zone object that describes {_elt}.
+         * Retrieve the area object that describes {_elt}.
          */
-        element_to_zone: function (_elt) {
+        element_to_area: function (_elt) {
 
-            return this._zones[this.element_to_index(_elt)];
+            return this._areas[this.element_to_index(_elt)];
         },
 
         /**
-         * Returns the single drop zone that lies directly beneath
+         * Returns the single drop area that lies directly beneath
          * the mouse pointer. The position is taken from the pageX
          * and pageY values of the supplied event object {_ev}.
          */
         find_beneath: function (_offset) {
 
-            var zones = this._zones;
-            var overlapping_zones = [];
+            var areas = this._areas;
+            var overlapping_areas = [];
 
             /* Hit detection:
                 If the mouse pointer is currently positioned over one
-                or more drop zone containers, save them in an array. */
+                or more drop area containers, save them in an array. */
 
-            for (var i = 0, len = zones.length; i < len; ++i) {
+            for (var i = 0, len = areas.length; i < len; ++i) {
 
                 var x = _offset.x;
                 var y = _offset.y;
 
-                var zone = zones[i];
-                var scroll_elt = zone.scroll_elt;
-                var container_elt = zone.container_elt;
+                var area = areas[i];
+                var scroll_elt = area.scroll_elt;
+                var container_elt = area.container_elt;
 
                 var current_scroll =
-                    this._cumulative_scroll(zone.container_elt);
+                    this._cumulative_scroll(area.container_elt);
 
                 /* Adjust for scrolling of ancestors:
                     The naive approach would be to just recalculate all of
-                    the zones, but that approach is costly with large sets. */
+                    the areas, but that approach is costly with large sets. */
 
-                x += (current_scroll.x - zone.initial_scroll.x);
-                y += (current_scroll.y - zone.initial_scroll.y);
+                x += (current_scroll.x - area.initial_scroll.x);
+                y += (current_scroll.y - area.initial_scroll.y);
 
                 /* Special case:
                     Scrolling container is the browser window. */
@@ -226,42 +226,42 @@
                 }
 
                 /* Require containment along x-axis */
-                if (x < zone.x[0] || x > zone.x[1]) {
+                if (x < area.x[0] || x > area.x[1]) {
                     continue;
                 }
 
                 /* Require containment along y-axis */
-                if (y < zone.y[0] || y > zone.y[1]) {
+                if (y < area.y[0] || y > area.y[1]) {
                     continue;
                 }
 
-                overlapping_zones.push(zone);
+                overlapping_areas.push(area);
             }
 
-            /* No drop zones under pointer?
+            /* No drop areas under pointer?
                 Skip the autoscroll calculations, and return nothing. */
 
-            if (overlapping_zones.length <= 0) {
+            if (overlapping_areas.length <= 0) {
                 return null;
             }
 
-            return this._find_topmost_zone(overlapping_zones);
+            return this._find_topmost_area(overlapping_areas);
         },
 
         /**
          * Returns the set of drop elements that lie directly
          * underneath the mouse pointer (position specified in _ev).
          */
-        _find_topmost_zone: function (_zones) {
+        _find_topmost_area: function (_areas) {
 
             var rv = null, rvz = null;
 
-            for (var i = 0, len = _zones.length; i < len; ++i) {
-                var zone = _zones[i];
-                var z = parseInt(zone.elt.css('z-index'), 10);
+            for (var i = 0, len = _areas.length; i < len; ++i) {
+                var area = _areas[i];
+                var z = parseInt(area.elt.css('z-index'), 10);
 
                 if (!rv || z > rvz) {
-                    rv = zone;
+                    rv = area;
                     rvz = z;
                 }
             }
@@ -336,7 +336,7 @@
                     'mousedown.udrag', priv._handle_drag_mousedown
                 );
 
-                priv.bind_drop_zones(elt, options);
+                priv.bind_drop_areas(elt, options);
             });
 
             return this;
@@ -444,17 +444,17 @@
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
 
-            var drop_zone = data.drop_zones.find_beneath(
+            var drop_area = data.areas.find_beneath(
                 { x: _ev.pageX, y: _ev.pageY },
                     [ data.placeholder_elt ]
             );
 
             priv.clear_highlight(null, data);
 
-            if (drop_zone) {
+            if (drop_area && !drop_area.scroll_only) {
 
                 var options = data.options;
-                var drop_elt = drop_zone.elt;
+                var drop_elt = drop_area.elt;
                 var absolute_offset = { x: _ev.pageX, y: _ev.pageY };
 
                 var offsets = {
@@ -509,13 +509,13 @@
                 _ev = data.last_positioning_event;
             }
 
-            var drop_zone = data.drop_zones.find_beneath(
+            var drop_area = data.areas.find_beneath(
                 { x: _ev.pageX, y: _ev.pageY },
                     [ data.placeholder_elt ]
             );
 
-            var recent = data.recent_drop_zone_containers = [
-                data.recent_drop_zone_containers[1], drop_zone
+            var recent = data.recent_drop_area_containers = [
+                data.recent_drop_area_containers[1], drop_area
             ];
 
 
@@ -525,14 +525,14 @@
                 left: _ev.pageX - data.delta.x
             });
 
-            priv.clear_highlight(drop_zone, data);
+            priv.clear_highlight(drop_area, data);
 
-            if (drop_zone) {
+            if (drop_area) {
 
-                var drop_elt = drop_zone.elt;
+                var drop_elt = drop_area.elt;
 
                 /* Special autoscrolling case:
-                    The pointer moved from one drop zone to another,
+                    The pointer moved from one drop area to another,
                     directly and without any events between the two.
                     Switch out the autoscroll element directly, and
                     recalculate the scroll direction. We can't stop
@@ -541,28 +541,31 @@
                     two calls, and thus autoscrolling won't restart. */
 
                 if (recent[0] && recent[0] != recent[1]) {
-                    data.autoscroll_elt = drop_zone.container_elt[0];
+                    data.autoscroll_elt = drop_area.container_elt[0];
                 }
 
-                priv.calculate_autoscroll_direction(_elt, _ev, drop_zone);
-                priv.set_highlight(drop_zone, data);
-                priv.start_autoscroll(_elt, drop_zone);
-                
-                if (!_skip_events) {
-                    var absolute_offset = {
-                        x: _ev.pageX, y: _ev.pageY
-                    };
-                    priv.trigger_event(
-                        'hover', priv.default_hover_callback,
-                        _elt, data.options, [
-                            _elt, drop_elt, {
-                                absolute: absolute_offset,
-                                relative: priv.relative_drop_offset(
-                                    _elt, drop_elt, absolute_offset
-                                )
-                            }
-                        ]
-                    );
+                priv.calculate_autoscroll_direction(_elt, _ev, drop_area);
+                priv.start_autoscroll(_elt, drop_area);
+
+                if (!drop_area.scroll_only) {
+                    priv.set_highlight(drop_area, data);
+                    
+                    if (!_skip_events) {
+                        var absolute_offset = {
+                            x: _ev.pageX, y: _ev.pageY
+                        };
+                        priv.trigger_event(
+                            'hover', priv.default_hover_callback,
+                            _elt, data.options, [
+                                _elt, drop_elt, {
+                                    absolute: absolute_offset,
+                                    relative: priv.relative_drop_offset(
+                                        _elt, drop_elt, absolute_offset
+                                    )
+                                }
+                            ]
+                        );
+                    }
                 }
 
             } else {
@@ -615,12 +618,12 @@
         },
 
         /**
-         * Start scrolling the container element in {_drop_zone},
+         * Start scrolling the container element in {_drop_area},
          * using the scroll-axis information found in {_elt}. This
-         * information is calculated in find_drop_zone_beneath, which
+         * information is calculated in find_drop_area_beneath, which
          * is called every time the draggable element is repositioned.
          */
-        start_autoscroll: function (_elt, _drop_zone) {
+        start_autoscroll: function (_elt, _drop_area) {
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
@@ -637,12 +640,12 @@
             }
 
             data.is_autoscrolling = true;
-            data.autoscroll_elt = _drop_zone.container_elt[0];
-            priv._handle_autoscroll_timeout(_elt, _drop_zone);
+            data.autoscroll_elt = _drop_area.container_elt[0];
+            priv._handle_autoscroll_timeout(_elt, _drop_area);
         },
 
         /**
-         * Stop scrolling the container element found in {_drop_zone}.
+         * Stop scrolling the container element found in {_drop_area}.
          * This merely modifies {_elt}'s private storage, which causes
          * {_handle_autoscroll_timeout} to clean up and stop running.
          */
@@ -667,7 +670,7 @@
          * If the {autoscroll_elt} private storage field is set,
          * this function reschedules itself to run again.
          */
-        _handle_autoscroll_timeout: function (_elt, _drop_zone) {
+        _handle_autoscroll_timeout: function (_elt, _drop_area) {
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
@@ -736,7 +739,7 @@
                 this avoids accidental scrolling during a drag/drop. */
 
             var callback_fn = function () {
-                priv._handle_autoscroll_timeout(_elt, _drop_zone);
+                priv._handle_autoscroll_timeout(_elt, _drop_area);
             };
 
             var timeout = (
@@ -752,30 +755,30 @@
         },
 
         /**
-         * Highlight the current drop zone, provided that the current
-         * draggable element is on top of a drop zone. If the current
-         * draggable element is not over a drop zone, do nothing.
+         * Highlight the current drop area, provided that the current
+         * draggable element is on top of a drop area. If the current
+         * draggable element is not over a drop area, do nothing.
          */
-        set_highlight: function (_zone, _data) {
+        set_highlight: function (_area, _data) {
 
-            if (_zone && _zone != _data.previous_highlight_zone) {
-                _zone.container_elt.addClass('hover');
-                _data.previous_highlight_zone = _zone;
+            if (_area && _area != _data.previous_highlight_area) {
+                _area.container_elt.addClass('hover');
+                _data.previous_highlight_area = _area;
             }
         },
 
         /**
-         * Remove the highlighting from the previous drop zone,
+         * Remove the highlighting from the previous drop area,
          * provided there was one. Otherwise, take no action.
          */
-        clear_highlight: function (_zone, _data) {
+        clear_highlight: function (_area, _data) {
 
-            var prev_zone = _data.previous_highlight_zone;
+            var prev_area = _data.previous_highlight_area;
 
-            if (prev_zone) {
-                if (!_zone || _zone != prev_zone) {
-                    prev_zone.container_elt.removeClass('hover');
-                    _data.previous_highlight_zone = null;
+            if (prev_area) {
+                if (!_area || _area != prev_area) {
+                    prev_area.container_elt.removeClass('hover');
+                    _data.previous_highlight_area = null;
                 }
             }
         },
@@ -783,9 +786,10 @@
         /**
          * Initialize private storage on the element _elt, setting
          * all private fields to their original default values. This
-         * must be called before any drop zones can be modified.
+         * must be called before any drop areas can be modified.
          */
         create_instance_data: function (_elt, _options) {
+
             _elt.data(
                 $.uDrag.key, {
                     elt: null,
@@ -793,12 +797,12 @@
                     autoscroll_elt: null,
                     placeholder_elt: null,
                     last_positioning_event: null,
-                    previous_highlight_zone: null,
+                    previous_highlight_area: null,
                     is_autoscrolling: false,
                     has_scrolled_recently: false,
                     autoscroll_axes: { x: 0, y: 0 },
-                    recent_drop_zone_containers: [],
-                    drop_zones: new $.uDrag.AreaIndex()
+                    recent_drop_area_containers: [],
+                    areas: new $.uDrag.AreaIndex()
                 }
             );
 
@@ -810,20 +814,26 @@
          * store them -- along with offsets and extents -- in a
          * searchable data structure.
          */
-        bind_drop_zones: function (_elt, _options) {
+        bind_drop_areas: function (_elt, _options) {
 
             var priv = $.uDrag.priv;
             var drop_option = (_options.drop || []);
+            var scroll_option = (_options.scroll || []);
             var data = priv.create_instance_data(_elt, _options);
 
             var container_option = (_options.container || false);
             var container_callback = null;
 
-            /* Array-ize a non-array argument */
+            /* Argument processing:
+                Array-ize any non-array arguments */
+
             if (!$.isArray(drop_option)) {
                 drop_option = [ drop_option ];
             }
-            
+            if (!$.isArray(scroll_option)) {
+                scroll_option = [ scroll_option ];
+            }
+
             /* Base implementation of container locator function:
                 This function treats container_option as a jQuery selector
                 if possible, and selects the closest matching ancestor.
@@ -861,14 +871,14 @@
                 }
             }
 
-            /* Traverse array of jQuery collection objects */
+            /* Drop areas: array of jQuery collections */
             for (var i = 0, len = drop_option.length; i < len; ++i) {
                 $(drop_option[i]).each(function (j, drop_elt) {
 
-                    /* Find drop zone element's container:
+                    /* Find drop area element's container:
                         This is used for auto-scrolling. The container is a
                         parent that matches the supplied container selector,
-                        or the same as the drop zone element otherwise. */
+                        or the same as the drop area element otherwise. */
 
                     drop_elt = $(drop_elt);
                     var container_elt = container_callback(drop_elt, i);
@@ -877,25 +887,30 @@
                         container_elt = drop_elt;
                     }
 
-                    var ancestor_elts = [ container_elt ].concat(
-                        container_elt.parentsUntil('body')
+                    priv.track_drop_area(
+                        _elt, drop_elt, container_elt, _options
                     );
+                });
+            }
 
-                    for (var i = 0, l = ancestor_elts.length; i < l; ++i) {
-                        ancestor_elts[i].bind(
-                            'scroll.udrag',
-                            $.proxy(priv._handle_ancestor_scroll, _elt)
-                        );
-                    }
+            /* Scroll-only areas: array of jQuery collection objects */
+            for (var i = 0, len = scroll_option.length; i < len; ++i) {
+                $(scroll_option[i]).each(function (j, scroll_elt) {
 
-                    /* Cache a single drop zone:
-                        This fills in details about the drop zone,
-                        and prepares it for fast indexed retrieval. */
+                    scroll_elt = $(scroll_elt);
 
-                    data.drop_zones.track(drop_elt, {
-                        container_elt: container_elt,
-                        ancestor_elts: ancestor_elts
-                    });
+                    var container_elt = $(
+                        scroll_elt[0] == document.body ?
+                            window : scroll_elt[0]
+                    );
+                    scroll_elt = $(
+                        scroll_elt[0] == window ?
+                            document.body : scroll_elt[0]
+                    );
+                    priv.track_drop_area(
+                        _elt, scroll_elt, container_elt, _options,
+                            { scroll_only: true }
+                    );
                 });
             }
 
@@ -903,19 +918,48 @@
         },
 
         /**
-         * Fill the {autoscroll_axes} member of {_elt}'s private data
-         * with directional information for the autoscrolling code.
          */
-         calculate_autoscroll_direction: function (_elt, _ev, _zone) {
+        track_drop_area: function (_elt, _drop_elt, _container_elt,
+                                   _area_options, _track_options) {
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
-            var container_elt = _zone.container_elt;
+
+            var ancestor_elts = [ _container_elt ].concat(
+                _container_elt.parentsUntil('body')
+            );
+
+            for (var i = 0, len = ancestor_elts.length; i < len; ++i) {
+                ancestor_elts[i].bind(
+                    'scroll.udrag',
+                    $.proxy(priv._handle_ancestor_scroll, _elt)
+                );
+            }
+
+            /* Cache a single drop area:
+                This fills in details about the drop area,
+                and prepares it for fast indexed retrieval. */
+
+            data.areas.track(_drop_elt, $.extend(_track_options, {
+                container_elt: _container_elt,
+                ancestor_elts: ancestor_elts
+            }));
+        },
+
+        /**
+         * Fill the {autoscroll_axes} member of {_elt}'s private data
+         * with directional information for the autoscrolling code.
+         */
+         calculate_autoscroll_direction: function (_elt, _ev, _area) {
+
+            var priv = $.uDrag.priv;
+            var data = priv.instance_data_for(_elt);
+            var container_elt = _area.container_elt;
 
             /* Support for auto-scrolling:
                 Determine if we're hovering over one or more edges
-                of the drop zone's container. If so, set the sign bit
-                of the appropriate member of zone.autoscroll_axes. */
+                of the drop area's container. If so, set the sign bit
+                of the appropriate member of area.autoscroll_axes. */
 
             var x = _ev.pageX;
             var y = _ev.pageY;
@@ -932,21 +976,21 @@
             }
 
             /* Auto-scroll: x-axis */
-            if (x > _zone.x[0] && x < _zone.x[0] + scroll_edge) {
+            if (x > _area.x[0] && x < _area.x[0] + scroll_edge) {
                 scroll_axes.x = -1;
-            } else if (x < _zone.x[1] && x > _zone.x[1] - scroll_edge) {
+            } else if (x < _area.x[1] && x > _area.x[1] - scroll_edge) {
                 scroll_axes.x = 1;
             }
 
             /* Auto-scroll: y-axis */
-            if (y > _zone.y[0] && y < _zone.y[0] + scroll_edge) {
+            if (y > _area.y[0] && y < _area.y[0] + scroll_edge) {
                 scroll_axes.y = -1;
-            } else if (y < _zone.y[1] && y > _zone.y[1] - scroll_edge) {
+            } else if (y < _area.y[1] && y > _area.y[1] - scroll_edge) {
                 scroll_axes.y = 1;
             }
 
             data.autoscroll_axes = scroll_axes;
-            return _zone;
+            return _area;
         },
 
         /**
@@ -1087,7 +1131,6 @@
          */
         trigger_event: function (_name, _default_callback,
                                  _elt, _options, _arguments) {
-
             if (_elt) {
                 _elt.trigger('udrag:' + _name);
             }
@@ -1194,7 +1237,7 @@
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
 
-            data.drop_zones.recalculate_all();
+            data.areas.recalculate_all();
 
             priv.trigger_event(
                 'recalculate',

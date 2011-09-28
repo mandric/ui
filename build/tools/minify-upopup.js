@@ -39,7 +39,7 @@ exports.compress = function (_path, _callback) {
 exports.squeeze = function (_data) {
     return (
         _data.replace(/impl/g, '_')
-             .replace(/priv/g, '_')
+             .replace(/priv/g, 'z')
              .replace(/instance_data_for/g, 'z')
              .replace(/toggle/g, 'y')
              .replace(/calculate_arrow_delta/g, 'x')
