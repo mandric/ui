@@ -268,8 +268,8 @@
                     priv.bulk_css.apply(null, saved_margin);
                     areas.recalculate_element_areas(recalculate_elts);
 
-                    invoke_callback();
                     delete data.active_animations[index];
+                    invoke_callback();
                 };
 
                 grow_elt.css('height', '0px');
@@ -329,7 +329,7 @@
                 rules['padding' + keys.maximal] = 'hide';
             
             
-            _shrink_elt.animate(rules, {
+            return _shrink_elt.animate(rules, {
                 duration: _duration, complete: _callback,
                 step: function (now, fx) {
                     _grow_elt.css(fx.prop, fx.start - now);
@@ -352,7 +352,8 @@
             for (var i in animations) {
                 if (i !== _index) {
                     for (var j in animations[i]) {
-                        animations[i][j].stop(false, true).remove();
+                        var elt = (animations[i] || {})[j];
+                        if (elt) { elt.stop(false, true).remove(); }
                     }
                     delete animations[i];
                 }
