@@ -224,6 +224,7 @@
 
                 /* Produce two {_elt} clones:
                     These are used as animated placeholders. */
+
                 var shrink_elt = _target_elt.clone(true);
                 var grow_elt = _target_elt.clone(true);
 
@@ -271,15 +272,12 @@
                     delete data.active_animations[index];
                 };
 
-                priv.slide_open(data, shrink_elt, 0, function () {
-                    priv.slide_closed(data, shrink_elt, data.duration)
-                });
+                grow_elt.css('height', '0px');
 
-                priv.slide_closed(data, grow_elt, 0, function () {
-                    priv.slide_open(
-                        data, grow_elt, data.duration, after_animation
-                    );
-                });
+                priv.slide_elements(
+                    data, grow_elt, shrink_elt,
+                        data.duration, after_animation
+                );
 
             } else {
 
@@ -311,35 +309,33 @@
         /**
          * A helper for {insert_element}'s animation support: animate
          * {_elt} down to either zero width or zero height, depending
-         * upon the uSort {orientation} option.
+         * upon the uSort {orientation} option -- while simultaneously
+         * animating {_elt} up to its original width or height.
          */
-        slide_closed: function (_options, _elt, _duration, _callback) {
+        slide_elements: function (_options, _grow_elt,
+                                  _shrink_elt, _duration, _callback) {
+            var keys = (
+                _options.is_vertical ?
+                    { extent: 'height', minimal: 'Top', maximal: 'Bottom' }
+                    : { extent: 'width', minimal: 'Left', maximal: 'Right' }
+            );
 
-            if (_options.is_vertical) {
-                _elt.slideUp(_duration, _callback);
-            } else {
-                _elt.animate(
-                    { width: 'hide' }, _duration, _callback
-                );
-            }
+            var rules = {};
+
+            rules[keys.extent] =
+                rules['margin' + keys.minimal] =
+                rules['margin' + keys.maximal] =
+                rules['padding' + keys.minimal] =
+                rules['padding' + keys.maximal] = 'hide';
+            
+            
+            _shrink_elt.animate(rules, {
+                duration: _duration, complete: _callback,
+                step: function (now, fx) {
+                    _grow_elt.css(fx.prop, fx.start - now);
+                }
+            });
         },
-
-        /**
-         * A helper for {insert_element}'s animation support: animate
-         * {_elt} up to its original width or height, depending upon
-         * the uSort {orientation} option.
-         */
-        slide_open: function (_options, _elt, _duration, _callback) {
-
-            if (_options.is_vertical) {
-                _elt.slideDown(_duration, _callback);
-            } else {
-                _elt.animate(
-                    { width: 'show' }, _duration, _callback
-                );
-            }
-        },
-
 
         /**
          * Stop all in-progress animations, except for those 
