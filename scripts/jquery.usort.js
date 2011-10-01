@@ -220,8 +220,6 @@
 
             if (data.animate) {
 
-                _elt.css('display', 'none');
-
                 /* Produce two {_elt} clones:
                     These are used as animated placeholders. */
 
@@ -229,10 +227,10 @@
                 var grow_elt = _target_elt.clone(true);
 
                 var saved_margin = priv.bulk_css(
-                    [ _elt, _target_elt ],
-                    (data.is_vertical ?
-                        [ 'margin-top', 'margin-bottom' ]
-                        : [ 'margin-left', 'margin-right' ]), [ 0, 0 ]
+                    [ _elt, _target_elt ], [ 0, 0 ], (
+                        data.is_vertical ?
+                            [ 'margin-top', 'margin-bottom' ] : [ ]
+                    )
                 );
 
                 shrink_elt.addClass('animation');
@@ -259,11 +257,12 @@
                 }
 
                 insert_element_common();
+                _elt.css('display', 'none');
 
                 var after_animation = function () {
                     grow_elt.remove();
                     shrink_elt.remove();
-                    _elt.css('display', null);
+                    _elt.css('display', 'block');
 
                     priv.bulk_css.apply(null, saved_margin);
                     areas.recalculate_element_areas(recalculate_elts);
@@ -271,8 +270,6 @@
                     delete data.active_animations[index];
                     invoke_callback();
                 };
-
-                grow_elt.css('height', '0px');
 
                 priv.slide_elements(
                     data, grow_elt, shrink_elt,
@@ -292,7 +289,7 @@
         /**
          * A simple bulk save/restore interface for CSS attributes.
          */
-        bulk_css: function (_elts, _attrs, _values) {
+        bulk_css: function (_elts, _values, _attrs) {
 
             var rv = [ ];
 
@@ -303,7 +300,7 @@
                 }
             }
 
-            return [ _elts, _attrs, rv ];
+            return [ _elts, rv, _attrs ];
         },
 
         /**
@@ -327,8 +324,11 @@
                 rules['margin' + keys.maximal] =
                 rules['padding' + keys.minimal] =
                 rules['padding' + keys.maximal] = 'hide';
-            
-            
+           
+            _grow_elt.css(
+                (_options.is_vertical ? 'height' : 'width'), 0
+            );
+
             return _shrink_elt.animate(rules, {
                 duration: _duration, complete: _callback,
                 step: function (now, fx) {
