@@ -86,8 +86,7 @@
                 drop: sortable_elt,
                 container: options.container,
                 onInsertElement: function (_elt, _drop_elt) {
-                    priv.cancel_other_animations(sortable_elt, false);
-                    _elt.css('display', null);
+                    priv.stop_other_animations(sortable_elt, false);
                 },
                 onPositionElement: false,
                 onHover: $.proxy(priv.handle_drag_hover, this),
@@ -149,7 +148,8 @@
                 $.uSort.key, {
                     elt: null,
                     udrag: null,
-                    active_animations: {},
+                    animations: {},
+                    animation_count: 0,
                     area_index: new $.uDrag.AreaIndex(),
                     animate: !!(_options.animate),
                     duration: (_options.duration || 250),
@@ -202,10 +202,10 @@
                 Acquire lock on animations around {_target_elt}. */
 
             if (data.animate) {
-                if (data.active_animations[index]) {
+                if (data.animations[index]) {
                     return true;
                 }
-                priv.cancel_other_animations(_sortable_elt, index);
+                priv.stop_other_animations(_sortable_elt, index);
             }
 
             /* Determine recalculation range:
@@ -227,7 +227,7 @@
                 var grow_elt = _target_elt.clone(true);
 
                 var saved_margin = priv.bulk_css(
-                    [ _elt, _target_elt ], [ 0, 0 ], (
+                    [ _target_elt ], [ 0, 0 ], (
                         data.is_vertical ?
                             [ 'margin-top', 'margin-bottom' ] : [ ]
                     )
@@ -238,10 +238,6 @@
 
                 shrink_elt.css('visibility', 'hidden');
                 grow_elt.css('visibility', 'hidden');
-
-                data.active_animations[index] = [
-                    shrink_elt, grow_elt
-                ];
 
                 /* Insert placeholder elements:
                     One element will start with a extent of zero and
@@ -260,18 +256,23 @@
                 _elt.css('display', 'none');
 
                 var after_animation = function () {
+
                     grow_elt.remove();
                     shrink_elt.remove();
-                    _elt.css('display', 'block');
 
+                    if ((data.animation_count -= 1) == 0) {
+                        _elt.css('display', 'block');
+                    }
+                    
                     priv.bulk_css.apply(null, saved_margin);
-                    areas.recalculate_element_areas(recalculate_elts);
 
-                    delete data.active_animations[index];
+                    areas.recalculate_element_areas(recalculate_elts);
+                    delete data.animations[index];
                     invoke_callback();
                 };
 
-                priv.slide_elements(
+                data.animation_count += 1;
+                data.animations[index] = priv.slide_elements(
                     data, grow_elt, shrink_elt,
                         data.duration, after_animation
                 );
@@ -311,30 +312,113 @@
          */
         slide_elements: function (_options, _grow_elt,
                                   _shrink_elt, _duration, _callback) {
-            var keys = (
-                _options.is_vertical ?
-                    { extent: 'height', minimal: 'Top', maximal: 'Bottom' }
-                    : { extent: 'width', minimal: 'Left', maximal: 'Right' }
-            );
 
-            var rules = {};
+            var animation = function (_grow_elt, _shrink_elt, _callback) {
 
-            rules[keys.extent] =
-                rules['margin' + keys.minimal] =
-                rules['margin' + keys.maximal] =
-                rules['padding' + keys.minimal] =
-                rules['padding' + keys.maximal] = 'hide';
-           
-            _grow_elt.css(
-                (_options.is_vertical ? 'height' : 'width'), 0
-            );
+                this._is_running = false;
+                this._grow_elt = _grow_elt;
+                this._shrink_elt = _shrink_elt;
+                this._callback = _callback;
+                this._frame_duration = 5; /* ms */
 
-            return _shrink_elt.animate(rules, {
-                duration: _duration, complete: _callback,
-                step: function (now, fx) {
-                    _grow_elt.css(fx.prop, fx.start - now);
+                return this;
+            };
+
+            /**
+             * Fixed-frame animation:
+             *  This custom animation implementation uses a fixed number
+             *  of frames, rather than a wall-clock duration. When using
+             *  a wall-clock duration, jQuery needs to divide the element's
+             *  total extent by the elapsed time, leading to non-integer
+             *  extents with very large decimal portions. Placement can
+             *  vary +/- one pixel between browsers, which causes visual
+             *  jitter during the animation. This method is integer-only,
+             *  and provides predictable placement in all browsers.
+             */
+
+            animation.prototype = {
+                initialize: function () {
+                    var keys = this.keys = (
+                        _options.is_vertical ?
+                            [ 'height', 'margin-top', 'margin-bottom',
+                                'padding-top', 'padding-bottom' ]
+                            : [ 'width', 'margin-left', 'margin-right',
+                                'padding-left', 'padding-right' ]
+                    );
+
+                    this.current = {}, this.original = {};
+
+                    for (var i = 0, len = keys.length; i < len; ++i) {
+                        var value = parseInt(
+                            this._shrink_elt.css(keys[i]), 10
+                        );
+                        this.original[keys[i]] = value;
+                        this.current[keys[i]] = value;
+                    }
+                    
+                    return this;
+                },
+
+                frame: function () {
+                    var keys = this.keys;
+                    var should_continue = false;
+
+                    for (var i = 0, len = keys.length; i < len; ++i) {
+                        var value = this.current[keys[i]];
+                        if (value > 0) {
+                            this.current[keys[i]] -= 1;
+                            this._shrink_elt.css(
+                                keys[i], value + 'px'
+                            );
+                            this._grow_elt.css(
+                                keys[i],
+                                (this.original[keys[i]] - value) + 'px'
+                            );
+                            should_continue = true;
+                        }
+                    }
+
+                    return should_continue;
+                },
+
+                complete: function () {
+                    this._is_running = false;
+                    return this._callback();
+                },
+
+                run: function () {
+                    this.frame();
+                    this._is_running = true;
+
+                    var timer_id = setInterval($.proxy(
+                        function () {
+                            if (!this._is_running || !this.frame()) {
+                                this.complete();
+                                clearInterval(timer_id);
+                            }
+                        }, this
+                    ), this._frame_duration);
+
+                    return this;
+                },
+
+                stop: function () {
+                    this._is_running = false;
+
+                    /* Prevent flicker on some browsers:
+                        Remove animation elements synchronously,
+                        rather than from inside of the interval handler. */
+
+                    this._grow_elt.remove();
+                    this._shrink_elt.remove();
                 }
-            });
+            };
+
+            var a = new animation(
+                _grow_elt, _shrink_elt, _callback
+            );
+            
+            return a.initialize().run();
         },
 
         /**
@@ -342,18 +426,17 @@
          * with a {$.uDrag.AreaIndex} ordinal offset of {_index}.
          * If {_index} is non-numeric, calcel all animations.
          */
-        cancel_other_animations: function (_sortable_elt, _index)
+        stop_other_animations: function (_sortable_elt, _index)
         {
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(_sortable_elt);
 
-            var animations = data.active_animations;
+            var animations = data.animations;
 
             for (var i in animations) {
                 if (i !== _index) {
-                    for (var j in animations[i]) {
-                        var elt = (animations[i] || {})[j];
-                        if (elt) { elt.stop(false, true).remove(); }
+                    if (animations[i]) {
+                        animations[i].stop();
                     }
                     delete animations[i];
                 }
