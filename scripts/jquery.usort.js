@@ -40,7 +40,6 @@
  * assist our design and construction of open-source mobile health software.
  */
 
-
 /**
  * $.uSort:
  */
