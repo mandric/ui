@@ -305,7 +305,7 @@
                 scrollDelta: 32, /* px */
                 scrollDelay: 512, /* ms */
                 scrollInterval: 96, /* ms */
-                scrollEdgeExtent: 48 /* px, per side */
+                scrollEdgeExtent: 24 /* px, per side */
             };
 
             var doc = $(document);
@@ -1192,14 +1192,17 @@
                     )
                 ];
                 if (handler !== undefined) {
-                    if (handler) {
+                    if (handler) {  /* Skip on false or null */
                         handler.apply(null, _arguments);
                     }
-                    return true;
+                } else {
+                    if (_default_callback) {
+                        _default_callback.apply(null, _arguments);
+                    }
                 }
             }
 
-            _default_callback.apply(null, _arguments);
+            return true;
         },
 
         /**
