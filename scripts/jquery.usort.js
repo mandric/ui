@@ -153,6 +153,7 @@
                         (_options.animate || '').toString().match(/^v/)
                     ),
                     step: (_options.step || 2), /* pixel(s) */
+                    interval: (_options.interval || 10), /* ms */
                     duration: (_options.duration || 250), /* ms */
                     is_vertical: !(
                         (_options.direction ||
@@ -344,7 +345,7 @@
                 this._grow_elt = _grow_elt;
                 this._shrink_elt = _shrink_elt;
                 this._callback = _callback;
-                this._step = _data.step;
+                this._data = _data;
 
                 return this;
             };
@@ -364,7 +365,7 @@
             animation.prototype = {
                 initialize: function () {
                     var keys = this.keys = (
-                        _data.is_vertical ?
+                        this._data.is_vertical ?
                             [ 'height', 'margin-top', 'margin-bottom',
                                 'padding-top', 'padding-bottom' ]
                             : [ 'width', 'margin-left', 'margin-right',
@@ -391,8 +392,8 @@
                     for (var i = 0, len = keys.length; i < len; ++i) {
                         var value = this.current[keys[i]];
                         if (value > 0) {
-                            if (value > this._step) {
-                                this.current[keys[i]] -= this._step;
+                            if (value > this._data.step) {
+                                this.current[keys[i]] -= this._data.step;
                             } else {
                                 this.current[keys[i]] = 0;
                             }
@@ -426,7 +427,7 @@
                                 clearInterval(timer_id);
                             }
                         }, this
-                    ), 10);
+                    ), this._data.interval);
 
                     return this;
                 },
