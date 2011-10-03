@@ -85,6 +85,7 @@
                 drop: sortable_elt,
                 container: options.container,
                 onInsertElement: function (_elt, _drop_elt) {
+                    _elt.css('display', 'block');
                     priv.stop_other_animations(sortable_elt, false);
                 },
                 onPositionElement: false,
@@ -148,7 +149,11 @@
                     animation_count: 0,
                     area_index: new $.uDrag.AreaIndex(),
                     animate: !!(_options.animate),
-                    duration: (_options.duration || 250),
+                    fixed_frame_animation: !(
+                        (_options.animate || '').toString().match(/^v/)
+                    ),
+                    step: (_options.step || 2), /* pixel(s) */
+                    duration: (_options.duration || 250), /* ms */
                     is_vertical: !(
                         (_options.direction ||
                             _options.orientation || '').match(/^h/)
@@ -262,8 +267,15 @@
                     delete data.animations[index];
                 };
 
+                var slide_function = (
+                    data.fixed_frame_animation ?
+                        priv.slide_elements_fixed
+                            : priv.slide_elements_variable
+                );
+                
                 ++data.animation_count;
-                data.animations[index] = priv.slide_elements_fixed(
+
+                data.animations[index] = slide_function(
                     data, grow_elt, shrink_elt, after_animation
                 );
 
@@ -296,8 +308,7 @@
             var rules = {};
 
             rules[keys.extent] =
-                rules['margin' + keys.minimal] =
-                rules['margin' + keys.maximal] =
+                rules['margin' + keys.minimal] = rules['margin' + keys.maximal] =
                 rules['padding' + keys.minimal] =
                 rules['padding' + keys.maximal] = 'hide';
            
@@ -305,13 +316,15 @@
                 (_data.is_vertical ? 'height' : 'width'), 0
             );
 
-            return _shrink_elt.animate(rules, {
+            _shrink_elt.animate(rules, {
                 complete: _callback,
-                duration: (_data.duration || 250),
+                duration: _data.duration,
                 step: function (now, fx) {
                     _grow_elt.css(fx.prop, fx.start - now);
                 }
             });
+
+            return { grow: _grow_elt[0], shrink: _shrink_elt[0] };
         },
 
         /**
@@ -331,8 +344,7 @@
                 this._grow_elt = _grow_elt;
                 this._shrink_elt = _shrink_elt;
                 this._callback = _callback;
-                this._frame_duration = 8; /* ms */
-                this._step = (_data.step || 2) ; /* pixel(s) */
+                this._step = _data.step;
 
                 return this;
             };
@@ -414,7 +426,7 @@
                                 clearInterval(timer_id);
                             }
                         }, this
-                    ), this._frame_duration);
+                    ), 10);
 
                     return this;
                 },
@@ -441,6 +453,25 @@
         },
 
         /**
+         * Stops a currently-running animation, using the method
+         * denoted by the {animate} option. One method is a custom
+         * implementation of fixed-frame animation; the other is
+         * based upon jQuery's wall-clock animation implementation.
+         */
+         stop_animation: function (_data, _animation) {
+
+            if (_data.fixed_frame_animation) {
+                _animation.stop();
+            } else {
+                for (var i in _animation) {
+                    if (_animation[i]) {
+                        $(_animation[i]).stop(false, true).remove();
+                    }
+                }
+            }
+         },
+
+        /**
          * Stop all in-progress animations, except for those 
          * with a {$.uDrag.AreaIndex} ordinal offset of {_index}.
          * If {_index} is non-numeric, calcel all animations.
@@ -455,7 +486,7 @@
             for (var i in animations) {
                 if (i !== _index) {
                     if (animations[i]) {
-                        animations[i].stop();
+                        priv.stop_animation(data, animations[i]);
                     }
                 }
             }
