@@ -520,11 +520,24 @@
                 data.recent_drop_area_containers[1], drop_area
             ];
 
+            /* Workaround:
+                Webkit doesn't include the element's padding in
+                the event's _pageX or _pageY values; add it in here. */
+
+            var dx = (
+                jQuery.browser.webkit ?
+                    parseInt(_elt.css('padding-left'), 10) : 0
+            );
+
+            var dy = (
+                jQuery.browser.webkit ?
+                    parseInt(_elt.css('padding-top'), 10) : 0
+            );
 
             /* Move element */
             data.placeholder_elt.offset({
-                top: _ev.pageY - data.delta.y,
-                left: _ev.pageX - data.delta.x
+                top: _ev.pageY - data.delta.y - dy,
+                left: _ev.pageX - data.delta.x - dx
             });
 
             priv.clear_highlight(drop_area, data);
@@ -1074,8 +1087,8 @@
             drag_elt.css('position', 'absolute');
             drag_elt.css('visibility', 'hidden');
 
-            drag_elt.width(_elt.innerWidth());
-            drag_elt.height(_elt.innerHeight());
+            drag_elt.width(_elt.width());
+            drag_elt.height(_elt.height());
 
             $('body').append(drag_elt);
             priv.update_position(_elt, _ev, true);

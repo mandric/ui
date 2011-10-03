@@ -180,11 +180,11 @@
 
             var i_elt = _elt.prevAll(':not(.animation)').length;
             var i_dst = _target_elt.prevAll(':not(.animation)').length;
-            var in_negative_direction = (i_dst < i_elt);
+            var is_backward = (i_dst < i_elt);
 
             /* Base element insertion function */
             var insert_element_common = function () {
-                if (in_negative_direction) {
+                if (is_backward) {
                     _elt.insertBefore(_target_elt);
                 } else {
                     _elt.insertAfter(_target_elt);
@@ -214,7 +214,7 @@
                 these in a list and recalculate their position later. */
 
             var recalculate_elts = priv.find_elements_between.apply(
-                null, (in_negative_direction ?
+                null, (is_backward ?
                     [ _target_elt, _elt ] : [ _elt, _target_elt ])
             );
 
@@ -226,12 +226,8 @@
                 var shrink_elt = _target_elt.clone(true);
                 var grow_elt = _target_elt.clone(true);
 
-                var saved_margin = priv.bulk_css(
-                    [ _target_elt ], [ 0, 0 ], (
-                        data.is_vertical ?
-                            [ 'margin-top', 'margin-bottom' ] : [ ]
-                    )
-                );
+                var before_elt = $(_elt.prev(':not(.animation)'));
+                var after_elt = $(_elt.next(':not(.animation)'));
 
                 shrink_elt.addClass('animation');
                 grow_elt.addClass('animation');
@@ -244,7 +240,7 @@
                     grow to its natural extent, one will start at its
                     natural extent and shrink to an extent of zero. */
 
-                if (in_negative_direction) {
+                if (is_backward) {
                     shrink_elt.insertBefore(_elt);
                     grow_elt.insertBefore(_target_elt);
                 } else {
@@ -260,18 +256,17 @@
                     grow_elt.remove();
                     shrink_elt.remove();
 
-                    if ((data.animation_count -= 1) == 0) {
+                    if ((--data.animation_count) == 0) {
                         _elt.css('display', 'block');
                     }
                     
-                    priv.bulk_css.apply(null, saved_margin);
-
                     areas.recalculate_element_areas(recalculate_elts);
-                    delete data.animations[index];
+
                     invoke_callback();
+                    delete data.animations[index];
                 };
 
-                data.animation_count += 1;
+                ++data.animation_count;
                 data.animations[index] = priv.slide_elements(
                     data, grow_elt, shrink_elt,
                         data.duration, after_animation
@@ -285,23 +280,6 @@
             }
 
             return true;
-        },
-
-        /**
-         * A simple bulk save/restore interface for CSS attributes.
-         */
-        bulk_css: function (_elts, _values, _attrs) {
-
-            var rv = [ ];
-
-            for (var i in _elts) {
-                for (var j in _attrs) {
-                    rv.push(_elts[i].css(_attrs[j]));
-                    _elts[i].css(_attrs[j], _values[j]);
-                }
-            }
-
-            return [ _elts, rv, _attrs ];
         },
 
         /**
@@ -319,7 +297,7 @@
                 this._grow_elt = _grow_elt;
                 this._shrink_elt = _shrink_elt;
                 this._callback = _callback;
-                this._frame_duration = 5; /* ms */
+                this._frame_duration = 1; /* ms */
 
                 return this;
             };
@@ -403,7 +381,6 @@
                 },
 
                 stop: function () {
-                    this._is_running = false;
 
                     /* Prevent flicker on some browsers:
                         Remove animation elements synchronously,
@@ -411,6 +388,9 @@
 
                     this._grow_elt.remove();
                     this._shrink_elt.remove();
+
+                    this._is_running = false;
+                    return this;
                 }
             };
 
@@ -438,7 +418,6 @@
                     if (animations[i]) {
                         animations[i].stop();
                     }
-                    delete animations[i];
                 }
             }
         },
@@ -483,7 +462,7 @@
          * Event handler for uDrag-initiated {recalculate} events.
          */
         handle_drag_recalculate: function (_elt) {
-        
+
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
 
