@@ -40,7 +40,8 @@ exports.squeeze = function (_data) {
     return (
         _data.replace(/impl/g, '_')
              .replace(/priv/g, 'z')
-             .replace(/instance_data_for/g, 'z')
+             .replace(/jQuery/g, '$')
+             .replace(/\s*\/>/g, '/>')
              .replace(/toggle/g, 'y')
              .replace(/calculate_arrow_delta/g, 'x')
              .replace(/_serial_number/g, 'w')
@@ -51,8 +52,7 @@ exports.squeeze = function (_data) {
              .replace(/ratio/g, 'r')
              .replace(/autoposition/g, 'q')
              .replace(/reposition/g, 'p')
-             .replace(/jQuery/g, '$')
-             .replace(/\s*\/>/g, '/>')
+             .replace(/instance_data_for/g, 'o')
     );
 };
 

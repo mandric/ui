@@ -263,9 +263,8 @@
                 };
 
                 ++data.animation_count;
-                data.animations[index] = priv.slide_elements(
-                    data, grow_elt, shrink_elt,
-                        data.duration, after_animation
+                data.animations[index] = priv.slide_elements_fixed(
+                    data, grow_elt, shrink_elt, after_animation
                 );
 
             } else {
@@ -279,13 +278,52 @@
         },
 
         /**
+         * A helper for {insert_element}'s animation support: animate {_elt}
+         * down to either zero width or zero height, depending upon the
+         * uSort {orientation} option -- while simultaneously animating
+         * {_elt} up to its original width or height. This implementation
+         * uses a wall-clock duration, and will likely produce non-integer
+         * extents with many digits after the decimal point.
+         */
+        slide_elements_variable: function (_data, _grow_elt,
+                                           _shrink_elt, _callback) {
+            var keys = (
+                _data.is_vertical ?
+                    { extent: 'height', minimal: 'Top', maximal: 'Bottom' }
+                    : { extent: 'width', minimal: 'Left', maximal: 'Right' }
+            );
+
+            var rules = {};
+
+            rules[keys.extent] =
+                rules['margin' + keys.minimal] =
+                rules['margin' + keys.maximal] =
+                rules['padding' + keys.minimal] =
+                rules['padding' + keys.maximal] = 'hide';
+           
+            _grow_elt.css(
+                (_data.is_vertical ? 'height' : 'width'), 0
+            );
+
+            return _shrink_elt.animate(rules, {
+                complete: _callback,
+                duration: (_data.duration || 250),
+                step: function (now, fx) {
+                    _grow_elt.css(fx.prop, fx.start - now);
+                }
+            });
+        },
+
+        /**
          * A helper for {insert_element}'s animation support: animate
          * {_elt} down to either zero width or zero height, depending
          * upon the uSort {orientation} option -- while simultaneously
-         * animating {_elt} up to its original width or height.
+         * animating {_elt} up to its original width or height. This
+         * implementation animates a fixed number of frames proportional
+         * to the elements' extent, rather than a duration in seconds.
          */
-        slide_elements: function (_options, _grow_elt,
-                                  _shrink_elt, _duration, _callback) {
+        slide_elements_fixed: function (_data, _grow_elt,
+                                        _shrink_elt, _callback) {
 
             var animation = function (_grow_elt, _shrink_elt, _callback) {
 
@@ -293,7 +331,8 @@
                 this._grow_elt = _grow_elt;
                 this._shrink_elt = _shrink_elt;
                 this._callback = _callback;
-                this._frame_duration = 1; /* ms */
+                this._frame_duration = 8; /* ms */
+                this._step = (_data.step || 2) ; /* pixel(s) */
 
                 return this;
             };
@@ -305,7 +344,7 @@
              *  a wall-clock duration, jQuery needs to divide the element's
              *  total extent by the elapsed time, leading to non-integer
              *  extents with very large decimal portions. Placement can
-             *  vary +/- one pixel between browsers, which causes visual
+             *  vary +/- one pixel in some browsers, which causes visual
              *  jitter during the animation. This method is integer-only,
              *  and provides predictable placement in all browsers.
              */
@@ -313,7 +352,7 @@
             animation.prototype = {
                 initialize: function () {
                     var keys = this.keys = (
-                        _options.is_vertical ?
+                        _data.is_vertical ?
                             [ 'height', 'margin-top', 'margin-bottom',
                                 'padding-top', 'padding-bottom' ]
                             : [ 'width', 'margin-left', 'margin-right',
@@ -340,7 +379,11 @@
                     for (var i = 0, len = keys.length; i < len; ++i) {
                         var value = this.current[keys[i]];
                         if (value > 0) {
-                            this.current[keys[i]] -= 1;
+                            if (value > this._step) {
+                                this.current[keys[i]] -= this._step;
+                            } else {
+                                this.current[keys[i]] = 0;
+                            }
                             this._shrink_elt.css(
                                 keys[i], value + 'px'
                             );

@@ -38,16 +38,25 @@ exports.compress = function (_path, _callback) {
  */
 exports.squeeze = function (_data) {
     return (
-        _data.replace(/impl/g, '_')
-             .replace(/priv/g, 'z')
+        _data.replace(/impl/g, 'z')
+             .replace(/priv/g, 'y')
              .replace(/jQuery/g, '$')
              .replace(/\s*\/>/g, '/>')
-             /* Symbols: uSort */
              .replace(/handle_drag_hover/g, 'y')
              .replace(/handle_drag_recalculate/g, 'z')
-             /* Symbols: uSort.priv */
-             .replace(/instance_data_for/g, 'z')
-             .replace(/create_instance_data/g, 'y')
+             .replace(/stop_other_animations/g, 'w')
+             .replace(/slide_elements_fixed/g, 'v')
+             .replace(/slide_elements_variable/g, 'u')
+             .replace(/find_elements_between/g, 't')
+             .replace(/animation_count/g, 's')
+             .replace(/animations/g, 'r')
+             .replace(/_is_running/g, 'q')
+             .replace(/_grow_elt/g, 'p')
+             .replace(/_shrink_elt/g, 'o')
+             .replace(/_step/g, 'n')
+             .replace(/_frame_duration/g, 'm')
+             .replace(/is_vertical/g, 'l')
+             .replace(/insert_element/g, 'k')
     );
 };
 
