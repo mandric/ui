@@ -104,7 +104,13 @@
                 $('.drag').uDrag('create', {
                     scroll: 'body',
                     drop: [ $('.drop'), '.another-drop' ],
-                    container: [ '.scroll', '.another-scroll' ]
+                    container: [ '.scroll', '.another-scroll' ],
+                    onEnter: function (_elt, _container_elt) {
+                        _container_elt.addClass('hover');
+                    },
+                    onExit: function (_elt, _container_elt) {
+                        _container_elt.removeClass('hover');
+                    },
                 });
             });
         </script>

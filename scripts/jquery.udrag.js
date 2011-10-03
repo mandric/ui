@@ -453,7 +453,7 @@
                     [ data.placeholder_elt ]
             );
 
-            priv.clear_highlight(null, data);
+            priv.exit_drop_area(null, data);
 
             if (drop_area && !drop_area.scroll_only) {
 
@@ -533,7 +533,7 @@
                 left: _ev.pageX - data.delta.x - delta.x
             });
 
-            priv.clear_highlight(drop_area, data);
+            priv.exit_drop_area(drop_area, data);
 
             if (drop_area) {
 
@@ -556,7 +556,7 @@
                 priv.start_autoscroll(_elt, drop_area);
 
                 if (!drop_area.scroll_only) {
-                    priv.set_highlight(drop_area, data);
+                    priv.enter_drop_area(drop_area, data);
                     
                     if (!_skip_events) {
                         var absolute_offset = {
@@ -784,10 +784,15 @@
          * draggable element is on top of a drop area. If the current
          * draggable element is not over a drop area, do nothing.
          */
-        set_highlight: function (_area, _data) {
+        enter_drop_area: function (_area, _data) {
+
+            var priv = $.uDrag.priv;
 
             if (_area && _area != _data.previous_highlight_area) {
-                _area.container_elt.addClass('hover');
+                priv.trigger_event(
+                    'enter', null, _area.elt, _data.options,
+                        [ _area.elt, _area.container_elt ]
+                );
                 _data.previous_highlight_area = _area;
             }
         },
@@ -796,13 +801,17 @@
          * Remove the highlighting from the previous drop area,
          * provided there was one. Otherwise, take no action.
          */
-        clear_highlight: function (_area, _data) {
+        exit_drop_area: function (_area, _data) {
 
+            var priv = $.uDrag.priv;
             var prev_area = _data.previous_highlight_area;
 
             if (prev_area) {
                 if (!_area || _area != prev_area) {
-                    prev_area.container_elt.removeClass('hover');
+                    priv.trigger_event(
+                        'exit', null, prev_area.elt, _data.options,
+                            [ prev_area.elt, prev_area.container_elt ]
+                    );
                     _data.previous_highlight_area = null;
                 }
             }
