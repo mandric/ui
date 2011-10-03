@@ -129,10 +129,11 @@
      *
      *              style:
      *                  Selects one of several available styles for the
-     *                  popup dialog. The default is 'upopup'; this uses
-     *                  the CSS that ships with uPopup. Other styles --
-     *                  e.g. 'bootstrap' -- allow uPopup to take on the
-     *                  native appearance of other CSS libraries / designs.
+     *                  popup dialog. The default is $.uPopup.styles.default;
+     *                  this uses the CSS that ships with uPopup. Other
+     *                  styles -- e.g. $.uPopup.styles.bootstrap -- allow
+     *                  uPopup to take on the native appearance and
+     *                  positioning logic of other CSS libraries / designs.
      *
      *              fx:
      *                  A boolean value. True (default) if uPopup should be
@@ -232,6 +233,11 @@
             var priv = $.uPopup.priv;
             var options = (_options || {});
             var target_elts = priv.listify(_target_elts);
+
+            options.style = (
+                typeof(options.style) === 'object' ?
+                    options.style : $.uPopup.styles.regular
+            );
 
             $(this).each(function (i, popup_elt) {
 
@@ -450,40 +456,10 @@
          */
         wrap: function (_popup_elt, _options) {
 
-            var wrap_elt;
-            var options = (_options || {});
             var wrap_selector = '.inner';
+            var wrap_elt = $(_options.style.create_wrapper());
 
-            switch (options.style) {
-                case 'bootstrap':
-                    wrap_elt = $(
-                        '<div class="popover">' +
-                            '<div class="direction">' +
-                                '<div class="arrow" />' +
-                                    '<div class="inner" />' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>'
-                    );
-                    break;
-                default:
-                case 'upopup':
-                    wrap_elt = $(
-                        '<div class="' + $.uPopup.key + '">' +
-                            '<div class="direction">' +
-                                '<div class="arrow first-arrow" />' +
-                                '<div class="border">' +
-                                    '<div class="inner" />' +
-                                '</div>' +
-                                '<div class="arrow last-arrow" />' +
-                                '<div class="clear" />' +
-                            '</div>' +
-                        '</div>'
-                    );
-                    break;
-            }
-
-            $(wrap_elt).closestChild(wrap_selector).append(_popup_elt);
+            wrap_elt.closestChild(wrap_selector).append(_popup_elt);
             return wrap_elt;
         },
 
@@ -783,7 +759,7 @@
                 }
             }
 
-            priv.apply_element_style(
+            data.options.style.apply_style(
                 _wrapper_elt, inner_elt, data, _bias
             )
 
@@ -794,48 +770,6 @@
                 top: offsets.y[_bias.y],
                 left: offsets.x[_bias.x]
             });
-        },
-
-        apply_element_style: function (_wrapper_elt,
-                                       _inner_elt, _data, _bias) {
-            var options = _data.options;
-
-            switch (options.style) {
-                case 'bootstrap':
-
-                    /* Position arrow:
-                        Select from one of four possible values: top,
-                        bottom, left, or right. The arrow is always
-                        centered on the axis that is not described here. */
-
-                    var classes = [
-                        [ 'left', 'left' ], [ 'right', 'right' ]
-                    ];
-
-                    _wrapper_elt.removeClass('left right above below');
-                    _wrapper_elt.addClass(classes[_bias.x][_bias.y]);
-
-                    break;
-
-                default:
-                case 'upopup':
-
-                    /* Position arrow:
-                        We place the arrow on a corner of the popup.
-                        Specifically, we use the corner that's closest
-                        to the near corner of the target element. */
-
-                    var classes = (
-                        options.vertical ?
-                            [ [ 'se', 'ne' ], [ 's', 'n' ] ]
-                            : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
-                    );
-
-                    _inner_elt.removeClass('se ne s n ese e wsw w');
-                    _inner_elt.addClass(classes[_bias.x][_bias.y]);
-
-                    break;
-            }
         },
 
         /**
@@ -891,6 +825,74 @@
             return { x: x, y: y };
         }
 
+    };
+
+    $.uPopup.styles = {
+
+        /**
+         */
+        regular: {
+            create_wrapper: function () {
+                return $(
+                    '<div class="' + $.uPopup.key + '">' +
+                        '<div class="direction">' +
+                            '<div class="arrow first-arrow" />' +
+                            '<div class="border">' +
+                                '<div class="inner" />' +
+                            '</div>' +
+                            '<div class="arrow last-arrow" />' +
+                            '<div class="clear" />' +
+                        '</div>' +
+                    '</div>'
+                );
+            },
+            apply_style: function (_wrapper_elt,
+                                   _inner_elt, _data, _bias) {
+                /* Position arrow:
+                    We place the arrow on a corner of the popup.
+                    Specifically, we use the corner that's closest
+                    to the near corner of the target element. */
+                
+                var classes = (
+                    _data.options.vertical ?
+                        [ [ 'se', 'ne' ], [ 's', 'n' ] ]
+                        : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
+                );
+
+                _inner_elt.removeClass('se ne s n ese e wsw w');
+                _inner_elt.addClass(classes[_bias.x][_bias.y]);
+            }
+        },
+
+        /**
+         */
+        bootstrap: {
+            create_wrapper: function () {
+                return $(
+                    '<div class="popover">' +
+                        '<div class="direction">' +
+                            '<div class="arrow" />' +
+                                '<div class="inner" />' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>'
+                );
+            },
+            apply_style: function (_wrapper_elt,
+                                   _inner_elt, _data, _bias) {
+                /* Position arrow:
+                    Select from one of four possible values: top,
+                    bottom, left, or right. The arrow is always
+                    centered on the axis that is not described here. */
+
+                var classes = [
+                    [ 'left', 'left' ], [ 'right', 'right' ]
+                ];
+
+                _wrapper_elt.removeClass('left right above below');
+                _wrapper_elt.addClass(classes[_bias.x][_bias.y]);
+            }
+        }
     };
 
     $.fn.uPopup = function (/* const */_method /* , ... */) {
