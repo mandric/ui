@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet"
+            href="../../../styles/contrib/bootstrap.min.css" />
+        <link rel="stylesheet"
+            href="../../../styles/jquery.upopup.css" />
+        <script type="text/javascript"
+            src="../../../scripts/contrib/jquery-1.4.2.min.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/jquery.upopup.js">
+        </script>
+        <style type="text/css">
+            html, body {
+                width: 100%;
+                height: 100%;
+                padding: 0;
+                margin: 0;
+                overflow: hidden;
+            }
+            .test-instructions {
+                width: 50%;
+                padding: 1em;
+                text-align: center;
+                margin: auto;
+            }
+            .button {
+                margin: 0 1em;
+            }
+            .content {
+                max-width: 22em;
+            }
+            .arrow {
+            }
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript">
+            jQuery(function () {
+                $('.btn').click(function (ev) {
+                    var elt = $(
+                        '<div>' +
+                            '<h3 class="title">' +
+                                'Example Popover' +
+                            '</h3>' +
+                            '<div class="content">' +
+                                '<p>' +
+                                'Lorem ipsum dolor sit amet, consectetur ' +
+                                'adipisicing elit, sed do eiusmod tempor ' +
+                                'incididunt ut labore et dolore magna ' +
+                                'aliqua. Ut enim ad minim veniam, quis ' +
+                                'nostrud exercitation ullamco laboris ' +
+                                'nisi ut aliquip ex ea commodo consequat.' +
+                                '</p>' +
+                            '</div>' +
+                        '</div>'
+                    );
+                    elt.uPopup('create', this, {
+                        style: 'bootstrap'
+                    });
+                    var popup = elt.uPopup('elements');
+                    popup.click(function (ev) {
+                        $(elt).uPopup('destroy');
+                    });
+                });
+            });
+        </script>
+        <div class="test-instructions">
+            Click each button, and verify that a gray popup dialog appears.
+            Verify that the popup is fully on screen, and is visible without
+            additional scrolling. Verify that each dialog's arrow points at
+            the appropriate corner of the button that triggered it.
+        </div>
+        <div style="position: absolute; left: 40%; top: 40%;">
+            <input class="btn primary" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 50%; top: 50%;">
+            <input class="btn danger" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 60%; top: 60%;">
+            <input class="btn primary" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 60%; top: 40%;">
+            <input class="btn primary" type="button" value="Test" />
+        </div>
+        <div style="position: absolute; left: 40%; top: 60%;">
+            <input class="btn primary" type="button" value="Test" />
+        </div>
+        <div style="float: right">
+            <input class="btn success" type="button" value="Test" />
+        </div>
+        <div style="padding-bottom: 10em;">
+            <input class="btn success" type="button" value="Test" />
+        </div>
+        <div style="float: right;">
+            <input class="btn success" type="button" value="Test" />
+        </div>
+        <div style="padding-bottom: 10em;">
+            <input class="btn success" type="button" value="Test" />
+        </div>
+        <div style="float: right;">
+            <input class="btn success" type="button" value="Test" />
+        </div>
+        <div style="padding-bottom: 10em;">
+            <input class="btn success" type="button" value="Test" />
+        </div>
+        <div style="float: right;">
+            <input class="btn success" type="button" value="Test" />
+        </div>
+        <div>
+            <input class="btn success" type="button" value="Test" />
+        </div>
+    </body>
+</html>

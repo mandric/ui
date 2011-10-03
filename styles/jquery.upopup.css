@@ -38,21 +38,21 @@
     height: 0;
     width: 0;
     position: absolute;
-    border: 1.35em solid transparent;
+    border: 1.15em solid transparent;
     background-color: transparent;
 }
 .upopup .border {
     border: solid 0.15em #999;
-    border-radius: 2.25em;
-    -moz-border-radius: 2.25em;
-    -webkit-border-radius: 2.25em;
+    border-radius: 1.5em;
+    -moz-border-radius: 1.5em;
+    -webkit-border-radius: 1.5em;
     background-color: #aaa;
     padding: 0.25em;
 }
 .upopup .inner {
     border: solid 0.15em #f5f5f5;
-    border-radius: 1.75em;
-    -moz-border-radius: 1.75em;
+    border-radius: 1em;
+    -moz-border-radius: 1em;
     background-color: #f5f5f5;
     min-width: 12em;
     min-height: 8em;
@@ -67,23 +67,23 @@
 .upopup .w .border,
 .upopup .wnw .border,
 .upopup .wsw .border {
-    box-shadow: 0.15em 0.15em 0.35em #777;
-    -webkit-box-shadow: 0.15em 0.15em 0.35em #777;
-    -moz-box-shadow: 0.15em 0.15em 0.35em #777;
+    box-shadow: 0.15em 0.15em 0.35em #aaa;
+    -webkit-box-shadow: 0.15em 0.15em 0.35em #aaa;
+    -moz-box-shadow: 0.15em 0.15em 0.35em #aaa;
 }
 .upopup .s .border,
 .upopup .se .border,
 .upopup .sw .border {
-    box-shadow: -0.15em -0.15em 0.35em #777;
-    -webkit-box-shadow: -0.15em -0.15em 0.35em #777;
-    -moz-box-shadow: -0.15em -0.15em 0.35em #777;
+    box-shadow: -0.15em -0.15em 0.35em #aaa;
+    -webkit-box-shadow: -0.15em -0.15em 0.35em #aaa;
+    -moz-box-shadow: -0.15em -0.15em 0.35em #aaa;
 }
 .upopup .e .border,
 .upopup .ese .border,
 .upopup .ene .border {
-    box-shadow: 0.15em 0.15em 0.35em #777;
-    -webkit-box-shadow: -0.15em 0.15em 0.35em #777;
-    -moz-box-shadow: 0.15em -0.15em 0.35em #777;
+    box-shadow: 0.15em 0.15em 0.35em #aaa;
+    -webkit-box-shadow: -0.15em 0.15em 0.35em #aaa;
+    -moz-box-shadow: 0.15em -0.15em 0.35em #aaa;
 }
 .upopup .n .arrow,
 .upopup .nw .arrow,
@@ -133,33 +133,33 @@
 }
 .upopup .n .arrow,
 .upopup .nw .arrow {
-    top: -2.6em;
+    top: -2.2em;
     left: 2em;
 }
 .upopup .e .arrow,
 .upopup .ene .arrow {
-    right: -2.6em;
+    right: -2.2em;
     top: 2em;
 }
 .upopup .ne .arrow {
     right: 2em;
-    top: -2.6em;
+    top: -2.2em;
 }
 .upopup .wsw .arrow,
 .upopup .ese .arrow {
-    bottom: 2.6em;
+    bottom: 2.25em;
 }
 .upopup .wsw .arrow {
-    left: -2.6em;
+    left: -2.2em;
     bottom: 2em;
 }
 .upopup .ese .arrow {
-    right: -2.6em;
+    right: -2.2em;
     bottom: 2em;
 }
 .upopup .s .arrow,
 .upopup .sw .arrow {
-    bottom: -2.6em;
+    bottom: -2.2em;
     left: 2em;
 }
 .upopup .se .arrow {
@@ -168,7 +168,7 @@
 .upopup .w .arrow,
 .upopup .wnw .arrow {
     top: 2em;
-    left: -2.6em;
+    left: -2.2em;
 }
 .clear {
     clear: both;

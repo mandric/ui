@@ -127,6 +127,13 @@
      *          behaviour of uPopup. A summary of the available options
      *          appears below:
      *
+     *              style:
+     *                  Selects one of several available styles for the
+     *                  popup dialog. The default is 'upopup'; this uses
+     *                  the CSS that ships with uPopup. Other styles --
+     *                  e.g. 'bootstrap' -- allow uPopup to take on the
+     *                  native appearance of other CSS libraries / designs.
+     *
      *              fx:
      *                  A boolean value. True (default) if uPopup should be
      *                  permitted to use jQuery effects when showing/hiding
@@ -246,12 +253,12 @@
                 target_elt = $(target_elt);
 
                 /* Wrap `popup_elt` inside of `wrapper_elt` */
-                var wrapper_elt = priv.wrap(popup_elt);
+                var wrapper_elt = priv.wrap(popup_elt, options);
 
                 /* Save instance state data */
                 popup_elt.data($.uPopup.key, {
                     elt: wrapper_elt,
-                    options: options
+                    options: (options || {})
                 });
 
                 /* Insert popup */
@@ -268,7 +275,7 @@
 
                 var reposition_fn = function (ev) {
                     priv.autoposition(
-                        wrapper_elt, popup_elt, target_elt, options
+                        wrapper_elt, popup_elt, target_elt
                     );
                 };
 
@@ -443,22 +450,40 @@
          */
         wrap: function (_popup_elt, _options) {
 
+            var wrap_elt;
             var options = (_options || {});
+            var wrap_selector = '.inner';
 
-            var wrap_elt = $(
-                '<div class="' + $.uPopup.key + '">' +
-                    '<div class="direction">' +
-                        '<div class="arrow first-arrow" />' +
-                        '<div class="border">' +
-                            '<div class="inner" />' +
-                        '</div>' +
-                        '<div class="arrow last-arrow" />' +
-                        '<div class="clear" />' +
-                    '</div>' +
-                '</div>'
-            );
+            switch (options.style) {
+                case 'bootstrap':
+                    wrap_elt = $(
+                        '<div class="popover">' +
+                            '<div class="direction">' +
+                                '<div class="arrow" />' +
+                                    '<div class="inner" />' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>'
+                    );
+                    break;
+                default:
+                case 'upopup':
+                    wrap_elt = $(
+                        '<div class="' + $.uPopup.key + '">' +
+                            '<div class="direction">' +
+                                '<div class="arrow first-arrow" />' +
+                                '<div class="border">' +
+                                    '<div class="inner" />' +
+                                '</div>' +
+                                '<div class="arrow last-arrow" />' +
+                                '<div class="clear" />' +
+                            '</div>' +
+                        '</div>'
+                    );
+                    break;
+            }
 
-            $('.inner', wrap_elt).append(_popup_elt);
+            $(wrap_elt).closestChild(wrap_selector).append(_popup_elt);
             return wrap_elt;
         },
 
@@ -533,12 +558,12 @@
          * available screen space, in each of two dimensions.
          */
         autoposition: function (_wrapper_elt,
-                                _popup_elt, _target_elt, _options) {
+                                _popup_elt, _target_elt) {
             var avail = {};
             var priv = $.uPopup.priv;
-            var options = (_options || {});
+            var data = priv.instance_data_for(_popup_elt);
 
-            var ev = options.eventData;
+            var ev = data.options.eventData;
             var container_elt = $(document);
 
             /* Precompute sizes, offsets:
@@ -557,7 +582,7 @@
 
             /* Available space on each side of target:
                 { x: [ left, right ], y: [ top, bottom ] } */
-            
+
             if (ev) {
 
                 /* Event object provided:
@@ -597,7 +622,7 @@
                 If the viewport option has been set, then
                 only count space that's immediately visible. */
 
-            if (options.useViewport !== false) {
+            if (data.options.useViewport !== false) {
 
                 var window_elt = $(window);
 
@@ -618,18 +643,24 @@
                 );
 
             }
-            
-            /* Indices:
-                Each value is an index for `avail` and `offsets`. */
 
-            var indices = {
+            /* Stash for later use:
+                Some styles might move the wrapper element around,
+                and may need access to the available space calculations. */
+
+            data.avail = avail;
+
+            /* Bias values:
+                Each value is an index for `avail` and `offsets`;
+                zero is the minimal side of an axis, one the maximal. */
+
+            var bias = {
                 x: priv.index_of_max(avail.x),
                 y: priv.index_of_max(avail.y)
             };
 
             return priv.reposition(
-                _wrapper_elt, _popup_elt,
-                    _target_elt, indices.x, indices.y, _options
+                _wrapper_elt, _popup_elt, _target_elt, bias
             );
         },
 
@@ -642,12 +673,13 @@
          * {priv.wrap}; _x and _y are boolean values denoting left/right
          * and top/bottom (each zero/one or false/true, respectively).
          */
-        reposition: function (_wrapper_elt, _popup_elt,
-                              _target_elt, _x, _y, _options) {
+        reposition: function (_wrapper_elt,
+                              _popup_elt, _target_elt, _bias) {
             var offsets;
             var priv = $.uPopup.priv;
-            var options = (_options || {});
+            var data = priv.instance_data_for(_popup_elt);
 
+            var options = data.options;
             var ev = options.eventData;
             var inner_elt = _wrapper_elt.closestChild('.direction');
             var arrow_elt = inner_elt.closestChild('.arrow');
@@ -738,7 +770,7 @@
                 space). Due to this fact, the following steps never
                 yield less room for dialog placement -- always more. */
 
-            if (!options.eventData) {
+            if (!ev) {
                 if (options.center || options.centerX) {
                     var dx = target_size.x / 2;
                     offsets.x[0] += dx;
@@ -751,26 +783,59 @@
                 }
             }
 
-            /* Position arrow:
-                We place the arrow on the corner of the popup that
-                is closest to the near corner of the target element. */
-
-            var classes = (
-                options.vertical ?
-                    [ [ 'se', 'ne' ], [ 's', 'n' ] ]
-                    : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
-            );
-
-            inner_elt.removeClass('se ne s n ese e wsw w');
-            inner_elt.addClass(classes[_x][_y]);
+            priv.apply_element_style(
+                _wrapper_elt, inner_elt, data, _bias
+            )
 
             /* Finally, reposition:
                 Write the actual style change to the DOM element. */
 
             _wrapper_elt.offset({
-                top: offsets.y[_y],
-                left: offsets.x[_x]
+                top: offsets.y[_bias.y],
+                left: offsets.x[_bias.x]
             });
+        },
+
+        apply_element_style: function (_wrapper_elt,
+                                       _inner_elt, _data, _bias) {
+            var options = _data.options;
+
+            switch (options.style) {
+                case 'bootstrap':
+
+                    /* Position arrow:
+                        Select from one of four possible values: top,
+                        bottom, left, or right. The arrow is always
+                        centered on the axis that is not described here. */
+
+                    var classes = [
+                        [ 'left', 'left' ], [ 'right', 'right' ]
+                    ];
+
+                    _wrapper_elt.removeClass('left right above below');
+                    _wrapper_elt.addClass(classes[_bias.x][_bias.y]);
+
+                    break;
+
+                default:
+                case 'upopup':
+
+                    /* Position arrow:
+                        We place the arrow on a corner of the popup.
+                        Specifically, we use the corner that's closest
+                        to the near corner of the target element. */
+
+                    var classes = (
+                        options.vertical ?
+                            [ [ 'se', 'ne' ], [ 's', 'n' ] ]
+                            : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
+                    );
+
+                    _inner_elt.removeClass('se ne s n ese e wsw w');
+                    _inner_elt.addClass(classes[_bias.x][_bias.y]);
+
+                    break;
+            }
         },
 
         /**
