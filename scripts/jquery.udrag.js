@@ -474,7 +474,6 @@
                     the event allows you to change the placement policy. */
 
                 var events = {
-                    drop: priv.default_drop_callback,
                     insert_element: priv.default_insert_callback,
                     position_element: priv.default_position_callback
                 };
@@ -564,7 +563,7 @@
                             x: _ev.pageX, y: _ev.pageY
                         };
                         priv.trigger_event(
-                            'hover', priv.default_hover_callback,
+                            'hover', null,
                             _elt, data.options, [
                                 _elt, drop_elt, {
                                     absolute: absolute_offset,
@@ -630,33 +629,12 @@
         },
        
         /**
-         * The default implementation of the onDrop event callback.
-         */
-        default_drop_callback: function (_elt, _drop_elt, _offset) {
-            return true;
-        },
-       
-        /**
          * The default implementation of the insertElement callback.
          */
         default_insert_callback: function (_elt, _drop_elt) {
             _drop_elt.prepend(_elt);
         },
-        
-        /**
-         * The default implementation of the onHover callback.
-         */
-        default_hover_callback: function (_elt, _drop_elt) {
-            return true;
-        },
-        
-        /**
-         * The default implementation of the onRecalculate callback.
-         */
-        default_recalculate_callback: function (_drop_elt) {
-            return true;
-        },
-
+       
         /**
          * Start scrolling the container element in {_drop_area},
          * using the scroll-axis information found in {_elt}. This
@@ -1291,9 +1269,8 @@
             data.areas.recalculate_all();
 
             priv.trigger_event(
-                'recalculate',
-                priv.default_recalculate_callback,
-                _elt, data.options, [ (data.container_elt || _elt) ]
+                'recalculate', null, _elt, data.options,
+                    [ (data.container_elt || _elt) ]
             );
 
             return true;
