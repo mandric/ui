@@ -212,6 +212,8 @@
      */
 
     $.uPopup = {};
+    $.uPopup.key = 'upopup';
+
     $.uPopup.impl = {
 
         /**
@@ -247,7 +249,7 @@
                 var wrapper_elt = priv.wrap(popup_elt);
 
                 /* Save instance state data */
-                popup_elt.data('upopup', {
+                popup_elt.data($.uPopup.key, {
                     elt: wrapper_elt,
                     options: options
                 });
@@ -287,15 +289,15 @@
 
                     /* Browser window resize/reflow */
                     $(window).bind(
-                        'resize.upopup', reposition_fn
+                        'resize.' + $.uPopup.key, reposition_fn
                     );
                     /* AJAX update affecting popup's content */
                     popup_elt.bind(
-                        'ajaxComplete.upopup', reposition_fn
+                        'ajaxComplete.' + $.uPopup.key, reposition_fn
                     );
                     /* DOM element mutation, where supported */
                     popup_elt.bind(
-                        'DOMSubtreeModified.upopup', reposition_fn
+                        'DOMSubtreeModified.' + $.uPopup.key, reposition_fn
                     );
                 }
 
@@ -349,8 +351,8 @@
             );
             $(this).each(function (i, popup_elt) {
                 popup_elt = $(popup_elt);
-                popup_elt.unbind('.upopup');
-                popup_elt.data('upopup', null);
+                popup_elt.unbind('.' + $.uPopup.key);
+                popup_elt.data($.uPopup.key, null);
             });
         },
 
@@ -364,7 +366,8 @@
             return $(
                 $(this).map(function (i, popup_elt) {
                     /* Convert element to instance data */
-                    var wrapper_elt = priv.instance_data_for(popup_elt).elt;
+                    var data = priv.instance_data_for(popup_elt);
+                    var wrapper_elt = data.elt;
                     return (wrapper_elt ? wrapper_elt[0] : undefined);
                 }).filter(function (wrapper_elt) {
                     /* Filter out undefined or empty values */
@@ -396,6 +399,7 @@
          * Make `_v` an array if it isn't already an array.
          */
         listify: function (_v) {
+
             return ($.isArray(_v) ? _v : [ _v ]);
         },
 
@@ -403,7 +407,17 @@
          * Returns the uPopup-private storage attached to `_elt`.
          */
         instance_data_for: function (_elt) {
-            return ($(_elt).data('upopup') || {});
+
+            var elt = $(_elt);
+            var key = $.uPopup.key;
+            var rv = elt.data(key);
+
+            if (!rv) {
+                rv = {};
+                _elt.data(key, rv);
+            }
+
+            return rv;
         },
 
         /**
@@ -411,7 +425,9 @@
          * largest value in the array.
          */
         index_of_max: function (a) {
+
             var rv, max;
+
             for (var i = 0, len = a.length; i < len; ++i) {
                 if (!max || a[i] > max) {
                     max = a[i]; rv = i;
@@ -430,7 +446,7 @@
             var options = (_options || {});
 
             var wrap_elt = $(
-                '<div class="upopup">' +
+                '<div class="' + $.uPopup.key + '">' +
                     '<div class="direction">' +
                         '<div class="arrow first-arrow" />' +
                         '<div class="border">' +
@@ -480,9 +496,9 @@
             $(this).each(function (i, popup_elt) {
 
                 /* Retrieve instance state data */
-                var state = priv.instance_data_for(popup_elt);
-                var options = (state.options || {});
-                var wrapper_elt = state.elt;
+                var data = priv.instance_data_for(popup_elt);
+                var options = (data.options || {});
+                var wrapper_elt = data.elt;
 
                 /* Build callback */
                 var callback = function () {

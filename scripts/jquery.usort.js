@@ -123,19 +123,16 @@
          */
         instance_data_for: function (_elt, _v) {
 
-            var key = $.uSort.key;
             var elt = $(_elt);
-            var data = elt.data(key);
+            var key = $.uSort.key;
+            var rv = elt.data(key);
 
-            if (!data) {
-                _v = {};
+            if (!rv) {
+                rv = {};
+                _elt.data(key, rv);
             }
 
-            if (_v) {
-                elt.data(key, _v);
-            }
-
-            return data;
+            return rv;
         },
 
         /**
@@ -160,7 +157,7 @@
                 }
             );
 
-            return _sortable_elt.data('usort');
+            return _sortable_elt.data($.uSort.key);
         },
 
         /*

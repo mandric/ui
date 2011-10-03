@@ -320,22 +320,22 @@
                     Register event handlers to detect drag/move events. */
 
                 doc.bind(
-                    'mousemove.udrag',
+                    'mousemove.' + $.uDrag.key,
                     $.proxy(priv._handle_document_mousemove, elt)
                 );
 
                 doc.bind(
-                    'mouseup.udrag',
+                    'mouseup.' + $.uDrag.key,
                     $.proxy(priv._handle_document_mouseup, elt)
                 );
 
                 $(window).bind(
-                    'resize.udrag',
+                    'resize.' + $.uDrag.key,
                     $.proxy(priv._handle_document_resize, elt)
                 );
 
                 elt.bind(
-                    'mousedown.udrag', priv._handle_drag_mousedown
+                    'mousedown.' + $.uDrag.key, priv._handle_drag_mousedown
                 );
 
                 priv.bind_drop_areas(elt, options);
@@ -350,14 +350,16 @@
          */
         destroy: function () {
 
-            $(document).unbind('.udrag');
-            $(window).unbind('.udrag');
+            var key = $.uDrag.key;
+
+            $(document).unbind('.' + key);
+            $(window).unbind('.' + key);
 
             this.each(function (i, elt) {
                 var priv = $.uDrag.priv;
                 var data = priv.instance_data_for(elt);
 
-                elt.unbind('.udrag');
+                elt.unbind('.' + key);
                 elt.data($.uDrag.key, null);
             });
 
@@ -376,21 +378,19 @@
         /**
          * Set/get the uDrag-private storage attached to `_elt`.
          */
-        instance_data_for: function (_elt, _v) {
+        instance_data_for: function (_elt) {
 
             var elt = $(_elt);
             var key = $.uDrag.key;
-            var data = elt.data(key);
+            var rv = elt.data(key);
 
-            if (!data) {
-                _v = {};
+            if (!rv) {
+                rv = {};
+                elt.data(key, rv);
             }
 
-            if (_v) {
-                elt.data(key, _v);
-            }
+            return rv;
 
-            return data;
         },
 
         /**
@@ -978,7 +978,7 @@
 
             for (var i = 0, len = ancestor_elts.length; i < len; ++i) {
                 ancestor_elts[i].bind(
-                    'scroll.udrag',
+                    'scroll.' + $.uDrag.key,
                     $.proxy(priv._handle_ancestor_scroll, _elt)
                 );
             }
@@ -1180,7 +1180,7 @@
         trigger_event: function (_name, _default_callback,
                                  _elt, _options, _arguments) {
             if (_elt) {
-                _elt.trigger('udrag:' + _name);
+                _elt.trigger($.uDrag.key + ':' + _name);
             }
 
             if (_options) {
