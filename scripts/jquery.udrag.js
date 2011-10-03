@@ -401,15 +401,17 @@
             var elt = $(_elt);
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
+
             var offset = elt.offset();
+            var adjust = priv.compute_pixel_adjustment($(_elt));
 
             if (data.is_dragging) {
                 return false;
             }
 
             data.delta = {
-                x: (_ev.offsetX || _ev.pageX - offset.left),
-                y: (_ev.offsetY || _ev.pageY - offset.top)
+                x: _ev.pageX - offset.left - adjust.x,
+                y: _ev.pageY - offset.top - adjust.y
             };
 
             data.is_dragging = true;
@@ -524,20 +526,12 @@
                 Webkit doesn't include the element's padding in
                 the event's _pageX or _pageY values; add it in here. */
 
-            var dx = (
-                jQuery.browser.webkit ?
-                    parseInt(_elt.css('padding-left'), 10) : 0
-            );
-
-            var dy = (
-                jQuery.browser.webkit ?
-                    parseInt(_elt.css('padding-top'), 10) : 0
-            );
+            var delta = priv.compute_pixel_adjustment(_elt);
 
             /* Move element */
             data.placeholder_elt.offset({
-                top: _ev.pageY - data.delta.y - dy,
-                left: _ev.pageX - data.delta.x - dx
+                top: _ev.pageY - data.delta.y - delta.y,
+                left: _ev.pageX - data.delta.x - delta.x
             });
 
             priv.clear_highlight(drop_area, data);
@@ -591,15 +585,46 @@
         },
 
         /**
+         * Returns an object containing browser-specific placement
+         * adjustment information, in pixels. This is used to work
+         * around implementation-specific issues with pageX/pageY.
+         */
+        compute_pixel_adjustment: function (_elt) {
+
+            var rv = { x: 0, y: 0 };
+
+            if (jQuery.browser.webkit) {
+                var keys_x = [
+                    'margin-left', 'padding-left', 'border-left-width'
+                ];
+                var keys_y = [
+                    'margin-top', 'padding-top', 'border-top-width'
+                ];
+
+                for (var i = 0, len = keys_x.length; i < len; ++i) {
+                    rv.x += parseInt(_elt.css(keys_x[i]), 10);
+                }
+                for (var i = 0, len = keys_y.length; i < len; ++i) {
+                    rv.y += parseInt(_elt.css(keys_y[i]), 10);
+                }
+            }
+
+            return rv;
+        },
+
+        /**
          * The default implementation of the positionElement callback.
          * If not overridden, this will use relative positioning to
          * (visually) maintain the dropped element's position.
          */
         default_position_callback: function (_elt, _drop_elt, _offsets) {
 
+            var priv = $.uDrag.priv;
+            var delta = priv.compute_pixel_adjustment(_elt);
+
             _elt.css('position', 'relative');
-            _elt.css('top', _offsets.relative.y + 'px');
-            _elt.css('left', _offsets.relative.x + 'px');
+            _elt.css('top', (_offsets.relative.y - delta.y) + 'px');
+            _elt.css('left', (_offsets.relative.x - delta.x) + 'px');
 
             return _elt;
         },
