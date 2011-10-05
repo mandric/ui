@@ -46,7 +46,7 @@
     border-radius: 1.5em;
     -moz-border-radius: 1.5em;
     -webkit-border-radius: 1.5em;
-    background-color: #aaa;
+    background-color: #999;
     padding: 0.25em;
 }
 .upopup .inner {
@@ -67,23 +67,23 @@
 .upopup .w .border,
 .upopup .wnw .border,
 .upopup .wsw .border {
-    box-shadow: 0.15em 0.15em 0.35em #aaa;
-    -webkit-box-shadow: 0.15em 0.15em 0.35em #aaa;
-    -moz-box-shadow: 0.15em 0.15em 0.35em #aaa;
+    box-shadow: 0.15em 0.15em 0.15em #aaa;
+    -webkit-box-shadow: 0.15em 0.15em 0.15em #aaa;
+    -moz-box-shadow: 0.15em 0.15em 0.15em #aaa;
 }
 .upopup .s .border,
 .upopup .se .border,
 .upopup .sw .border {
-    box-shadow: -0.15em -0.15em 0.35em #aaa;
-    -webkit-box-shadow: -0.15em -0.15em 0.35em #aaa;
-    -moz-box-shadow: -0.15em -0.15em 0.35em #aaa;
+    box-shadow: 0.15em 0.15em 0.15em #aaa;
+    -webkit-box-shadow: 0.15em 0.15em 0.15em #aaa;
+    -moz-box-shadow: 0.15em 0.15em 0.15em #aaa;
 }
 .upopup .e .border,
 .upopup .ese .border,
 .upopup .ene .border {
-    box-shadow: 0.15em 0.15em 0.35em #aaa;
-    -webkit-box-shadow: -0.15em 0.15em 0.35em #aaa;
-    -moz-box-shadow: 0.15em -0.15em 0.35em #aaa;
+    box-shadow: 0.15em 0.15em 0.15em #aaa;
+    -webkit-box-shadow: 0.15em 0.15em 0.15em #aaa;
+    -moz-box-shadow: 0.15em 0.15em 0.15em #aaa;
 }
 .upopup .n .arrow,
 .upopup .nw .arrow,

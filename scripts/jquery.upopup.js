@@ -367,6 +367,7 @@
                 popup_elt.unbind('.' + $.uPopup.key);
                 popup_elt.data($.uPopup.key, null);
             });
+            $(window).unbind('.' + $.uPopup.key);
         },
 
         /**
@@ -759,9 +760,12 @@
                 }
             }
 
-            data.options.style.apply_style(
-                _wrapper_elt, inner_elt, data, _bias
-            )
+            /* Stash for later use:
+                Some styles might move the wrapper element,
+                and may need access to our offset calculations. */
+
+            data.offsets = offsets;
+            data.size = wrapper_size;
 
             /* Finally, reposition:
                 Write the actual style change to the DOM element. */
@@ -770,6 +774,14 @@
                 top: offsets.y[_bias.y],
                 left: offsets.x[_bias.x]
             });
+
+            /* Defer to style-specific code:
+                Allow the style to make modifications to the position
+                of the wrapper element, or otherwise make changes to it. */
+
+            data.options.style.apply_style(
+                _wrapper_elt, inner_elt, data, _bias
+            )
         },
 
         /**
@@ -846,6 +858,7 @@
                     '</div>'
                 );
             },
+
             apply_style: function (_wrapper_elt,
                                    _inner_elt, _data, _bias) {
                 /* Position arrow:
@@ -878,19 +891,46 @@
                     '</div>'
                 );
             },
+
             apply_style: function (_wrapper_elt,
                                    _inner_elt, _data, _bias) {
-                /* Position arrow:
-                    Select from one of four possible values: top,
-                    bottom, left, or right. The arrow is always
-                    centered on the axis that is not described here. */
 
-                var classes = [
-                    [ 'left', 'left' ], [ 'right', 'right' ]
-                ];
+                var avail = _data.avail;
+                var offsets = _data.offsets;
+                var size = _data.size;
+
+                var css = {
+                    x: [ 'left', 'right' ], y: [ 'above', 'below' ]
+                };
+
+                /* Select preferred side and axis:
+                    Together, these determine placement entirely. */
+
+                var side = {
+                    x: (avail.x[0] > avail.x[1] ? 0 : 1),
+                    y: (avail.y[0] > avail.y[1] ? 0 : 1)
+                };
+
+                var axis = (
+                    avail.x[side.x] > avail.y[side.y] ? 'x' : 'y'
+                );
+
+                /* Adjustment factor:
+                    This transforms the popup placement, centering it
+                    along the placement axis that we did not select. */
+
+                var coeff = {
+                    x: (axis === 'y' ? (_bias.x ? -1 : 1) : 0),
+                    y: (axis === 'x' ? (_bias.y ? -1 : 1) : 0)
+                };
+
+                _wrapper_elt.offset({
+                    top: offsets.y[_bias.y] + ((size.y / 2) * coeff.y),
+                    left: offsets.x[_bias.x] + ((size.x / 2) * coeff.x)
+                });
 
                 _wrapper_elt.removeClass('left right above below');
-                _wrapper_elt.addClass(classes[_bias.x][_bias.y]);
+                _wrapper_elt.addClass(css[axis][side[axis]]);
             }
         }
     };
