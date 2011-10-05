@@ -57,7 +57,8 @@
                         '</div>'
                     );
                     elt.uPopup('create', this, {
-                        style: $.uPopup.style.bootstrap
+                        style: $.uPopup.style.bootstrap,
+                        center: $(this).hasClass('danger')
                     });
                     var popup = elt.uPopup('elements');
                     popup.click(function (ev) {

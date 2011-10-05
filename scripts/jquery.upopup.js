@@ -691,14 +691,14 @@
             /* Delta value:
                 Distance between popup's edge and arrow's edge. */
 
-            var d = data.options.style.calculate_delta(_wrapper_elt);
-
-            /* Coefficients:
-                Arrow size, adjust width/x, adjust height/y */
-
-            var c = (
-                options.vertical ? [ -1, 1, 0 ] : [ 1, 0, 1 ]
+            var d = data.options.style.calculate_delta(
+                _wrapper_elt, data
             );
+
+            /* Coefficient:
+                Sign indicates the shift direction for {arrow_size}. */
+
+            var c = (options.vertical ? -1 : 1);
 
             if (ev) {
 
@@ -714,14 +714,12 @@
 
                 offsets = {
                     x: [
-                        pt.x - wrapper_size.x - c[0] * arrow_size.x / 2
-                            + c[1] * d.x,
-                        pt.x + c[0] * arrow_size.x / 2 - c[1] * d.x
+                        pt.x - wrapper_size.x - (c * arrow_size.x / 2) + d.x,
+                        pt.x + (c * arrow_size.x / 2) - d.x
                     ],
                     y: [
-                        pt.y - wrapper_size.y + c[0] * arrow_size.y / 2
-                            + c[2] * d.y,
-                        pt.y - c[0] * arrow_size.y / 2 - c[2] * d.y
+                        pt.y - wrapper_size.y + (c * arrow_size.y / 2) + d.y,
+                        pt.y - (c * arrow_size.y / 2) - d.y
                     ]
                 };
 
@@ -732,16 +730,16 @@
 
                 offsets = {
                     x: [
-                        target_offset.left - wrapper_size.x + c[1] * d.x
-                            + padding_size.x - c[0] * arrow_size.x / 2,
-                        target_offset.left + target_size.x - c[1] * d.x
-                            - padding_size.x + c[0] * arrow_size.x / 2
+                        target_offset.left - wrapper_size.x + d.x
+                            + padding_size.x - c * arrow_size.x / 2,
+                        target_offset.left + target_size.x - d.x
+                            - padding_size.x + c * arrow_size.x / 2
                     ],
                     y: [
-                        target_offset.top - wrapper_size.y + c[2] * d.y
-                            + padding_size.y + c[0] * arrow_size.y / 2,
-                        target_offset.top + target_size.y - c[2] * d.y
-                            - padding_size.y - c[0] * arrow_size.y / 2
+                        target_offset.top - wrapper_size.y + d.y
+                            + padding_size.y + c * arrow_size.y / 2,
+                        target_offset.top + target_size.y - d.y
+                            - padding_size.y - c * arrow_size.y / 2
                     ]
                 };
             }
@@ -935,14 +933,21 @@
              * we don't have a solid way to determine the offset-from-edge
              * in pixels using element positioning data alone.
              */
-            calculate_delta: function (_wrapper_elt)
+            calculate_delta: function (_wrapper_elt, _data)
             {
                 var adjust_div = $('<div />').addClass('adjust');
                 _wrapper_elt.append(adjust_div)
 
+                /* Coefficients:
+                    Adjust width/x, adjust height/y */
+
+                var c = (
+                    _data.options.vertical ? [ 1, 0 ] : [ 0, 1 ]
+                );
+
                 var delta = {
-                    x: adjust_div.width(),
-                    y: adjust_div.height()
+                    x: c[0] * adjust_div.width(),
+                    y: c[1] * adjust_div.height()
                 };
 
                 adjust_div.remove();
@@ -993,7 +998,7 @@
              * height; this adjusts placement so that the arrow
              * points to the correct location on the target element.
              */
-            calculate_delta: function (_wrapper_elt)
+            calculate_delta: function (_wrapper_elt, _options)
             {
                 var arrow_elt = _wrapper_elt.closestChild('.arrow');
 
