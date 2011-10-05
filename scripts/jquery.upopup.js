@@ -686,7 +686,7 @@
             /* Delta value:
                 Distance between popup's edge and arrow's edge. */
 
-            var d = priv.calculate_arrow_delta(_wrapper_elt);
+            var d = data.options.style.calculate_delta(_wrapper_elt);
 
             /* Coefficients:
                 Arrow size, adjust width/x, adjust height/y */
@@ -784,27 +784,6 @@
             )
         },
 
-        /**
-         * Use an invisible <div> to determine the number of additional
-         * pixels needed to shift to the arrow element's exact point.
-         * This is required due to the use of absolute positioning --
-         * we don't have a solid way to determine the offset-from-edge
-         * in pixels using position data alone.
-         */
-        calculate_arrow_delta: function (_wrapper_elt)
-        {
-            var adjust_div = $('<div />').addClass('adjust');
-            _wrapper_elt.append(adjust_div)
-
-            var delta = {
-                x: adjust_div.width(),
-                y: adjust_div.height()
-            };
-
-            adjust_div.remove();
-            return delta;
-        },
-
         /*
          * Given a jQuery event object (containing both pageX and
          * pageY coordinates), extract the coordinates and apply any
@@ -842,8 +821,15 @@
     $.uPopup.styles = {
 
         /**
+         * The default look and feel for uPopup.
          */
         regular: {
+
+            /**
+             * Create an element that will surround the user-provided
+             * element. Content will be inserted under the element
+             * that has a CSS class of {.inner}.
+             */
             create_wrapper: function () {
                 return $(
                     '<div class="' + $.uPopup.key + '">' +
@@ -859,6 +845,11 @@
                 );
             },
 
+            /**
+             * Apply any style-specific modifications to the uPopup-managed
+             * elements. In the default case, positioning is performed for
+             * us; we just set the appropriate CSS class and return.
+             */
             apply_style: function (_wrapper_elt,
                                    _inner_elt, _data, _bias) {
                 /* Position arrow:
@@ -874,12 +865,40 @@
 
                 _inner_elt.removeClass('se ne s n ese e wsw w');
                 _inner_elt.addClass(classes[_bias.x][_bias.y]);
+            },
+
+            /**
+             * Use an invisible <div> to determine the number of additional
+             * pixels needed to shift to the arrow element's exact point.
+             * This is required due to the use of absolute positioning --
+             * we don't have a solid way to determine the offset-from-edge
+             * in pixels using element positioning data alone.
+             */
+            calculate_delta: function (_wrapper_elt)
+            {
+                var adjust_div = $('<div />').addClass('adjust');
+                _wrapper_elt.append(adjust_div)
+
+                var delta = {
+                    x: adjust_div.width(),
+                    y: adjust_div.height()
+                };
+
+                adjust_div.remove();
+                return delta;
             }
         },
 
         /**
+         * Allows uPopup to work with Twitter's Bootstrap CSS
+         * library, which provides a 'popover' class.
          */
         bootstrap: {
+            /**
+             * Create an element that will surround the user-provided
+             * element. Content will be inserted under the element
+             * that has a CSS class of {.inner}.
+             */
             create_wrapper: function () {
                 return $(
                     '<div class="popover">' +
@@ -892,6 +911,12 @@
                 );
             },
 
+            /**
+             * Apply any style-specific modifications to the uPopup-managed
+             * elements. In this case, we adjust the default position to
+             * account for the fact that the Bootstrap popups have the
+             * arrow in the center of the popup edge, not the corner.
+             */
             apply_style: function (_wrapper_elt,
                                    _inner_elt, _data, _bias) {
 
@@ -931,6 +956,21 @@
 
                 _wrapper_elt.removeClass('left right above below');
                 _wrapper_elt.addClass(css[axis][side[axis]]);
+            },
+
+            /**
+             * Bootstrap's arrow is offset by its exact width and
+             * height; this adjusts placement so that the arrow
+             * points to the correct location on the target element.
+             */
+            calculate_delta: function (_wrapper_elt)
+            {
+                var arrow_elt = _wrapper_elt.closestChild('.arrow');
+
+                return {
+                    x: -arrow_elt.outerWidth(),
+                    y: -arrow_elt.outerHeight()
+                };
             }
         }
     };
