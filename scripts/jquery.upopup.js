@@ -69,16 +69,21 @@
      *  border, with three transparent sides) to point at the target
      *  element that you provide. Only one arrow may be visible at a
      *  time; the visible arrow can be controlled by using one of the
-     *  css classes from the diagram below (pipes again denote "or"):
-     *  
-     *                    (n | nw)    (ne)
-     *                       ^         ^
-     *               (wnw) < +---------+ > (ene)
-     *                       |         |
-     *                       |         |
-     *               (wsw) < +---------+ > (ese)
-     *                       v         v
-     *                    (s | sw)    (se)
+     *  css classes from the diagram below (pipes again denote "or";
+     *  asterisks indicate centered-arrow styles, which may have
+     *  suboptimal placement due to the position of the arrow).
+     *
+     *                              (top *
+     *                    (n | nw)   | above)    (ne)
+     *                       ^          ^        ^
+     *               (wnw) < +--------------------+ > (ene)
+     *                       |                    |
+     *            (left *) < |                    | > (right *)
+     *                       |                    |
+     *               (wsw) < +--------------------+ > (ese)
+     *                       v          v         v
+     *                    (s | sw)   (below *    (se)
+     *                                | bottom)
      *
      *  To modify the appearance of any uPopup-managed element, use a
      *  custom stylesheet to override properties found in the default
@@ -129,9 +134,9 @@
      *
      *              style:
      *                  Selects one of several available styles for the
-     *                  popup dialog. The default is $.uPopup.styles.default;
+     *                  popup dialog. The default is $.uPopup.style.default;
      *                  this uses the CSS that ships with uPopup. Other
-     *                  styles -- e.g. $.uPopup.styles.bootstrap -- allow
+     *                  styles -- e.g. $.uPopup.style.bootstrap -- allow
      *                  uPopup to take on the native appearance and
      *                  positioning logic of other CSS libraries / designs.
      *
@@ -236,7 +241,7 @@
 
             options.style = (
                 typeof(options.style) === 'object' ?
-                    options.style : $.uPopup.styles.regular
+                    options.style : $.uPopup.style.regular
             );
 
             $(this).each(function (i, popup_elt) {
@@ -563,7 +568,7 @@
             if (ev) {
 
                 /* Event object provided:
-                    This tells us where the pointer currently is.
+                    This tells us where the mouse pointer currently is.
                     We can use this instead of the target's corners. */
 
                 var pt = priv.event_to_point(
@@ -698,7 +703,7 @@
             if (ev) {
 
                 /* Event object provided:
-                    This tells us where the pointer currently is.
+                    This tells us where the mouse pointer currently is.
                     We can use this instead of the target's corners
                     to determine the list of possible placements. */
 
@@ -818,7 +823,63 @@
 
     };
 
-    $.uPopup.styles = {
+    $.uPopup.style = {
+
+        /**
+         * Commonly used placement and style functions,
+         * to be reused inside of style implementations.
+         * This is not a complete style; referencing this
+         * object in the {style} option will fail.
+         */
+        helper: {
+
+            /**
+             * Repositions {_wrapper_elt} to account for the 
+             * triangular arrow/pointer being centered along
+             * one axis, rather than in a corner of {_wrapper_elt}.
+             */
+            reposition_for_centered_pointer: function (_wrapper_elt,
+                                                       _data, _bias) {
+                var avail = _data.avail;
+                var offsets = _data.offsets;
+                var size = _data.size;
+
+                var css = {
+                    x: [ 'left', 'right' ], y: [ 'above', 'below' ]
+                };
+
+                /* Select preferred side and axis:
+                    Together, these determine placement entirely. */
+
+                var side = {
+                    x: (avail.x[0] > avail.x[1] ? 0 : 1),
+                    y: (avail.y[0] > avail.y[1] ? 0 : 1)
+                };
+
+                var axis = (
+                    avail.x[side.x] > avail.y[side.y] ? 'x' : 'y'
+                );
+
+                /* Adjustment factor:
+                    This transforms the popup placement, centering it
+                    along the placement axis that we did not select. */
+
+                var coeff = {
+                    x: (axis === 'y' ? (_bias.x ? -1 : 1) : 0),
+                    y: (axis === 'x' ? (_bias.y ? -1 : 1) : 0)
+                };
+
+                _wrapper_elt.offset({
+                    top: offsets.y[_bias.y] + ((size.y / 2) * coeff.y),
+                    left: offsets.x[_bias.x] + ((size.x / 2) * coeff.x)
+                });
+
+                _wrapper_elt.removeClass('left right above below');
+                _wrapper_elt.addClass(css[axis][side[axis]]);
+            },
+
+
+        },
 
         /**
          * The default look and feel for uPopup.
@@ -920,42 +981,11 @@
             apply_style: function (_wrapper_elt,
                                    _inner_elt, _data, _bias) {
 
-                var avail = _data.avail;
-                var offsets = _data.offsets;
-                var size = _data.size;
-
-                var css = {
-                    x: [ 'left', 'right' ], y: [ 'above', 'below' ]
-                };
-
-                /* Select preferred side and axis:
-                    Together, these determine placement entirely. */
-
-                var side = {
-                    x: (avail.x[0] > avail.x[1] ? 0 : 1),
-                    y: (avail.y[0] > avail.y[1] ? 0 : 1)
-                };
-
-                var axis = (
-                    avail.x[side.x] > avail.y[side.y] ? 'x' : 'y'
+                return (
+                    $.uPopup.style.helper.reposition_for_centered_pointer(
+                        _wrapper_elt, _data, _bias
+                    )
                 );
-
-                /* Adjustment factor:
-                    This transforms the popup placement, centering it
-                    along the placement axis that we did not select. */
-
-                var coeff = {
-                    x: (axis === 'y' ? (_bias.x ? -1 : 1) : 0),
-                    y: (axis === 'x' ? (_bias.y ? -1 : 1) : 0)
-                };
-
-                _wrapper_elt.offset({
-                    top: offsets.y[_bias.y] + ((size.y / 2) * coeff.y),
-                    left: offsets.x[_bias.x] + ((size.x / 2) * coeff.x)
-                });
-
-                _wrapper_elt.removeClass('left right above below');
-                _wrapper_elt.addClass(css[axis][side[axis]]);
             },
 
             /**
