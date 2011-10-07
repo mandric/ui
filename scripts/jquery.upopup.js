@@ -202,7 +202,14 @@
      *                  default. Set this to false if you're okay with the
      *                  popup dialog occasionally being placed outside of
      *                  the viewport (but still within the document).
-     *      
+     *
+     *              cssClasses:
+     *                  A string containing CSS classes that should be added
+     *                  to the popup's {inner_elt} prior to positioning. This
+     *                  should be used for classes that influence the size or
+     *                  shape of the popup (e.g. smallest, smaller, small,
+     *                  large, larger, largest).
+     *
      *  elements():
      *      Returns the set of wrapper elements being maintained by the
      *      uPopup library. This function returns an array whose size is
@@ -286,14 +293,25 @@
                     options: (options || {})
                 });
 
+                /* Additional CSS classes for popup:
+                    Add classes that affect size/shape before reposition. */
+
+                if (options.cssClasses) {
+                    wrapper_elt.closestChild('.direction').addClass(
+                        options.cssClasses
+                    );
+                }
+
                 /* Insert popup */
                 priv.insert(
                     wrapper_elt, popup_elt, target_elt, options
                 );
 
                 /* Show popup */
-                priv.toggle.call(popup_elt, true, options.onShow);
-                    
+                if (!options.hidden) {
+                    priv.toggle.call(popup_elt, true, options.onShow);
+                }
+
                 /* Reusable function that invokes positioning code:
                     This is used both to set the initial position, and
                     from within resize and ajax event handlers, below. */
@@ -537,9 +555,13 @@
                 /* Invoke action */
                 if (options.fx !== false) {
                     if (_is_show) {
-                        wrapper_elt.fadeIn(null, callback);
+                        wrapper_elt.fadeIn(
+                            (options.duration || 250), callback
+                        );
                     } else {
-                        wrapper_elt.fadeOut(null, callback);
+                        wrapper_elt.fadeOut(
+                            (options.duration || 250), callback
+                        );
                     }
                 } else {
                     if (_is_show) {
@@ -707,11 +729,17 @@
                 y: (wrapper_size.y - inner_elt.height()) / 2
             };
 
+
             /* Delta value:
                 Distance between popup's edge and arrow's edge. */
 
+            var elts = {
+                wrapper: _wrapper_elt,
+                arrow: arrow_elt, inner: inner_elt
+            };
+
             var d = data.options.style.calculate_delta(
-                _wrapper_elt, data, _bias
+                elts, data, _bias
             );
 
             if (ev) {
@@ -796,10 +824,7 @@
                 Allow the style to make modifications to the position
                 of the wrapper element, or otherwise make changes to it. */
 
-            data.options.style.apply_style(
-                { wrapper: _wrapper_elt,
-                    arrow: arrow_elt, inner: inner_elt }, data, _bias
-            )
+            data.options.style.apply_style(elts, data, _bias);
         },
 
         /*
@@ -1006,14 +1031,14 @@
              * we don't have a solid way to determine the offset-from-edge
              * in pixels using element positioning data alone.
              */
-            calculate_delta: function (_wrapper_elt, _data, _bias)
+            calculate_delta: function (_elts, _data, _bias)
             {
                 var delta = { x: 0, y: 0 };
 
                 if (_data.options.useCorners) {
 
                     var adjust_div = $('<div />').addClass('adjust');
-                    _wrapper_elt.append(adjust_div)
+                    _elts.inner.append(adjust_div)
 
                     /* Coefficients:
                         Adjust width/x, adjust height/y */
@@ -1082,7 +1107,7 @@
             /**
              * Bootstrap's arrow is not offset; return zeroes.
              */
-            calculate_delta: function (_wrapper_elt, _data, _bias)
+            calculate_delta: function (_elts, _data, _bias)
             {
                 return { x: 0, y: 0 };
             }
