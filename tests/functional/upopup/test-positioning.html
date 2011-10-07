@@ -31,9 +31,7 @@
                 $('.button').click(function (ev) {
                     var elt = $('<div style="width: 10em; height: 10em;" />');
                     elt.uPopup('create', this, {
-                        center: true,
-                        vertical: true,
-                        useCorners: false
+                        vertical: !!($(this).hasClass('vertical'))
                     });
                     var popup = elt.uPopup('elements');
                     popup.click(function (ev) {

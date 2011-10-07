@@ -601,8 +601,8 @@
             };
 
             var target_size = {
-                x: _target_elt.outerWidth(true),
-                y: _target_elt.outerHeight(true)
+                x: _target_elt.outerWidth(),
+                y: _target_elt.outerHeight()
             };
 
             /* Available space on each side of target:
@@ -715,13 +715,13 @@
             var target_offset = _target_elt.offset();
 
             var wrapper_size = {
-                x: _wrapper_elt.outerWidth(true),
-                y: _wrapper_elt.outerHeight(true)
+                x: _wrapper_elt.outerWidth(),
+                y: _wrapper_elt.outerHeight()
             };
 
             var target_size = {
-                x: _target_elt.outerWidth(true),
-                y: _target_elt.outerHeight(true)
+                x: _target_elt.outerWidth(),
+                y: _target_elt.outerHeight()
             };
 
             var padding_size = {
