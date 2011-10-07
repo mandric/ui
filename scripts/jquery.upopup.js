@@ -125,7 +125,7 @@
      *          not defined, the positioning algorithm will use the closest
      *          previous element t[j] (max(j) | j < i) to determine an
      *          optimal position. If t[i] is a function, it will be invoked
-     *          before positioning occurs, and must return an element.
+     *          before positioning occurs, and must return a jQuery selection.
      *
      *      _options:
      *          A javascript object, containing options that influence the
@@ -368,10 +368,10 @@
             var priv = $.uPopup.priv;
 
             $(this).each(function (i, popup_elt) {
-                var state = priv.instance_data_for(popup_elt);
+                var data = priv.instance_data_for(popup_elt);
                 priv.toggle.call(
-                    popup_elt, true, (state.options || {}).onShow
-                )
+                    popup_elt, true, (data.options || {}).onShow
+                );
             });
         },
 
@@ -384,10 +384,12 @@
             var priv = $.uPopup.priv;
 
             $(this).each(function (i, popup_elt) {
-                var state = priv.instance_data_for(popup_elt);
+                var data = priv.instance_data_for(popup_elt);
+                data.ratio = null;
+
                 priv.toggle.call(
-                    popup_elt, false, (state.options || {}).onHide
-                )
+                    popup_elt, false, (data.options || {}).onHide
+                );
             });
         },
 
@@ -422,11 +424,15 @@
 
             return $(
                 $(this).map(function (i, popup_elt) {
+
                     /* Convert element to instance data */
                     var data = priv.instance_data_for(popup_elt);
                     var wrapper_elt = data.elt;
+
                     return (wrapper_elt ? wrapper_elt[0] : undefined);
+
                 }).filter(function (wrapper_elt) {
+
                     /* Filter out undefined or empty values */
                     return !wrapper_elt;
                 })
@@ -490,6 +496,7 @@
                     max = a[i]; rv = i;
                 }
             }
+
             return rv;
         },
 
@@ -615,8 +622,7 @@
                     We can use this instead of the target's corners. */
 
                 var pt = priv.event_to_point(
-                    ev, priv.instance_data_for(_popup_elt),
-                        target_offset, target_size
+                    ev, data, target_offset, target_size
                 );
 
                 avail = {
@@ -750,8 +756,7 @@
                     to determine the list of possible placements. */
 
                 var pt = priv.event_to_point(
-                    ev, priv.instance_data_for(_popup_elt),
-                        target_offset, target_size
+                    ev, data, target_offset, target_size
                 );
 
                 offsets = {
@@ -834,26 +839,20 @@
          */
         event_to_point: function (ev, state, offset, size) {
 
-            var x = ev.pageX, y = ev.pageY;
-
-            if (state.ratio) {
-
-                /* Do we have a offset-to-size ratio?
-                    If so, adjust x and y before returning. */
-
-                x = offset.left + state.ratio.x * size.x;
-                y = offset.top + state.ratio.y * size.y;
-            }
-
             /* Save offset-to-size ratio:
-                If the target element is resized, then we'll use 
-                this ratio to adjust the event coordinates later. */
+                If the target element is resized, then we'll use this
+                ratio to adjust the coordinates originally provided. */
 
             if (!state.ratio) {
                 state.ratio = {
-                    x: (x - offset.left) / size.x,
-                    y: (y - offset.top) / size.y
+                    x: (ev.pageX - offset.left) / size.x,
+                    y: (ev.pageY - offset.top) / size.y
                 };
+            }
+
+            return {
+                x: offset.left + state.ratio.x * size.x,
+                y: offset.top + state.ratio.y * size.y
             }
 
             return { x: x, y: y };
@@ -1015,8 +1014,9 @@
                             : { x: [ -1, 1 ], y: [ 0, 0 ] }
                     );
 
-                    _elts.inner.removeClass('right left top bottom');
-                    _elts.inner.addClass(classes[pos.axis][pos.side]);
+                    var e = _elts.inner;
+                    e.removeClass('right left top bottom above below');
+                    e.addClass(classes[pos.axis][pos.side]);
                 }
 
                 helper.adjust_for_arrow(
