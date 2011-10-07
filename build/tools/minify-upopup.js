@@ -55,6 +55,8 @@ exports.squeeze = function (_data) {
              .replace(/instance_data_for/g, 'o')
              .replace(/apply_style/g, 'n')
              .replace(/create_wrapper/g, 'm')
+             .replace(/adjust_for_arrow/g, 'l')
+             .replace(/adjust_for_centered_pointer/g, 'k')
     );
 };
 
