@@ -58,7 +58,7 @@
                     );
                     elt.uPopup('create', this, {
                         style: $.uPopup.style.bootstrap,
-                        center: $(this).hasClass('danger')
+                        center: !!$(this).hasClass('danger')
                     });
                     var popup = elt.uPopup('elements');
                     popup.click(function (ev) {
@@ -71,7 +71,9 @@
             Click each button, and verify that a gray popup dialog appears.
             Verify that the popup is fully on screen, and is visible without
             additional scrolling. Verify that each dialog's arrow points at
-            the appropriate corner of the button that triggered it.
+            the appropriate corner of the button that triggered it &#8212;
+            except for the red button, where the arrow should point at the
+            center.
         </div>
         <div style="position: absolute; left: 40%; top: 40%;">
             <input class="btn primary" type="button" value="Test" />

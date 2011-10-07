@@ -158,6 +158,13 @@
      *                  {_target_elts} -- either on the x-axis, y-axis,
      *                  or on both axes, respectively.
      *
+     *              useCorners:
+     *                  A boolean value, defaults to true. When set, this
+     *                  causes the pointer/arrow to appear in a corner of
+     *                  the popup. When false, the arrow appears centered
+     *                  along one axis, on the top/bottom/left/right of the
+     *                  popup wrapper.
+     *
      *              vertical:
      *                  A boolean value. If true, place each popup dialog's
      *                  pointer (i.e. triangular arrow) on the top or bottom
@@ -239,10 +246,17 @@
             var options = (_options || {});
             var target_elts = priv.listify(_target_elts);
 
+            /* Process options:
+                Add defaults for unspecified options. */
+
             options.style = (
                 typeof(options.style) === 'object' ?
                     options.style : $.uPopup.style.regular
             );
+
+            if (options.useCorners !== false) {
+                options.useCorners = true;
+            }
 
             $(this).each(function (i, popup_elt) {
 
@@ -309,6 +323,9 @@
                     $(window).bind(
                         'resize.' + $.uPopup.key, reposition_fn
                     );
+                    $(window).bind(
+                        'scroll.' + $.uPopup.key, reposition_fn
+                    );
                     /* AJAX update affecting popup's content */
                     popup_elt.bind(
                         'ajaxComplete.' + $.uPopup.key, reposition_fn
@@ -361,17 +378,20 @@
          * selected element(s), hiding the popup first if necessary.
          */
         destroy: function () {
+
             $.uPopup.priv.toggle.call(
                 this, false, function (_wrapper_elt) {
                     _wrapper_elt.remove();
                     delete _wrapper_elt;
                 }
             );
+
             $(this).each(function (i, popup_elt) {
                 popup_elt = $(popup_elt);
                 popup_elt.unbind('.' + $.uPopup.key);
                 popup_elt.data($.uPopup.key, null);
             });
+
             $(window).unbind('.' + $.uPopup.key);
         },
 
@@ -557,6 +577,7 @@
                 x: container_elt.width(),
                 y: container_elt.height()
             };
+
             var target_size = {
                 x: _target_elt.outerWidth(true),
                 y: _target_elt.outerHeight(true)
@@ -675,30 +696,23 @@
                 x: _wrapper_elt.outerWidth(true),
                 y: _wrapper_elt.outerHeight(true)
             };
+
             var target_size = {
                 x: _target_elt.outerWidth(true),
                 y: _target_elt.outerHeight(true)
             };
+
             var padding_size = {
                 x: (wrapper_size.x - inner_elt.width()) / 2,
                 y: (wrapper_size.y - inner_elt.height()) / 2
-            };
-            var arrow_size = {
-                x: arrow_elt.outerWidth(),
-                y: arrow_elt.outerHeight()
             };
 
             /* Delta value:
                 Distance between popup's edge and arrow's edge. */
 
             var d = data.options.style.calculate_delta(
-                _wrapper_elt, data
+                _wrapper_elt, data, _bias
             );
-
-            /* Coefficient:
-                Sign indicates the shift direction for {arrow_size}. */
-
-            var c = (options.vertical ? -1 : 1);
 
             if (ev) {
 
@@ -714,12 +728,12 @@
 
                 offsets = {
                     x: [
-                        pt.x - wrapper_size.x - (c * arrow_size.x / 2) + d.x,
-                        pt.x + (c * arrow_size.x / 2) - d.x
+                        pt.x - wrapper_size.x  + d.x,
+                        pt.x - d.x
                     ],
                     y: [
-                        pt.y - wrapper_size.y + (c * arrow_size.y / 2) + d.y,
-                        pt.y - (c * arrow_size.y / 2) - d.y
+                        pt.y - wrapper_size.y + d.y,
+                        pt.y - d.y
                     ]
                 };
 
@@ -731,15 +745,15 @@
                 offsets = {
                     x: [
                         target_offset.left - wrapper_size.x + d.x
-                            + padding_size.x - c * arrow_size.x / 2,
+                            + padding_size.x,
                         target_offset.left + target_size.x - d.x
-                            - padding_size.x + c * arrow_size.x / 2
+                            - padding_size.x
                     ],
                     y: [
                         target_offset.top - wrapper_size.y + d.y
-                            + padding_size.y + c * arrow_size.y / 2,
+                            + padding_size.y,
                         target_offset.top + target_size.y - d.y
-                            - padding_size.y - c * arrow_size.y / 2
+                            - padding_size.y
                     ]
                 };
             }
@@ -783,7 +797,8 @@
                 of the wrapper element, or otherwise make changes to it. */
 
             data.options.style.apply_style(
-                _wrapper_elt, inner_elt, data, _bias
+                { wrapper: _wrapper_elt,
+                    arrow: arrow_elt, inner: inner_elt }, data, _bias
             )
         },
 
@@ -824,27 +839,46 @@
     $.uPopup.style = {
 
         /**
-         * Commonly used placement and style functions,
-         * to be reused inside of style implementations.
-         * This is not a complete style; referencing this
-         * object in the {style} option will fail.
+         * Commonly used placement and style functions, to be reused
+         * inside of style implementations. This is not a complete
+         * style itself; don't reference this as a {style} option.
          */
         helper: {
+
+            /**
+             * Move {_wrapper_elt} so that the point of {_arrow_elt}
+             * is over the intended target, rather than the corner
+             * of {_arrow_elt}'s bounding box.
+             */
+            adjust_for_arrow: function (_wrapper_elt,
+                                        _arrow_elt, _bias, _coefficients) {
+
+                var wrapper_offset = _wrapper_elt.offset();
+
+                var arrow_size = {
+                    x: _arrow_elt.outerWidth(),
+                    y: _arrow_elt.outerHeight()
+                };
+                
+                _wrapper_elt.offset({
+                    top: wrapper_offset.top
+                        - (_coefficients.y[_bias.y] * arrow_size.y / 2),
+                    left: wrapper_offset.left
+                        + (_coefficients.x[_bias.x] * arrow_size.x / 2)
+                });
+            },
 
             /**
              * Repositions {_wrapper_elt} to account for the 
              * triangular arrow/pointer being centered along
              * one axis, rather than in a corner of {_wrapper_elt}.
              */
-            reposition_for_centered_pointer: function (_wrapper_elt,
-                                                       _data, _bias) {
+            adjust_for_centered_pointer: function (_wrapper_elt,
+                                                   _inner_elt,
+                                                   _data, _bias) {
                 var avail = _data.avail;
                 var offsets = _data.offsets;
                 var size = _data.size;
-
-                var css = {
-                    x: [ 'left', 'right' ], y: [ 'above', 'below' ]
-                };
 
                 /* Select preferred side and axis:
                     Together, these determine placement entirely. */
@@ -872,8 +906,9 @@
                     left: offsets.x[_bias.x] + ((size.x / 2) * coeff.x)
                 });
 
-                _wrapper_elt.removeClass('left right above below');
-                _wrapper_elt.addClass(css[axis][side[axis]]);
+                return {
+                    axis: axis, side: side[axis]
+                }
             },
 
 
@@ -909,21 +944,59 @@
              * elements. In the default case, positioning is performed for
              * us; we just set the appropriate CSS class and return.
              */
-            apply_style: function (_wrapper_elt,
-                                   _inner_elt, _data, _bias) {
+            apply_style: function (_elts, _data, _bias) {
+
+                var coefficients;
+                var helper = $.uPopup.style.helper;
+
                 /* Position arrow:
                     We place the arrow on a corner of the popup.
                     Specifically, we use the corner that's closest
                     to the near corner of the target element. */
-                
-                var classes = (
-                    _data.options.vertical ?
-                        [ [ 'se', 'ne' ], [ 's', 'n' ] ]
-                        : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
-                );
 
-                _inner_elt.removeClass('se ne s n ese e wsw w');
-                _inner_elt.addClass(classes[_bias.x][_bias.y]);
+                if (_data.options.useCorners) {
+
+                    var is_vertical = _data.options.vertical;
+
+                    var classes = (
+                        is_vertical ?
+                            [ [ 'se', 'ne' ], [ 's', 'n' ] ]
+                            : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
+                    );
+
+                    coefficients = (
+                        is_vertical ?
+                            { x: [ 1, -1 ], y: [ 1, -1 ] }
+                            : { x: [ -1, 1 ], y: [ -1, 1 ] }
+                    );
+
+                    _elts.inner.removeClass('se ne s n ese e wsw w');
+                    _elts.inner.addClass(classes[_bias.x][_bias.y]);
+
+                } else {
+               
+                    var classes = {
+                        x: [ 'right', 'left' ],
+                            y: [ 'below', 'above' ]
+                    };
+
+                    var pos = helper.adjust_for_centered_pointer(
+                        _elts.wrapper, _elts.inner, _data, _bias
+                    );
+
+                    coefficients = (
+                        (pos.axis !== 'x') ?
+                            { x: [ 0, 0 ], y: [ 1, -1 ] }
+                            : { x: [ -1, 1 ], y: [ 0, 0 ] }
+                    );
+
+                    _elts.inner.removeClass('right left top bottom');
+                    _elts.inner.addClass(classes[pos.axis][pos.side]);
+                }
+
+                helper.adjust_for_arrow(
+                    _elts.wrapper, _elts.arrow, _bias, coefficients
+                );
             },
 
             /**
@@ -933,24 +1006,26 @@
              * we don't have a solid way to determine the offset-from-edge
              * in pixels using element positioning data alone.
              */
-            calculate_delta: function (_wrapper_elt, _data)
+            calculate_delta: function (_wrapper_elt, _data, _bias)
             {
-                var adjust_div = $('<div />').addClass('adjust');
-                _wrapper_elt.append(adjust_div)
+                var delta = { x: 0, y: 0 };
 
-                /* Coefficients:
-                    Adjust width/x, adjust height/y */
+                if (_data.options.useCorners) {
 
-                var c = (
-                    _data.options.vertical ? [ 1, 0 ] : [ 0, 1 ]
-                );
+                    var adjust_div = $('<div />').addClass('adjust');
+                    _wrapper_elt.append(adjust_div)
 
-                var delta = {
-                    x: c[0] * adjust_div.width(),
-                    y: c[1] * adjust_div.height()
-                };
+                    /* Coefficients:
+                        Adjust width/x, adjust height/y */
 
-                adjust_div.remove();
+                    var c = (_data.options.vertical ? [ 1, 0 ] : [ 0, 1 ]);
+
+                    delta.x = c[0] * adjust_div.width();
+                    delta.y = c[1] * adjust_div.height();
+
+                    adjust_div.remove();
+                }
+
                 return delta;
             }
         },
@@ -983,29 +1058,33 @@
              * account for the fact that the Bootstrap popups have the
              * arrow in the center of the popup edge, not the corner.
              */
-            apply_style: function (_wrapper_elt,
-                                   _inner_elt, _data, _bias) {
+            apply_style: function (_elts, _data, _bias) {
 
-                return (
-                    $.uPopup.style.helper.reposition_for_centered_pointer(
-                        _wrapper_elt, _data, _bias
-                    )
+                var helper = $.uPopup.style.helper;
+
+                var css = {
+                    x: [ 'left', 'right' ], y: [ 'above', 'below' ]
+                };
+
+                var pos = helper.adjust_for_centered_pointer(
+                    _elts.wrapper, _elts.wrapper, _data, _bias
+                );
+
+                _elts.wrapper.removeClass('left right above below');
+                _elts.wrapper.addClass(css[pos.axis][pos.side]);
+
+                helper.adjust_for_arrow(
+                    _elts.wrapper, _elts.arrow, _bias,
+                        { x: [ -1, 1 ], y: [ 1, -1 ] }
                 );
             },
 
             /**
-             * Bootstrap's arrow is offset by its exact width and
-             * height; this adjusts placement so that the arrow
-             * points to the correct location on the target element.
+             * Bootstrap's arrow is not offset; return zeroes.
              */
-            calculate_delta: function (_wrapper_elt, _options)
+            calculate_delta: function (_wrapper_elt, _data, _bias)
             {
-                var arrow_elt = _wrapper_elt.closestChild('.arrow');
-
-                return {
-                    x: -arrow_elt.outerWidth(),
-                    y: -arrow_elt.outerHeight()
-                };
+                return { x: 0, y: 0 };
             }
         }
     };

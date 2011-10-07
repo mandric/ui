@@ -75,26 +75,12 @@
 .upopup .arrow {
     position: absolute;
 }
-.upopup .n .border,
-.upopup .nw .border,
-.upopup .ne .border,
-.upopup .w .border,
-.upopup .wnw .border,
-.upopup .wsw .border {
-    box-shadow: 0.15em 0.15em 0.35em #555;
-    -webkit-box-shadow: 0.15em 0.15em 0.35em #555;
-    -moz-box-shadow: 0.15em 0.15em 0.35em #555;
-}
-.upopup .s .border,
-.upopup .se .border,
-.upopup .sw .border {
-    box-shadow: 0.15em 0.15em 0.35em #555;
-    -webkit-box-shadow: 0.15em 0.15em 0.35em #555;
-    -moz-box-shadow: 0.15em 0.15em 0.35em #555;
-}
-.upopup .e .border,
-.upopup .ese .border,
-.upopup .ene .border {
+.upopup .border,
+.upopup .border,
+.upopup .border,
+.upopup .border,
+.upopup .border,
+.upopup .border {
     box-shadow: 0.15em 0.15em 0.35em #555;
     -webkit-box-shadow: 0.15em 0.15em 0.35em #555;
     -moz-box-shadow: 0.15em 0.15em 0.35em #555;
