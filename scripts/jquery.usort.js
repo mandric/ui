@@ -65,8 +65,10 @@
             var options = $.extend(default_options, _options || {});
             var data = priv.create_instance_data(this, options);
 
-            var sortable_elt = this;
+            var sortable_elts = this;
             var items = options.items;
+
+            sortable_elts.addClass('usort');
 
             switch (typeof(items)) {
                 case 'function':
@@ -82,11 +84,11 @@
             };
 
             data.udrag = items.uDrag('create', {
-                drop: sortable_elt,
+                drop: sortable_elts,
                 container: options.container,
                 onInsertElement: function (_elt, _drop_elt) {
                     _elt.css('display', 'block');
-                    priv.stop_other_animations(sortable_elt, false);
+                    priv.stop_other_animations(sortable_elts, false);
                 },
                 onPositionElement: false,
                 onHover: $.proxy(priv.handle_drag_hover, this),
@@ -94,7 +96,9 @@
             });
 
             items.each(function (i, elt) {
-                data.area_index.track(elt);
+                data.area_index.track(elt, {
+                    sortable_elt: $(elt).parents('.usort').first()
+                });
             });
 
             return this;
@@ -166,30 +170,44 @@
         },
 
         /*
-         * Insert {_elt} either before or after {_target_elt},
+         * Insert {_elt} either before or after {_target_area},
          * depending upon {_elt}'s original position. Recalculate
          * areas for any affected elements. If animation is enabled,
          * this function will be run asynchronously.
          */
-        insert_element: function (_sortable_elt, _elt,
-                                  _target_elt, _callback) {
-            
+        insert_element: function (_sortable_elt, _src_area,
+                                  _target_area, _callback) {
+
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(_sortable_elt);
 
             var areas = data.area_index;
-            var index = areas.element_to_index(_target_elt);
+            var src_elt = _src_area.elt;
+            var target_elt = _target_area.elt;
+            var target_index = areas.element_to_index(target_elt);
 
-            var i_elt = _elt.prevAll(':not(.animation)').length;
-            var i_dst = _target_elt.prevAll(':not(.animation)').length;
+            var i_dst = target_elt.prevAll(':not(.animation)').length;
+            var i_elt = src_elt.prevAll(':not(.animation)').length;
+
+            var different_parent = false;
             var is_backward = (i_dst < i_elt);
+
+            /* Change of parent?
+                If the {src_elt} is being dropped on a different parent
+                element, force the {target_elt} to move downward. Update
+                the parent element to reflect the fact that it's moving. */
+
+            if (_src_area.sortable_elt[0] != _target_area.sortable_elt[0]) {
+                is_backward = different_parent = true;
+                _src_area.sortable_elt = _target_area.sortable_elt;
+            }
 
             /* Base element insertion function */
             var insert_element_common = function () {
                 if (is_backward) {
-                    _elt.insertBefore(_target_elt);
+                    src_elt.insertBefore(target_elt);
                 } else {
-                    _elt.insertAfter(_target_elt);
+                    src_elt.insertAfter(target_elt);
                 }
             };
 
@@ -201,35 +219,46 @@
             }
 
             /* One animation at a time:
-                Acquire lock on animations around {_target_elt}. */
+                Acquire lock on animations around {target_elt}. */
 
             if (data.animate) {
-                if (data.animations[index]) {
+                if (data.animations[target_index]) {
                     return true;
                 }
-                priv.stop_other_animations(_sortable_elt, index);
+                priv.stop_other_animations(_sortable_elt, target_index);
             }
 
             /* Determine recalculation range:
                 A move operation affects the position of all
-                elements between {_elt} and {_target_elt}; store
+                elements between {src_elt} and {target_elt}; store
                 these in a list and recalculate their position later. */
 
-            var recalculate_elts = priv.find_elements_between.apply(
-                null, (is_backward ?
-                    [ _target_elt, _elt ] : [ _elt, _target_elt ])
-            );
+            var recalc_elts;
+
+            if (different_parent) {
+                var next_elt = src_elt.next();
+                recalc_elts = [ src_elt, next_elt, target_elt ].concat(
+                    next_elt.nextAll().add(target_elt.nextAll()).toArray()
+                )
+            } else {
+                recalc_elts = priv.find_elements_between.apply(
+                    null, (
+                        is_backward ?
+                            [ target_elt, src_elt ] : [ src_elt, target_elt ]
+                    )
+                );
+            }
 
             if (data.animate) {
 
                 /* Produce two {_elt} clones:
                     These are used as animated placeholders. */
 
-                var shrink_elt = _target_elt.clone(true);
-                var grow_elt = _target_elt.clone(true);
+                var shrink_elt = target_elt.clone(true);
+                var grow_elt = target_elt.clone(true);
 
-                var before_elt = $(_elt.prev(':not(.animation)'));
-                var after_elt = $(_elt.next(':not(.animation)'));
+                var before_elt = $(src_elt.prev(':not(.animation)'));
+                var after_elt = $(src_elt.next(':not(.animation)'));
 
                 shrink_elt.addClass('animation');
                 grow_elt.addClass('animation');
@@ -243,15 +272,15 @@
                     natural extent and shrink to an extent of zero. */
 
                 if (is_backward) {
-                    shrink_elt.insertBefore(_elt);
-                    grow_elt.insertBefore(_target_elt);
+                    shrink_elt.insertBefore(src_elt);
+                    grow_elt.insertBefore(target_elt);
                 } else {
-                    shrink_elt.insertAfter(_elt);
-                    grow_elt.insertAfter(_target_elt);
+                    shrink_elt.insertAfter(src_elt);
+                    grow_elt.insertAfter(target_elt);
                 }
 
                 insert_element_common();
-                _elt.css('display', 'none');
+                src_elt.css('display', 'none');
 
                 var after_animation = function () {
 
@@ -259,13 +288,13 @@
                     shrink_elt.remove();
 
                     if ((--data.animation_count) == 0) {
-                        _elt.css('display', 'block');
+                        src_elt.css('display', 'block');
                     }
                     
-                    areas.recalculate_element_areas(recalculate_elts);
+                    areas.recalculate_element_areas(recalc_elts);
 
                     invoke_callback();
-                    delete data.animations[index];
+                    delete data.animations[target_index];
                 };
 
                 var slide_function = (
@@ -276,14 +305,14 @@
                 
                 ++data.animation_count;
 
-                data.animations[index] = slide_function(
+                data.animations[target_index] = slide_function(
                     data, grow_elt, shrink_elt, after_animation
                 );
 
             } else {
 
                 insert_element_common();
-                areas.recalculate_element_areas(recalculate_elts);
+                areas.recalculate_element_areas(recalc_elts);
                 invoke_callback();
             }
 
@@ -520,10 +549,14 @@
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
-            var area = data.area_index.find_beneath(_offsets.absolute);
+            var src_area = data.area_index.element_to_area(_elt);
 
-            if (area && !area.elt.hasClass('placeholder')) {
-                priv.insert_element(this, _elt, area.elt);
+            var target_area = data.area_index.find_beneath(
+                _offsets.absolute
+            );
+
+            if (target_area && !target_area.elt.hasClass('placeholder')) {
+                priv.insert_element(this, src_area, target_area);
             }
 
             return false;
