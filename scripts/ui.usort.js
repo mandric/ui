@@ -539,7 +539,7 @@
                 priv.insert_element(this, src_area, target_area);
             }
 
-            return false;
+            return true; /* Allow drop operation */
         },
 
         /**
@@ -551,7 +551,7 @@
             var data = priv.instance_data_for(this);
 
             data.area_index.recalculate_all();
-            return false;
+            return true;
         }
     };
  

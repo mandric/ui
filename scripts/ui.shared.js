@@ -54,6 +54,8 @@
          */
         trigger_event: function (_name, _key, _default_callback,
                                  _elt, _options, _arguments) {
+            var rv = null;
+
             if (_elt) {
                 _elt.trigger(_key + ':' + _name);
             }
@@ -68,16 +70,16 @@
                 ];
                 if (handler !== undefined) {
                     if (handler) {  /* Skip on false or null */
-                        handler.apply(null, _arguments);
+                        rv = handler.apply(null, _arguments);
                     }
                 } else {
                     if (_default_callback) {
-                        _default_callback.apply(null, _arguments);
+                        rv = _default_callback.apply(null, _arguments);
                     }
                 }
             }
 
-            return true;
+            return rv;
         },
 
         /**

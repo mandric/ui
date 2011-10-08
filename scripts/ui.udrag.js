@@ -455,7 +455,7 @@
 
             priv.exit_drop_area(null, data);
 
-            if (drop_area && !drop_area.scroll_only) {
+            if (drop_area && !drop_area.scroll_only && data.drop_allowed) {
 
                 var options = data.options;
                 var drop_elt = drop_area.elt;
@@ -474,6 +474,7 @@
                     the event allows you to change the placement policy. */
 
                 var events = {
+                    drop: priv.default_drop_callback,
                     insert_element: priv.default_insert_callback,
                     position_element: priv.default_position_callback
                 };
@@ -556,14 +557,12 @@
                 priv.start_autoscroll(_elt, drop_area);
 
                 if (!drop_area.scroll_only) {
-                    priv.enter_drop_area(drop_area, data);
-                    
                     if (!_skip_events) {
                         var absolute_offset = {
                             x: _ev.pageX, y: _ev.pageY
                         };
-                        $.uI.trigger_event(
-                            'hover', $.uDrag.key, null,
+                        data.drop_allowed = $.uI.trigger_event(
+                            'hover', $.uDrag.key, priv.default_hover_callback,
                             _elt, data.options, [
                                 _elt, drop_elt, {
                                     absolute: absolute_offset,
@@ -574,10 +573,20 @@
                             ]
                         );
                     }
+                    if (data.drop_allowed) {
+                        priv.enter_drop_area(drop_area, data);
+                    }
                 }
 
             } else {
+
+                /* No drop zone underneath pointer:
+                    Stop any scrolling, and tell stop_dragging
+                    that we're not hovering over a valid drop area. */
+
                 priv.stop_autoscroll(_elt);
+                data.drop_allowed = false;
+
             }
 
             return _elt;
@@ -612,7 +621,7 @@
         },
 
         /**
-         * The default implementation of the positionElement callback.
+         * The default implementation of the positionElement event.
          * If not overridden, this will use relative positioning to
          * (visually) maintain the dropped element's position.
          */
@@ -629,12 +638,26 @@
         },
        
         /**
-         * The default implementation of the insertElement callback.
+         * The default implementation of the insertElement event.
          */
         default_insert_callback: function (_elt, _drop_elt) {
             _drop_elt.prepend(_elt);
         },
-       
+              
+        /**
+         * The default implementation of the hover event.
+         */
+        default_hover_callback: function (_elt, _drop_elt, _offsets) {
+            return true;
+        },
+              
+        /**
+         * The default implementation of the drop event.
+         */
+        default_drop_callback: function (_elt, _drop_elt, _offsets) {
+            return true;
+        },
+
         /**
          * Start scrolling the container element in {_drop_area},
          * using the scroll-axis information found in {_elt}. This
@@ -833,6 +856,7 @@
                     placeholder_elt: null,
                     last_positioning_event: null,
                     previous_highlight_area: null,
+                    drop_allowed: false,
                     is_autoscrolling: false,
                     has_scrolled_recently: false,
                     autoscroll_axes: { x: 0, y: 0 },
