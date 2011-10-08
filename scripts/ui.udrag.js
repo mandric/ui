@@ -479,8 +479,8 @@
                 };
 
                 for (var k in events) {
-                    priv.trigger_event(
-                        k, events[k], _elt, data.options,
+                    $.uI.trigger_event(
+                        k, $.uDrag.key, events[k], _elt, data.options,
                         [ _elt, drop_elt, offsets ]
                     );
                 }
@@ -562,8 +562,8 @@
                         var absolute_offset = {
                             x: _ev.pageX, y: _ev.pageY
                         };
-                        priv.trigger_event(
-                            'hover', null,
+                        $.uI.trigger_event(
+                            'hover', $.uDrag.key, null,
                             _elt, data.options, [
                                 _elt, drop_elt, {
                                     absolute: absolute_offset,
@@ -789,8 +789,8 @@
             var priv = $.uDrag.priv;
 
             if (_area && _area != _data.previous_highlight_area) {
-                priv.trigger_event(
-                    'enter', null, _area.elt, _data.options,
+                $.uI.trigger_event(
+                    'enter', $.uDrag.key, null, _area.elt, _data.options,
                         [ _area.elt, _area.container_elt ]
                 );
                 _data.previous_highlight_area = _area;
@@ -808,8 +808,9 @@
 
             if (prev_area) {
                 if (!_area || _area != prev_area) {
-                    priv.trigger_event(
-                        'exit', null, prev_area.elt, _data.options,
+                    $.uI.trigger_event(
+                        'exit', $.uDrag.key, null,
+                            prev_area.elt, _data.options,
                             [ prev_area.elt, prev_area.container_elt ]
                     );
                     _data.previous_highlight_area = null;
@@ -1160,37 +1161,6 @@
             });
         },
 
-        /**
-         * Trigger an event, using either a callback,
-         * a dynamic event, or both.
-         */
-        trigger_event: function (_name, _default_callback,
-                                 _elt, _options, _arguments) {
-            if (_elt) {
-                _elt.trigger($.uDrag.key + ':' + _name);
-            }
-
-            if (_options) {
-                var handler = _options[
-                    'on' + _name.replace(
-                        /(?:^|_)(\w)/g, function (s, x) {
-                            return x.toUpperCase();
-                        }
-                    )
-                ];
-                if (handler !== undefined) {
-                    if (handler) {  /* Skip on false or null */
-                        handler.apply(null, _arguments);
-                    }
-                } else {
-                    if (_default_callback) {
-                        _default_callback.apply(null, _arguments);
-                    }
-                }
-            }
-
-            return true;
-        },
 
         /**
          * Event handler for document's mouse-up event.
@@ -1277,8 +1247,8 @@
 
             data.areas.recalculate_all();
 
-            priv.trigger_event(
-                'recalculate', null, _elt, data.options,
+            $.uI.trigger_event(
+                'recalculate', $.uDrag.key, null, _elt, data.options,
                     [ (data.container_elt || _elt) ]
             );
 

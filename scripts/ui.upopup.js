@@ -241,6 +241,9 @@
     $.uPopup = {};
     $.uPopup.key = 'upopup';
 
+    /**
+     * $.uPopup:
+     */
     $.uPopup.impl = {
 
         /**
@@ -251,7 +254,7 @@
 
             var priv = $.uPopup.priv;
             var options = (_options || {});
-            var target_elts = priv.listify(_target_elts);
+            var target_elts = $.uI.listify(_target_elts);
 
             /* Process options:
                 Add defaults for unspecified options. */
@@ -458,13 +461,6 @@
         _serial_number: 0,
         _zindex_base: 16384,
 
-        /**
-         * Make `_v` an array if it isn't already an array.
-         */
-        listify: function (_v) {
-
-            return ($.isArray(_v) ? _v : [ _v ]);
-        },
 
         /**
          * Returns the uPopup-private storage attached to `_elt`.
@@ -478,23 +474,6 @@
             if (!rv) {
                 rv = {};
                 _elt.data(key, rv);
-            }
-
-            return rv;
-        },
-
-        /**
-         * Returns the array offset (i.e. index) that contains the
-         * largest value in the array.
-         */
-        index_of_max: function (a) {
-
-            var rv, max;
-
-            for (var i = 0, len = a.length; i < len; ++i) {
-                if (!max || a[i] > max) {
-                    max = a[i]; rv = i;
-                }
             }
 
             return rv;
@@ -686,8 +665,8 @@
                 zero is the minimal side of an axis, one the maximal. */
 
             var bias = {
-                x: priv.index_of_max(avail.x),
-                y: priv.index_of_max(avail.y)
+                x: $.uI.index_of_max(avail.x),
+                y: $.uI.index_of_max(avail.y)
             };
 
             return priv.reposition(
@@ -1127,36 +1106,4 @@
 
 })(jQuery);
 
-
-/* 
- * closestChild for jQuery
- * Copyright 2011, Tobias Lindig
- * 
- * Dual licensed under the MIT license and GPL licenses:
- *   http://www.opensource.org/licenses/mit-license.php
- *   http://www.opensource.org/licenses/gpl-license.php
- */
-(function ($) {
-    if (!$.fn.closestChild) {
-        $.fn.closestChild = function (selector) {
-            /* Breadth-first search for the first matched node */
-            if (selector && selector !== '') {
-                var queue = [];
-                queue.push(this);
-                while (queue.length > 0) {
-                    var node = queue.shift();
-                    var children = node.children();
-                    for (var i = 0; i < children.length; ++i) {
-                        var child = $(children[i]);
-                        if (child.is(selector)) {
-                            return child;
-                        }
-                        queue.push(child);
-                    }
-                }
-            }
-            return $(); /* Nothing found */
-        };
-    }
-}(jQuery));
 

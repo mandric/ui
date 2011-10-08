@@ -241,7 +241,7 @@
                     next_elt.nextAll().add(target_elt.nextAll()).toArray()
                 )
             } else {
-                recalc_elts = priv.find_elements_between.apply(
+                recalc_elts = $.uI.find_elements_between.apply(
                     null, (
                         is_backward ?
                             [ target_elt, src_elt ] : [ src_elt, target_elt ]
@@ -520,26 +520,6 @@
                     }
                 }
             }
-        },
-
-        /**
-         * Return an array containing {_start_elt}, {_end_elt},
-         * and all of the sibling elements located between the two.
-         */
-        find_elements_between: function (_start_elt, _end_elt) {
-
-            var rv = [];
-            var p = $(_start_elt);
-
-            while (p[0]) {
-                rv.push(p[0]);
-                if (p[0] === _end_elt[0]) {
-                    break;
-                }
-                p = p.next();
-            }
-
-            return rv;
         },
 
         /**
