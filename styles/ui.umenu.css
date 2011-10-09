@@ -1,15 +1,22 @@
 
 .umenu {
     max-width: 20em;
-    font-size: 1.1em;
 }
 
-.umenu .item {
+.udrag .item .inner,
+.umenu .item .inner,
+.upopup .inner .umenu .item .inner {
     padding: 0.75em 1.75em 0.75em 0.75em;
     border-bottom: solid 1px #ccc;
 }
 
-.umenu .item:last-child {
+.udrag .item .inner {
+    font-size: 0.75em;
+    border-bottom: none;
+}
+    
+.umenu .item:last-child .inner,
+.upopup .inner .umenu .item:last-child .inner {
     border-bottom: none;
 }
 

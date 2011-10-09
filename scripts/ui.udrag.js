@@ -417,7 +417,6 @@
 
             data.is_dragging = true;
             var drag_elt = priv.create_overlay(elt, _ev);
-            drag_elt.css('z-index', 65535);
 
             data.extent = {
                 x: drag_elt.outerWidth(),
@@ -457,6 +456,11 @@
 
             priv.exit_drop_area(null, data);
 
+            $.uI.trigger_event(
+                'drop', $.uDrag.key, priv.default_drop_callback,
+                    _elt, data.options, [ _elt ]
+            );
+
             if (drop_area && !drop_area.scroll_only && data.drop_allowed) {
 
                 var options = data.options;
@@ -476,7 +480,6 @@
                     the event allows you to change the placement policy. */
 
                 var events = {
-                    drop: priv.default_drop_callback,
                     insert_element: priv.default_insert_callback,
                     position_element: priv.default_position_callback
                 };
@@ -488,14 +491,14 @@
                     );
                 }
 
-                /* Start animation:
-                    Asynchronously move {_elt} back toward the origin. */
-
-                priv.move_element(_elt, drop_elt, _ev);
                 priv.recalculate_all(_elt);
             }
 
+            /* Start animation:
+                Asynchronously move {_elt} back toward the origin. */
+
             data.is_dragging = false;
+            priv.move_element(_elt);
             priv.stop_autoscroll(_elt);
             priv.return_to_original_position(_elt);
         },
@@ -1120,30 +1123,32 @@
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
-            var drag_elt = data.placeholder_elt = _elt.clone(true);
 
-            drag_elt.css('position', 'absolute');
-            drag_elt.css('visibility', 'hidden');
+            var wrap_elt = $('<div class="udrag" />');
+            var drag_elt = _elt.clone(true);
+
+            wrap_elt.append(drag_elt);
+            wrap_elt.css('z-index', 65535);
+            wrap_elt.css('position', 'absolute');
+            data.placeholder_elt = wrap_elt;
 
             drag_elt.width(_elt.width());
             drag_elt.height(_elt.height());
 
-            $('body').append(drag_elt);
+            $('body').append(wrap_elt);
             priv.update_position(_elt, _ev, true);
 
             _elt.addClass('placeholder');
             _elt.css('visibility', 'hidden');
-
             drag_elt.css('visibility', 'visible');
 
-            return drag_elt;
+            return wrap_elt;
         },
         
         /**
-         * Sets a new default position for the draggable
-         * element. The event {_ev} must contain page coordinates.
+         * Sets a new default position for the draggable element.
          */
-        move_element: function (_elt, _new_parent_elt, _ev) {
+        move_element: function (_elt) {
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
@@ -1153,7 +1158,6 @@
                 this when it's called, effectively moving the element. */
 
             var offset = _elt.offset();
-
             data.initial_position = { x: offset.left, y: offset.top };
             data.delta.x = data.delta.y = 0;
 

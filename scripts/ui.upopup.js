@@ -267,6 +267,10 @@
             if (options.useCorners !== false) {
                 options.useCorners = true;
             }
+            
+            if (options.useMutation !== false) {
+                options.useMutation = true;
+            }
 
             $(this).each(function (i, popup_elt) {
 
@@ -355,10 +359,13 @@
                     popup_elt.bind(
                         'ajaxComplete.' + $.uPopup.key, reposition_fn
                     );
-                    /* DOM element mutation, where supported */
-                    popup_elt.bind(
-                        'DOMSubtreeModified.' + $.uPopup.key, reposition_fn
-                    );
+                    /* DOM element mutation, when requested */
+                    if (options.useMutation) {
+                        popup_elt.bind(
+                            'DOMSubtreeModified.' +
+                                $.uPopup.key, reposition_fn
+                        );
+                    }
                 }
 
             });

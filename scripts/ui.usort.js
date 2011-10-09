@@ -84,9 +84,9 @@
             data.udrag = items.uDrag('create', {
                 drop: sortable_elts,
                 container: options.container,
-                onInsertElement: function (_elt, _drop_elt) {
-                    priv.stop_other_animations(sortable_elts, false);
+                onDrop: function (_elt) {
                     _elt.css('display', 'block');
+                    priv.stop_other_animations(sortable_elts, false);
                 },
                 onPositionElement: false,
                 onHover: $.proxy(priv.handle_drag_hover, this),
