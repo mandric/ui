@@ -502,7 +502,9 @@
 
             var wrap_selector = '.inner';
             var wrap_elt = $(_options.style.create_wrapper());
+
             data.original_parent = _popup_elt.parent();
+            data.original_sibling = _popup_elt.next();
 
             wrap_elt.closestChild(wrap_selector).append(_popup_elt);
 
@@ -511,17 +513,20 @@
 
         /**
          * Unwrap the wrapped {popup_elt}, and insert it back
-         * underneath the parent element from whence it came
-         * originally. This function does not necessarily guarantee
-         * that {popup_elt} will have the same right and left
-         * siblings once restored.
+         * underneath the parent element from whence it came originally.
+         * This function tries to use the popup's original right-sibling
+         * to move; if there was no right sibling (e.g. it was the
+         * last element, or only element), the popup is appended to
+         * its original parent.
          */
         unwrap: function (_popup_elt) {
             
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
 
-            if (data.original_parent) {
+            if (data.original_sibling[0]) {
+                _popup_elt.insertBefore(data.original_sibling);
+            } else if (data.original_parent[0]) {
                 data.original_parent.append(_popup_elt);
             }
         },
