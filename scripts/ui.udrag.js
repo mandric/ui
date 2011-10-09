@@ -315,6 +315,7 @@
             this.each(function (i, elt) {
 
                 elt = $(elt);
+                priv.create_instance_data(elt, options);
 
                 /* Draggable elements:
                     Register event handlers to detect drag/move events. */
@@ -416,6 +417,7 @@
 
             data.is_dragging = true;
             var drag_elt = priv.create_overlay(elt, _ev);
+            drag_elt.css('z-index', 65535);
 
             data.extent = {
                 x: drag_elt.outerWidth(),
@@ -851,7 +853,6 @@
             _elt.data(
                 $.uDrag.key, {
                 /*  elt: null,
-                    options: _options,
                     autoscroll_elt: null,
                     placeholder_elt: null,
                     last_positioning_event: null,
@@ -859,9 +860,10 @@
                     drop_allowed: false,
                     is_autoscrolling: false,
                     has_scrolled_recently: false, */
+                    options: _options,
+                    areas: new $.uDrag.AreaIndex(),
                     autoscroll_axes: { x: 0, y: 0 },
-                    recent_drop_area_containers: [],
-                    areas: new $.uDrag.AreaIndex()
+                    recent_drop_area_containers: []
                 }
             );
 
@@ -878,7 +880,6 @@
             var priv = $.uDrag.priv;
             var drop_option = (_options.drop || []);
             var scroll_option = (_options.scroll || []);
-            var data = priv.create_instance_data(_elt, _options);
 
             var container_option = (_options.container || false);
             var container_callback = null;

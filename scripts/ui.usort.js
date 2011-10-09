@@ -68,8 +68,6 @@
             var sortable_elts = this;
             var items = options.items;
 
-            sortable_elts.addClass('usort');
-
             switch (typeof(items)) {
                 case 'function':
                     items = $(items.apply(this));
@@ -87,8 +85,8 @@
                 drop: sortable_elts,
                 container: options.container,
                 onInsertElement: function (_elt, _drop_elt) {
-                    _elt.css('display', 'block');
                     priv.stop_other_animations(sortable_elts, false);
+                    _elt.css('display', 'block');
                 },
                 onPositionElement: false,
                 onHover: $.proxy(priv.handle_drag_hover, this),
@@ -153,11 +151,11 @@
                     animation_count: 0,
                     area_index: new $.uDrag.AreaIndex(),
                     animate: !!(_options.animate),
-                    fixed_frame_animation: !(
+                    fixed_speed_animation: !(
                         (_options.animate || '').toString().match(/^v/)
                     ),
                     step: (_options.step || 2), /* pixel(s) */
-                    interval: (_options.interval || 10), /* ms */
+                    interval: (_options.interval || 8), /* ms */
                     duration: (_options.duration || 250), /* ms */
                     is_vertical: !(
                         (_options.direction ||
@@ -254,8 +252,8 @@
                 /* Produce two {_elt} clones:
                     These are used as animated placeholders. */
 
-                var shrink_elt = target_elt.clone(true);
                 var grow_elt = target_elt.clone(true);
+                var shrink_elt = src_elt.clone(true).show();
 
                 var before_elt = $(src_elt.prev(':not(.animation)'));
                 var after_elt = $(src_elt.next(':not(.animation)'));
@@ -298,7 +296,7 @@
                 };
 
                 var slide_function = (
-                    data.fixed_frame_animation ?
+                    data.fixed_speed_animation ?
                         priv.slide_elements_fixed
                             : priv.slide_elements_variable
                 );
@@ -490,7 +488,7 @@
          */
          stop_animation: function (_data, _animation) {
 
-            if (_data.fixed_frame_animation) {
+            if (_data.fixed_speed_animation) {
                 _animation.stop();
             } else {
                 for (var i in _animation) {
