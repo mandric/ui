@@ -53,7 +53,7 @@
      *  (pipe characters denote mutually-exclusive alternatives):
      *
      *    <div class="upopup">
-     *      <div class="direction {n|s|e|w|nw|ne|se|sw|wnw|wsw|ene|ese}">
+     *      <div class="format direction {n|s|e|w|nw|...|wnw|wsw|ene|ese}">
      *        <div class="arrow first-arrow" />
      *        <div class="border">
      *          <div class="inner">
@@ -274,7 +274,13 @@
                     Use the final element repeatedly if there
                     are not enough target elements provided. */
 
-                var target_elt = (target_elts[i] || target_elts.last);
+                var target_elt, len = target_elts.length;
+
+                if (i >= len && len > 0) {
+                    target_elt = target_elts[len - 1];
+                } else {
+                    target_elt = target_elts[i];
+                }
 
                 /* Target element factory support:
                     Provide a function instead of a target element,
@@ -287,20 +293,18 @@
                 popup_elt = $(popup_elt);
                 target_elt = $(target_elt);
 
+                /* Save instance state data */
+                var data = priv.create_instance_data(popup_elt, options);
+
                 /* Wrap `popup_elt` inside of `wrapper_elt` */
                 var wrapper_elt = priv.wrap(popup_elt, options);
-
-                /* Save instance state data */
-                popup_elt.data($.uPopup.key, {
-                    elt: wrapper_elt,
-                    options: (options || {})
-                });
+                data.wrapper_elt = wrapper_elt;
 
                 /* Additional CSS classes for popup:
                     Add classes that affect size/shape before reposition. */
 
                 if (options.cssClasses) {
-                    wrapper_elt.closestChild('.direction').addClass(
+                    wrapper_elt.closestChild('.format').addClass(
                         options.cssClasses
                     );
                 }
@@ -402,20 +406,29 @@
          */
         destroy: function () {
 
-            $.uPopup.priv.toggle.call(
-                this, false, function (_wrapper_elt) {
-                    _wrapper_elt.remove();
-                    delete _wrapper_elt;
+            var priv = $.uPopup.priv;
+
+            var teardown_fn = function (_popup_elt, _wrapper_elt) {
+
+                priv.unwrap(_popup_elt);
+                $(window).unbind('.' + $.uPopup.key);
+
+                $(_popup_elt).each(function (i, elt) {
+                    elt = $(elt);
+                    elt.unbind('.' + $.uPopup.key);
+                    elt.data($.uPopup.key, null);
+                });
+                
+                _wrapper_elt.remove();
+                delete _wrapper_elt;
+            };
+
+            priv.toggle.call(
+                this, false, function (_popup_elt, _wrapper_elt) {
+                    teardown_fn(_popup_elt, _wrapper_elt);
                 }
             );
 
-            $(this).each(function (i, popup_elt) {
-                popup_elt = $(popup_elt);
-                popup_elt.unbind('.' + $.uPopup.key);
-                popup_elt.data($.uPopup.key, null);
-            });
-
-            $(window).unbind('.' + $.uPopup.key);
         },
 
         /**
@@ -423,14 +436,12 @@
          * returns a list of the 'wrapper' elements currently in use.
          */
         elements: function () {
-            var priv = $.uPopup.priv;
-
             return $(
                 $(this).map(function (i, popup_elt) {
 
                     /* Convert element to instance data */
-                    var data = priv.instance_data_for(popup_elt);
-                    var wrapper_elt = data.elt;
+                    var data = $.uPopup.priv.instance_data_for(popup_elt);
+                    var wrapper_elt = data.wrapper_elt;
 
                     return (wrapper_elt ? wrapper_elt[0] : undefined);
 
@@ -486,11 +497,33 @@
          */
         wrap: function (_popup_elt, _options) {
 
+            var priv = $.uPopup.priv;
+            var data = priv.instance_data_for(_popup_elt);
+
             var wrap_selector = '.inner';
             var wrap_elt = $(_options.style.create_wrapper());
+            data.original_parent = _popup_elt.parent();
 
             wrap_elt.closestChild(wrap_selector).append(_popup_elt);
+
             return wrap_elt;
+        },
+
+        /**
+         * Unwrap the wrapped {popup_elt}, and insert it back
+         * underneath the parent element from whence it came
+         * originally. This function does not necessarily guarantee
+         * that {popup_elt} will have the same right and left
+         * siblings once restored.
+         */
+        unwrap: function (_popup_elt) {
+            
+            var priv = $.uPopup.priv;
+            var data = priv.instance_data_for(_popup_elt);
+
+            if (data.original_parent) {
+                data.original_parent.append(_popup_elt);
+            }
         },
 
         /**
@@ -501,8 +534,8 @@
         insert: function (_wrapper_elt,
                           _popup_elt, _target_elt, _options) {
 
-            var options = (_options || {});
             var priv = $.uPopup.priv;
+            var options = (_options || {});
 
             _wrapper_elt.css(
                 'z-index',
@@ -521,20 +554,18 @@
          */
         toggle: function (_is_show, _callback) {
 
-            var priv = $.uPopup.priv;
-
             /* Multiple elements are allowed */
             $(this).each(function (i, popup_elt) {
 
                 /* Retrieve instance state data */
-                var data = priv.instance_data_for(popup_elt);
+                var data = $.uPopup.priv.instance_data_for(popup_elt);
                 var options = (data.options || {});
-                var wrapper_elt = data.elt;
+                var wrapper_elt = data.wrapper_elt;
 
                 /* Build callback */
                 var callback = function () {
                     if (_callback) {
-                        _callback.call(popup_elt, wrapper_elt);
+                        _callback.call(null, $(popup_elt), wrapper_elt);
                     }
                 };
 
@@ -555,7 +586,7 @@
                     } else {
                         wrapper_elt.hide();
                     }
-                    callback.call(this);
+                    callback();
                 }
             });
 
@@ -591,7 +622,7 @@
                 y: _target_elt.outerHeight()
             };
 
-            /* Available space on each side of target:
+            /* Compute available space on each side:
                 { x: [ left, right ], y: [ top, bottom ] } */
 
             if (ev) {
@@ -691,7 +722,7 @@
 
             var options = data.options;
             var ev = options.eventData;
-            var inner_elt = _wrapper_elt.closestChild('.direction');
+            var inner_elt = _wrapper_elt.closestChild('.format');
             var arrow_elt = inner_elt.closestChild('.arrow');
 
             /* Precompute sizes:
@@ -816,26 +847,48 @@
          * pageY coordinates), extract the coordinates and apply any
          * necessary transformations.
          */
-        event_to_point: function (ev, state, offset, size) {
+        event_to_point: function (ev, data, offset, size) {
 
             /* Save offset-to-size ratio:
                 If the target element is resized, then we'll use this
                 ratio to adjust the coordinates originally provided. */
 
-            if (!state.ratio) {
-                state.ratio = {
+            if (!data.ratio) {
+                data.ratio = {
                     x: (ev.pageX - offset.left) / size.x,
                     y: (ev.pageY - offset.top) / size.y
                 };
             }
 
             return {
-                x: offset.left + state.ratio.x * size.x,
-                y: offset.top + state.ratio.y * size.y
+                x: offset.left + data.ratio.x * size.x,
+                y: offset.top + data.ratio.y * size.y
             }
 
             return { x: x, y: y };
-        }
+        },
+
+        /**
+         * Initialize private storage on the element _elt, setting
+         * all private fields to their original and default values.
+         * This must be called before any popup can be modified.
+         */
+        create_instance_data: function (_popup_elt, _options) {
+
+            _popup_elt.data($.uPopup.key, {
+             /* size: null,
+                avail: null,
+                ratio: null,
+                offsets: null,
+                wrapper_elt: null,
+                original_parent: null, */
+                popup_elt: _popup_elt,
+                options: (_options || {})
+            });
+
+            return _popup_elt.data($.uPopup.key);
+        },
+
 
     };
 
@@ -930,7 +983,7 @@
             create_wrapper: function () {
                 return $(
                     '<div class="' + $.uPopup.key + '">' +
-                        '<div class="direction">' +
+                        '<div class="format direction">' +
                             '<div class="arrow first-arrow" />' +
                             '<div class="border">' +
                                 '<div class="inner" />' +
@@ -1047,7 +1100,7 @@
             create_wrapper: function () {
                 return $(
                     '<div class="popover">' +
-                        '<div class="direction">' +
+                        '<div class="format">' +
                             '<div class="arrow" />' +
                                 '<div class="inner" />' +
                             '</div>' +

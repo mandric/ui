@@ -850,7 +850,7 @@
 
             _elt.data(
                 $.uDrag.key, {
-                    elt: null,
+                /*  elt: null,
                     options: _options,
                     autoscroll_elt: null,
                     placeholder_elt: null,
@@ -858,7 +858,7 @@
                     previous_highlight_area: null,
                     drop_allowed: false,
                     is_autoscrolling: false,
-                    has_scrolled_recently: false,
+                    has_scrolled_recently: false, */
                     autoscroll_axes: { x: 0, y: 0 },
                     recent_drop_area_containers: [],
                     areas: new $.uDrag.AreaIndex()

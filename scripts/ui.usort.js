@@ -147,8 +147,8 @@
         create_instance_data: function (_sortable_elt, _options) {
             _sortable_elt.data(
                 $.uSort.key, {
-                    elt: null,
-                    udrag: null,
+                 /* elt: null,
+                    udrag: null, */
                     animations: {},
                     animation_count: 0,
                     area_index: new $.uDrag.AreaIndex(),
