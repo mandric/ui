@@ -52,7 +52,7 @@
     $.uSort.impl = {
 
         /**
-         * Initializes one or more new sortableelements, allowing
+         * Initializes one or more new sortable elements, allowing
          * the user to reorder a set of elements inside of a region.
          */
         create: function (_options) {
@@ -67,6 +67,8 @@
 
             var sortable_elts = this;
             var items = options.items;
+
+            sortable_elts.addClass('usort-installed');
 
             switch (typeof(items)) {
                 case 'function':
@@ -84,6 +86,9 @@
             data.udrag = items.uDrag('create', {
                 drop: sortable_elts,
                 container: options.container,
+                onInsertElement: function (_elt) {
+                    priv.stop_other_animations(sortable_elts, false);
+                },
                 onDrop: function (_elt) {
                     _elt.css('display', 'block');
                     priv.stop_other_animations(sortable_elts, false);
@@ -94,8 +99,8 @@
             });
 
             items.each(function (i, elt) {
-                data.area_index.track(elt, {
-                    sortable_elt: $(elt).parents('.usort').first()
+                data.areas.track(elt, {
+                    sortable_elt: $(elt).parents('.usort-installed').first()
                 });
             });
 
@@ -108,7 +113,36 @@
          */
         destroy: function () {
 
-            $.uDrag('destroy', data.udrag);
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(this);
+
+            data.udrag.uDrag('destroy');
+            return this;
+        },
+
+        /**
+         * Update cached offsets and extents for all of uSort's
+         * areas, plus all of the areas managed by its instance
+         * of uDrag.
+         */
+        recalculate: function () {
+
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(this);
+
+            /* Instance data may not be set yet:
+                This might be invoked from an early subtree-modified
+                event, firing before the instance data has been created.
+                Check for the presence of each member; ignore if missing. */
+                
+            if (data.areas) {
+                data.areas.recalculate_all();
+            }
+
+            if (data.udrag) {
+                data.udrag.uDrag('recalculate');
+            }
+
             return this;
         }
     };
@@ -149,8 +183,8 @@
                     udrag: null, */
                     animations: {},
                     animation_count: 0,
-                    area_index: new $.uDrag.AreaIndex(),
                     animate: !!(_options.animate),
+                    areas: new $.uDrag.AreaIndex(),
                     fixed_speed_animation: !(
                         (_options.animate || '').toString().match(/^v/)
                     ),
@@ -179,7 +213,7 @@
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(_sortable_elt);
 
-            var areas = data.area_index;
+            var areas = data.areas;
             var src_elt = _src_area.elt;
             var target_elt = _target_area.elt;
             var target_index = areas.element_to_index(target_elt);
@@ -527,9 +561,9 @@
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
-            var src_area = data.area_index.element_to_area(_elt);
+            var src_area = data.areas.element_to_area(_elt);
 
-            var target_area = data.area_index.find_beneath(
+            var target_area = data.areas.find_beneath(
                 _offsets.absolute
             );
 
@@ -548,7 +582,7 @@
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
 
-            data.area_index.recalculate_all();
+            data.areas.recalculate_all();
             return true;
         }
     };
