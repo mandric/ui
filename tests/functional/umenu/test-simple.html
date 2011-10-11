@@ -65,7 +65,10 @@
                             duration: 175,
                             vertical: true,
                             useMutation: false,
-                            cssClasses: 'small white square no-padding'
+                            cssClasses: 'small white square no-padding',
+                            onReposition: function (_elt) {
+                                _elt.uSort('recalculate');
+                            }
                         });
                         elt.uSort('create', {
                             animate: 'fixed', items: '.item'

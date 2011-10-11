@@ -61,7 +61,7 @@
      *      scrolling ancestor to the drop element (i.e. having
      *      the {overflow: scroll} CSS property). This is used
      *      to provide auto-scrolling functionality when hovering.
-     *      
+     *
      */
 
     $.uDrag = {};
@@ -365,6 +365,21 @@
             });
 
             return this;
+        },
+
+        /**
+         * Update cached offsets and extents for all of the
+         * areasindexed by this instance of uDrag. Call this
+         * when you make a change to the DOM that causes one
+         * or more drag/drop zones to move relative to the page.
+         */
+        recalculate: function () {
+
+            var priv = $.uDrag.priv;
+            var data = priv.instance_data_for(this);
+
+            data.areas.recalculate_all();
+            return this;
         }
     };
 
@@ -646,6 +661,7 @@
          * The default implementation of the insertElement event.
          */
         default_insert_callback: function (_elt, _drop_elt) {
+            console.log('insert');
             _drop_elt.prepend(_elt);
         },
               
@@ -1124,11 +1140,12 @@
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
 
-            var wrap_elt = $('<div class="udrag" />');
+            var wrap_elt = $('<div />');
             var drag_elt = _elt.clone(true);
 
             wrap_elt.append(drag_elt);
             wrap_elt.css('z-index', 65535);
+            wrap_elt.addClass('udrag-wrapper');
             wrap_elt.css('position', 'absolute');
             data.placeholder_elt = wrap_elt;
 

@@ -210,6 +210,18 @@
      *                  shape of the popup (e.g. smallest, smaller, small,
      *                  large, larger, largest).
      *
+     *              onReposition:
+     *                  A callback function. This is invoked whenever the
+     *                  contents of the popup changes position relative
+     *                  to the page. This can be either translation (i.e.
+     *                  caused always by a scroll or resize operation), or
+     *                  reorientation (i.e. a change in the popup's
+     *                  direction, caused sometimes by scroll/resize).
+     *
+     *              onReorient:
+     *                  A callback function. Like onReposition, but only
+     *                  fires if caused by a reorientation of the popup.
+     *
      *  elements():
      *      Returns the set of wrapper elements being maintained by the
      *      uPopup library. This function returns an array whose size is
@@ -320,7 +332,7 @@
 
                 /* Show popup */
                 if (!options.hidden) {
-                    priv.toggle.call(popup_elt, true, options.onShow);
+                    priv.toggle(popup_elt, true);
                 }
 
                 /* Reusable function that invokes positioning code:
@@ -378,15 +390,10 @@
          * You can disable animations by setting _options.fx = false
          * in the `create` method, or by disabling jQuery's effects.
          */
-        show: function () {
+        show: function (_callback) {
             var priv = $.uPopup.priv;
 
-            $(this).each(function (i, popup_elt) {
-                var data = priv.instance_data_for(popup_elt);
-                priv.toggle.call(
-                    popup_elt, true, (data.options || {}).onShow
-                );
-            });
+            priv.toggle(popup_elt, true, _callback);
         },
 
         /**
@@ -397,13 +404,11 @@
         hide: function (_callback) {
             var priv = $.uPopup.priv;
 
+            priv.toggle(this, false, _callback);
+
             $(this).each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
                 data.ratio = null;
-
-                priv.toggle.call(
-                    popup_elt, false, (data.options || {}).onHide
-                );
             });
         },
 
@@ -414,13 +419,13 @@
         destroy: function () {
 
             var priv = $.uPopup.priv;
-
             var teardown_fn = function (_popup_elt, _wrapper_elt) {
 
                 priv.unwrap(_popup_elt);
                 $(window).unbind('.' + $.uPopup.key);
 
                 $(_popup_elt).each(function (i, elt) {
+                    var data = priv.instance_data_for(elt);
                     elt = $(elt);
                     elt.unbind('.' + $.uPopup.key);
                     elt.data($.uPopup.key, null);
@@ -430,11 +435,12 @@
                 delete _wrapper_elt;
             };
 
-            priv.toggle.call(
-                this, false, function (_popup_elt, _wrapper_elt) {
-                    teardown_fn(_popup_elt, _wrapper_elt);
-                }
-            );
+            $(this).each(function (i, popup_elt) {
+                var data = priv.instance_data_for(popup_elt);
+                priv.toggle(
+                    popup_elt, false, teardown_fn
+                );
+            });
 
         },
 
@@ -564,10 +570,10 @@
          * destroy function. To create a new instance, use `create`.
          * This is the backend for impl.show and impl.hide.
          */
-        toggle: function (_is_show, _callback) {
+        toggle: function (_popup_elt, _is_show, _callback) {
 
             /* Multiple elements are allowed */
-            $(this).each(function (i, popup_elt) {
+            $(_popup_elt).each(function (i, popup_elt) {
 
                 /* Retrieve instance state data */
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
@@ -583,14 +589,18 @@
 
                 /* Invoke action */
                 if (options.fx !== false) {
+                    var f = function () {
+                        $.uI.trigger_event(
+                            (_is_show ? 'show' : 'hide'),
+                            $.uPopup.key, null, popup_elt, data.options,
+                            [ popup_elt, wrapper_elt ]
+                        );
+                        callback();
+                    };
                     if (_is_show) {
-                        wrapper_elt.fadeIn(
-                            (options.duration || 250), callback
-                        );
+                        wrapper_elt.fadeIn(options.duration || 250, f);
                     } else {
-                        wrapper_elt.fadeOut(
-                            (options.duration || 250), callback
-                        );
+                        wrapper_elt.fadeOut(options.duration || 250, f);
                     }
                 } else {
                     if (_is_show) {
@@ -851,7 +861,24 @@
                 Allow the style to make modifications to the position
                 of the wrapper element, or otherwise make changes to it. */
 
+            var events = { reposition: true };
+            var bias_key = (_bias.x << 1) + _bias.y;
+
             data.options.style.apply_style(elts, data, _bias);
+
+            if (bias_key !== data.recent_bias_key) {
+                events.reorient = true;
+                data.recent_bias_key = bias_key;
+            }
+
+            for (var k in events) {
+                $.uI.trigger_event(
+                    k, $.uPopup.key, null, _popup_elt,
+                        data.options, [ _popup_elt, _wrapper_elt ]
+                );
+            }
+
+            return true;
         },
 
         /*

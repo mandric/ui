@@ -3,16 +3,15 @@
     max-width: 20em;
 }
 
-.udrag .item .inner,
 .umenu .item .inner,
+.udrag-wrapper .item .inner,
 .upopup .inner .umenu .item .inner {
     padding: 0.75em 1.75em 0.75em 0.75em;
     border-bottom: solid 1px #ccc;
 }
 
-.udrag .item .inner {
+.udrag-wrapper .item .inner {
     font-size: 0.75em;
-    border-bottom: none;
 }
     
 .umenu .item:last-child .inner,
@@ -20,7 +19,8 @@
     border-bottom: none;
 }
 
-.upopup .umenu .item .arrow {
+.udrag .item .arrow,
+.umenu .item .arrow {
     right: -0.5em;
     position: absolute;
     margin: 0.25em 1em 0 0;

@@ -1,6 +1,6 @@
 /*
- * uPopup:
- *  A space-efficent pop-up dialog implementation for jQuery.
+ * uMenu:
+ *  A space-efficent pop-up menu implementation for jQuery.
  *
  * Copyright (c) 2011, David Brown <browndav@spoonguard.org>
  * Copyright (c) 2011, Medic Mobile <david@medicmobile.org>
@@ -39,4 +39,86 @@
  * deductible if you reside within the United States, and will directly
  * assist our design and construction of open-source mobile health software.
  */
+
+/**
+ * $.uMenu:
+ */
+
+(function ($) {
+
+    $.uMenu = {};
+    $.uMenu.key = 'usort';
+
+    $.uMenu.impl = {
+
+        /**
+         * Initializes one or more new menu elements, providing
+         * a hierarchical pop-up menu (with optional drag/drop).
+         */
+        create: function (_options) {
+
+            return this;
+        },
+
+        /**
+         * Removes the uMenu-managed event handlers from each element
+         * in {this}, restoring it to its pre-instansiation state.
+         */
+        destroy: function () {
+
+            return this;
+        }
+    };
+
+    /**
+     * This namespace contains private functions, each used
+     * privately as part of uMenu's underlying implementation.
+     * Please don't call these from outside of $.uMenu.impl.
+     */
+    $.uMenu.priv = {
+
+        /**
+         * Set/get the uMenu-private storage attached to `_elt`.
+         */
+        instance_data_for: function (_elt, _v) {
+
+            var elt = $(_elt);
+            var key = $.uSort.key;
+            var rv = elt.data(key);
+
+            if (!rv) {
+                rv = {};
+                _elt.data(key, rv);
+            }
+
+            return rv;
+        },
+
+        /**
+         * Initialize private storage on the element _elt, setting
+         * all private fields to their original default values. This
+         * must be called before any sortables can be modified.
+         */
+        create_instance_data: function (_menu_elt, _options) {
+            _menu_elt.data(
+                $.uMenu.key, {
+                }
+            );
+
+            return _menu_elt.data($.uMenu.key);
+        },
+    };
+ 
+    $.fn.uMenu = function (/* const */_method /* , ... */) {
+
+        /* Dispatch to appropriate method handler:
+            Note that the `method` argument should always be a constant;
+            never allow user-provided input to be used for the argument. */
+
+        return $.uMenu.impl[_method].apply(
+            this, Array.prototype.slice.call(arguments, 1)
+        );
+    };
+
+})(jQuery);
 

@@ -57,7 +57,7 @@
             var rv = null;
 
             if (_elt) {
-                _elt.trigger(_key + ':' + _name);
+                $(_elt).trigger(_key + ':' + _name);
             }
 
             if (_options) {
