@@ -118,7 +118,7 @@
             var areas = this._areas;
 
             for (var i = 0, len = areas.length; i < len; ++i) {
-                this.recalculate_one(areas[i]);
+                this.recalculate_one(this._areas[i]);
             }
 
             return this;
@@ -376,9 +376,12 @@
         recalculate: function () {
 
             var priv = $.uDrag.priv;
-            var data = priv.instance_data_for(this);
+            
+            this.each(function (i, elt) {
+                var data = priv.instance_data_for(elt);
+                data.areas.recalculate_all();
+            });
 
-            data.areas.recalculate_all();
             return this;
         }
     };
@@ -661,7 +664,6 @@
          * The default implementation of the insertElement event.
          */
         default_insert_callback: function (_elt, _drop_elt) {
-            console.log('insert');
             _drop_elt.prepend(_elt);
         },
               

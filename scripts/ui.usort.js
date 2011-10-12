@@ -65,10 +65,9 @@
             var options = $.extend(default_options, _options || {});
             var data = priv.create_instance_data(this, options);
 
-            var sortable_elts = this;
             var items = options.items;
 
-            sortable_elts.addClass('usort-installed');
+            this.addClass('usort-installed');
 
             switch (typeof(items)) {
                 case 'function':
@@ -83,15 +82,15 @@
                     break;
             };
 
-            data.udrag = items.uDrag('create', {
-                drop: sortable_elts,
+            items.uDrag('create', {
+                drop: this,
                 container: options.container,
                 onInsertElement: function (_elt) {
-                    priv.stop_other_animations(sortable_elts, false);
+                    priv.stop_other_animations(this, false);
                 },
                 onDrop: function (_elt) {
                     _elt.css('display', 'block');
-                    priv.stop_other_animations(sortable_elts, false);
+                    priv.stop_other_animations(this, false);
                 },
                 onPositionElement: false,
                 onHover: $.proxy(priv.handle_drag_hover, this),
@@ -104,6 +103,7 @@
                 });
             });
 
+            data.items = items;
             return this;
         },
 
@@ -116,7 +116,7 @@
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
 
-            data.udrag.uDrag('destroy');
+            data.items.uDrag('destroy');
             return this;
         },
 
@@ -134,13 +134,13 @@
                 This might be invoked from an early subtree-modified
                 event, firing before the instance data has been created.
                 Check for the presence of each member; ignore if missing. */
+
+            if (data.items) {
+                data.items.uDrag('recalculate');
+            }
                 
             if (data.areas) {
                 data.areas.recalculate_all();
-            }
-
-            if (data.udrag) {
-                data.udrag.uDrag('recalculate');
             }
 
             return this;
@@ -165,7 +165,7 @@
 
             if (!rv) {
                 rv = {};
-                _elt.data(key, rv);
+                elt.data(key, rv);
             }
 
             return rv;
@@ -180,7 +180,7 @@
             _sortable_elt.data(
                 $.uSort.key, {
                  /* elt: null,
-                    udrag: null, */
+                    items: null, */
                     animations: {},
                     animation_count: 0,
                     animate: !!(_options.animate),
