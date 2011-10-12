@@ -55,27 +55,30 @@
         </style>
     </head>
     <body>
-        <script type="text/javascript">
-            jQuery(function () {
-                $('.button').click(function (ev) {
-                    var elt = $('.umenu');
-                    if (!elt.parents('.upopup')[0]) {
-                        elt.uMenu('create', this, {
-                            sortable: true,
-                            cssClasses: 'small white square'
-                        });
-                    }
-                });
-            });
-        </script>
         <div class="test-instructions">
         </div>
-        <div class="umenu">
+        <div id="umenu" class="umenu">
             <div class="item">
                 <div class="inner">
                     <div class="arrow">
                     </div>
                     <label>This is a Test Caption</label>
+                </div>
+                <div class="umenu">
+                    <div class="item">
+                        <div class="inner">
+                            <div class="arrow">
+                            </div>
+                            This is a Submenu Test
+                        </div>
+                    </div>
+                    <div class="item">
+                        <div class="inner">
+                            <div class="arrow">
+                            </div>
+                            <label>This is a Submenu Caption</label>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="item">
@@ -131,4 +134,17 @@
         <input class="button top" type="button" value="Test" />
         <input class="button bottom" type="button" value="Test" />
     </body>
+        <script type="text/javascript">
+            jQuery(function () {
+                $('.button').click(function (ev) {
+                    var elt = $('#umenu');
+                    if (!elt.parents('.upopup')[0]) {
+                        elt.uMenu('create', this, {
+                            sortable: true, items: '.item',
+                            cssClasses: 'small white square'
+                        });
+                    }
+                });
+            });
+        </script>
 </html>

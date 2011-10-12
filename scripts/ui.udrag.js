@@ -908,12 +908,8 @@
             /* Argument processing:
                 Array-ize any non-array arguments */
 
-            if (!$.isArray(drop_option)) {
-                drop_option = [ drop_option ];
-            }
-            if (!$.isArray(scroll_option)) {
-                scroll_option = [ scroll_option ];
-            }
+            drop_option = $.uI.listify(drop_option);
+            scroll_option = $.uI.listify(scroll_option);
 
             /* Base implementation of container locator function:
                 This function treats container_option as a jQuery selector

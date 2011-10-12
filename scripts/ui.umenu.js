@@ -64,27 +64,43 @@
             var data = priv.create_instance_data(this, options);
 
             var css_classes = 'no-padding';
-            var items = $(options.items || '.item');
+            var items = (options.items || '.item');
 
             if (options.cssClasses) {
                 css_classes += (' ' + options.cssClasses);
             }
 
+            switch (typeof(items)) {
+                case 'function':
+                    items = $(items.apply(this));
+                    break;
+                case 'string':
+                    items = this.find(items);
+                    break;
+                default:
+                case 'object':
+                    items = $(items);
+                    break;
+            };
+
+            priv.bind_menu_items(this, items);
+            data.items = items;
+
             this.uPopup('create', _target_elt, {
                 cssClasses: css_classes,
                 onReorient: priv._handle_drag_reorient,
-                useMutation: false, hidden: false, center: true
+                useMutation: false, hidden: true, center: true
             });
+
+            if (!options.hidden) {
+                this.uMenu('show');
+            }
 
             if (options.sortable) {
                 this.uSort('create', {
                     animate: true,
                     items: items, scroll: 'body'
                 });
-            }
-
-            if (!options.hidden) {
-                this.uMenu('show');
             }
 
             return this;
@@ -113,8 +129,7 @@
         destroy: function () {
 
             return this;
-        },
-
+        }
 
     };
 
@@ -131,12 +146,12 @@
         instance_data_for: function (_elt, _v) {
 
             var elt = $(_elt);
-            var key = $.uSort.key;
+            var key = $.uMenu.key;
             var rv = elt.data(key);
 
             if (!rv) {
                 rv = {};
-                _elt.data(key, rv);
+                $(_elt).data(key, rv);
             }
 
             return rv;
@@ -148,6 +163,7 @@
          * must be called before any sortables can be modified.
          */
         create_instance_data: function (_menu_elt, _options) {
+
             _menu_elt.data(
                 $.uMenu.key, {
                     /* items: null, */
@@ -158,13 +174,42 @@
             return _menu_elt.data($.uMenu.key);
         },
 
+       /**
+        * 
+        */
+        bind_menu_items: function (_menu_elt, _item_elts) {
+
+            /* Hide submenus for all items:
+                These will be shown on mouse-over, by instansiating
+                another instance of uMenu on the sub-menu element. */
+
+            $('.umenu', _item_elts).each(function (i, _elt) {
+                $(_elt).hide();
+            });
+
+            /* Bind each item:
+                For every item selected via the {items} option,
+                bind the appropriate mouse-based event handlers. */
+
+            _item_elts.each(function (i, _item_elt) {
+
+                var item_elt = $(_item_elt);
+            });
+        },
+
         /**
          * Event handler for uPopup's {reorient} event. This is called
          * by uPopup when the popup window changes position in response
          * to a change in the available space on any side.
          */
-        _handle_drag_reorient: function (_popup_elt, _wrapper_elt) {
+        _handle_drag_reorient: function (_menu_elt, _wrapper_elt) {
 
+            var priv = $.uMenu.priv;
+            var data = priv.instance_data_for(_menu_elt);
+
+            if (data.options.sortable) {
+                $(_menu_elt).uSort('recalculate');
+            }
         }
     };
  

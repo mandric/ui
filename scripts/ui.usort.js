@@ -67,8 +67,6 @@
 
             var items = options.items;
 
-            this.addClass('usort-installed');
-
             switch (typeof(items)) {
                 case 'function':
                     items = $(items.apply(this));
@@ -97,6 +95,8 @@
                 onHover: $.proxy(priv.handle_drag_hover, this),
                 onRecalculate: $.proxy(priv.handle_drag_recalculate, this)
             });
+            
+            this.addClass('usort-installed');
 
             items.each(function (i, elt) {
                 data.areas.track(elt, {
