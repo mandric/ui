@@ -60,22 +60,9 @@
                 $('.button').click(function (ev) {
                     var elt = $('.umenu');
                     if (!elt.parents('.upopup')[0]) {
-                        elt.uPopup('create', this, {
-                            center: true,
-                            duration: 175,
-                            vertical: true,
-                            useMutation: false,
-                            cssClasses: 'small white square no-padding',
-                            onReorient: function (_elt, x) {
-                                _elt.uSort('recalculate');
-                            }
-                        });
-                        elt.uSort('create', {
-                            animate: 'fixed',
-                            items: '.item', scroll: 'body'
-                        });
-                        elt.uPopup('elements').click(function () {
-                            elt.uPopup('destroy');
+                        elt.uMenu('create', this, {
+                            sortable: true,
+                            cssClasses: 'small white square'
                         });
                     }
                 });

@@ -47,7 +47,7 @@
 (function ($) {
 
     $.uMenu = {};
-    $.uMenu.key = 'usort';
+    $.uMenu.key = 'umenu';
 
     $.uMenu.impl = {
 
@@ -55,9 +55,55 @@
          * Initializes one or more new menu elements, providing
          * a hierarchical pop-up menu (with optional drag/drop).
          */
-        create: function (_options) {
+        create: function (_target_elt, _options) {
+
+            var default_options = {};
+
+            var priv = $.uMenu.priv;
+            var options = $.extend(default_options, _options || {});
+            var data = priv.create_instance_data(this, options);
+
+            var css_classes = 'no-padding';
+            var items = $(options.items || '.item');
+
+            if (options.cssClasses) {
+                css_classes += (' ' + options.cssClasses);
+            }
+
+            this.uPopup('create', _target_elt, {
+                cssClasses: css_classes,
+                onReorient: priv._handle_drag_reorient,
+                useMutation: false, hidden: false, center: true
+            });
+
+            if (options.sortable) {
+                this.uSort('create', {
+                    animate: true,
+                    items: items, scroll: 'body'
+                });
+            }
+
+            if (!options.hidden) {
+                this.uMenu('show');
+            }
 
             return this;
+        },
+
+        /**
+         * Show the hierarchical pop-up menu(s) rooted at {this}.
+         */
+        show: function () {
+
+            this.uPopup('show');
+        },
+
+        /**
+         * Hide the hierarchical pop-up menu(s) rooted at {this}.
+         */
+        hide: function () {
+
+            this.uPopup('hide');
         },
 
         /**
@@ -67,7 +113,9 @@
         destroy: function () {
 
             return this;
-        }
+        },
+
+
     };
 
     /**
@@ -102,11 +150,22 @@
         create_instance_data: function (_menu_elt, _options) {
             _menu_elt.data(
                 $.uMenu.key, {
+                    /* items: null, */
+                    options: _options
                 }
             );
 
             return _menu_elt.data($.uMenu.key);
         },
+
+        /**
+         * Event handler for uPopup's {reorient} event. This is called
+         * by uPopup when the popup window changes position in response
+         * to a change in the available space on any side.
+         */
+        _handle_drag_reorient: function (_popup_elt, _wrapper_elt) {
+
+        }
     };
  
     $.fn.uMenu = function (/* const */_method /* , ... */) {

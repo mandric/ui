@@ -311,6 +311,7 @@
 
                 /* Save instance state data */
                 var data = priv.create_instance_data(popup_elt, options);
+                data.target_elt = target_elt;
 
                 /* Wrap `popup_elt` inside of `wrapper_elt` */
                 var wrapper_elt = priv.wrap(popup_elt, options);
@@ -332,33 +333,22 @@
 
                 /* Show popup */
                 if (!options.hidden) {
-                    priv.toggle(popup_elt, true);
-                }
-
-                /* Reusable function that invokes positioning code:
-                    This is used both to set the initial position, and
-                    from within resize and ajax event handlers, below. */
-
-                var reposition_fn = function (ev) {
-                    priv.autoposition(
-                        wrapper_elt, popup_elt, target_elt
-                    );
-                };
-
-                /* Set initial position */
-                reposition_fn.call();
-
-                /* Workaround for Webkit reflow bug:
-                    The first call to autoposition triggers a reflow
-                    problem in Webkit, but subsequent calls work without
-                    incident. Get the problem out of the way immediately. */
-
-                if ($.browser.webkit) {
-                    reposition_fn.call();
+                    $(this).uPopup('show');
                 }
 
                 /* Support for automatic repositioning */
                 if (options.reposition !== false) {
+
+                    /* Reusable function that invokes positioning code:
+                        This closure stores this instance's wrapper, popup,
+                        and target elements -- and is invoked from several
+                        resize, scroll, and ajax event handlers, below. */
+
+                    var reposition_fn = function (ev) {
+                        priv._autoposition(
+                            wrapper_elt, popup_elt, target_elt
+                        );
+                    };
 
                     /* Browser window resize/reflow */
                     $(window).bind(
@@ -391,9 +381,16 @@
          * in the `create` method, or by disabling jQuery's effects.
          */
         show: function (_callback) {
-            var priv = $.uPopup.priv;
 
-            priv.toggle(popup_elt, true, _callback);
+            var priv = $.uPopup.priv;
+            priv.toggle(this, true, _callback);
+
+            $(this).each(function (i, popup_elt) {
+                var data = priv.instance_data_for(popup_elt);
+                priv.autoposition(
+                    data.wrapper_elt, popup_elt, data.target_elt
+                );
+            });
         },
 
         /**
@@ -402,8 +399,8 @@
          * in the `create` method, or by disabling jQuery's effects.
          */
         hide: function (_callback) {
-            var priv = $.uPopup.priv;
 
+            var priv = $.uPopup.priv;
             priv.toggle(this, false, _callback);
 
             $(this).each(function (i, popup_elt) {
@@ -616,12 +613,34 @@
         },
 
         /**
-         * The popup dialog automatic repositioning algorithm. Places
-         * `wrapper_elt` on the side of `target_elt` that has the most
-         * available screen space, in each of two dimensions.
+         * Wrapper function for the popup dialog automatic-repositioning
+         * algorithm. This wrapper implements browser-specific workarounds
+         * for the actual autoposition code, found in {_autoposition}.
          */
         autoposition: function (_wrapper_elt,
                                 _popup_elt, _target_elt) {
+
+            var priv = $.uPopup.priv;
+
+            /* Workaround for Webkit reflow bug:
+                The first call to autoposition triggers a reflow
+                problem in Webkit, but subsequent calls work without
+                incident. Get the problem out of the way immediately. */
+
+            if ($.browser.webkit) {
+                priv._autoposition(_wrapper_elt, _popup_elt, _target_elt);
+            }
+            
+            return priv._autoposition(_wrapper_elt, _popup_elt, _target_elt);
+        },
+
+        /**
+         * Implementation of the popup dialog automatic-repositioning
+         * algorithm. Places `wrapper_elt` on the side of `target_elt` that
+         * has the most available screen space, in each of two dimensions.
+         */
+        _autoposition: function (_wrapper_elt,
+                                 _popup_elt, _target_elt) {
             var avail = {};
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
