@@ -84,6 +84,7 @@
 
             items.uDrag('create', {
                 drop: this,
+                scroll: options.scroll,
                 container: options.container,
                 onInsertElement: function (_elt) {
                     priv.stop_other_animations(this, false);
