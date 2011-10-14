@@ -1161,9 +1161,14 @@
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
+            var options = data.options;
 
             var wrap_elt = $('<div />');
             var drag_elt = _elt.clone(true);
+            
+            if (options.cssClasses) {
+                drag_elt.addClass(options.cssClasses);
+            }
 
             wrap_elt.append(drag_elt);
             wrap_elt.addClass('udrag-wrapper');

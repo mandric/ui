@@ -17,6 +17,10 @@
 }
 
 .udrag-wrapper .item .inner {
+    border-color: transparent;
+}
+
+.udrag-wrapper .small .inner {
     font-size: 0.75em;
 }
 
@@ -38,13 +42,21 @@
     -webkit-border-top-left-radius: 0.85em;
 }
 
+.udrag-wrapper .selected {
+    border-radius: 0.45em;
+    -moz-border-radius: 0.45em;
+    -webkit-border-radius: 0.45em;
+    border-color: transparent;
+}
+
 .umenu .item:last-child .inner,
 .upopup .inner .umenu .item:last-child .inner {
     border-bottom: none;
 }
 
+.umenu .item .arrow,
 .udrag .item .arrow,
-.umenu .item .arrow {
+.udrag-wrapper .item .arrow {
     right: -0.5em;
     position: absolute;
     margin: 0.25em 1em 0 0;
@@ -58,23 +70,25 @@
     background-color: transparent;
 }
 
-.umenu .selected {
+.umenu .selected,
+.udrag-wrapper .selected {
     color: #fff;
-    background-image: -moz-linear-gradient(top, #667, #445);
-    background-image: -ms-linear-gradient(top, #667, #445);
-    background-image: -webkit-linear-gradient(top, #667, #445);
-    background-image: -o-linear-gradient(top, #667, #445);
-    background-image: linear-gradient(top, #667, #445);
+    background-image: -moz-linear-gradient(top, #586068, #50535c);
+    background-image: -ms-linear-gradient(top, #586068, #50535c);
+    background-image: -webkit-linear-gradient(top, #586068, #50535c);
+    background-image: -o-linear-gradient(top, #586068, #50535c);
+    background-image: linear-gradient(top, #586068, #50535c);
     background-image: -webkit-gradient(
         linear, left top, left bottom,
-        color-stop(0%, #667), color-stop(100%, #445)
+        color-stop(0%, #586068), color-stop(100%, #50535c)
     );
     background-image: -khtml-gradient(
-        linear, left top, left bottom, from(#667), to(#445)
+        linear, left top, left bottom, from(#586068), to(#50535c)
     );
 }
 
-.umenu .selected .arrow {
+.umenu .selected .arrow,
+.udrag-wrapper .selected .arrow {
     border-left-color: #fff !important;
 }
 

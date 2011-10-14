@@ -85,6 +85,7 @@
                 drop: this,
                 scroll: options.scroll,
                 container: options.container,
+                cssClasses: options.cssClasses,
                 onInsertElement: function (_elt) {
                     priv.stop_other_animations(this, false);
                 },

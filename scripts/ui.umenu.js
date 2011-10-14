@@ -120,7 +120,8 @@
             if (options.sortable) {
                 this.uSort('create', {
                     animate: true,
-                    items: items, scroll: 'body'
+                    items: items, scroll: 'body',
+                    cssClasses: options.cssClasses
                 });
             }
 
