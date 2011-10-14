@@ -360,8 +360,9 @@
                 var priv = $.uDrag.priv;
                 var data = priv.instance_data_for(elt);
 
+                elt = $(elt);
+                elt.data(key, null);
                 elt.unbind('.' + key);
-                elt.data($.uDrag.key, null);
             });
 
             return this;
@@ -379,7 +380,10 @@
             
             this.each(function (i, elt) {
                 var data = priv.instance_data_for(elt);
-                data.areas.recalculate_all();
+
+                if (data.areas) {
+                    data.areas.recalculate_all();
+                }
             });
 
             return this;

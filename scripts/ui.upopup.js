@@ -418,15 +418,14 @@
             var priv = $.uPopup.priv;
             var teardown_fn = function (_popup_elt, _wrapper_elt) {
 
-                priv.unwrap(_popup_elt);
+                var popup_elt = $(_popup_elt);
+                var data = priv.instance_data_for(popup_elt);
+
+                priv.unwrap(popup_elt);
                 $(window).unbind('.' + $.uPopup.key);
 
-                $(_popup_elt).each(function (i, elt) {
-                    var data = priv.instance_data_for(elt);
-                    elt = $(elt);
-                    elt.unbind('.' + $.uPopup.key);
-                    elt.data($.uPopup.key, null);
-                });
+                popup_elt.unbind('.' + $.uPopup.key);
+                popup_elt.data($.uPopup.key, null);
                 
                 _wrapper_elt.remove();
                 delete _wrapper_elt;

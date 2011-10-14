@@ -139,7 +139,7 @@
             if (data.items) {
                 data.items.uDrag('recalculate');
             }
-                
+
             if (data.areas) {
                 data.areas.recalculate_all();
             }
