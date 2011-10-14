@@ -1,3 +1,4 @@
+/*global window: false, jQuery: false*/
 /*
  * uMenu:
  *  A space-efficent pop-up menu implementation for jQuery.
@@ -81,7 +82,7 @@
                 case 'object':
                     items = $(items);
                     break;
-            };
+            }
 
             this.each(function (i, menu_elt) {
 
@@ -105,9 +106,11 @@
             priv.bind_menu_items(this, items);
 
             this.uPopup('create', _target_elt, {
+                center: true,
+                hidden: true,
+                useMutation: false,
                 cssClasses: css_classes,
-                onReorient: priv._handle_drag_reorient,
-                useMutation: false, hidden: true, center: true
+                onReorient: priv._handle_drag_reorient
             });
 
             if (!options.hidden) {
@@ -330,5 +333,5 @@
         );
     };
 
-})(jQuery);
+}(jQuery));
 

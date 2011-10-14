@@ -1,3 +1,4 @@
+/*global window: false, jQuery: false*/
 /*
  * uSort:
  *  A space-efficent sortable implementation for jQuery.
@@ -78,7 +79,7 @@
                 case 'object':
                     items = $(items);
                     break;
-            };
+            }
 
             items.uDrag('create', {
                 drop: this,
@@ -237,7 +238,7 @@
                 element, force the {target_elt} to move downward. Update
                 the parent element to reflect the fact that it's moving. */
 
-            if (_src_area.sortable_elt[0] != _target_area.sortable_elt[0]) {
+            if (_src_area.sortable_elt[0] !== _target_area.sortable_elt[0]) {
                 is_backward = different_parent = true;
                 _src_area.sortable_elt = _target_area.sortable_elt;
             }
@@ -256,7 +257,7 @@
                 if (_callback) {
                     _callback.apply(_sortable_elt, arguments);
                 }
-            }
+            };
 
             /* One animation at a time:
                 Acquire lock on animations around {target_elt}. */
@@ -279,7 +280,7 @@
                 var next_elt = src_elt.next();
                 recalc_elts = [ src_elt, next_elt, target_elt ].concat(
                     next_elt.nextAll().add(target_elt.nextAll()).toArray()
-                )
+                );
             } else {
                 recalc_elts = $.uI.find_elements_between.apply(
                     null, (
@@ -327,7 +328,7 @@
                     grow_elt.remove();
                     shrink_elt.remove();
 
-                    if ((--data.animation_count) == 0) {
+                    if ((--data.animation_count) === 0) {
                         src_elt.css('display', 'block');
                     }
                     
@@ -408,7 +409,7 @@
         slide_elements_fixed: function (_data, _grow_elt,
                                         _shrink_elt, _callback) {
 
-            var animation = function (_grow_elt, _shrink_elt, _callback) {
+            var Animation = function (_grow_elt, _shrink_elt, _callback) {
 
                 this._is_running = false;
                 this._grow_elt = _grow_elt;
@@ -431,7 +432,7 @@
              *  and provides predictable placement in all browsers.
              */
 
-            animation.prototype = {
+            Animation.prototype = {
                 initialize: function () {
                     var keys = this.keys = (
                         this._data.is_vertical ?
@@ -441,7 +442,8 @@
                                 'padding-left', 'padding-right' ]
                     );
 
-                    this.current = {}, this.original = {};
+                    this.current = {};
+                    this.original = {};
 
                     for (var i = 0, len = keys.length; i < len; ++i) {
                         var value = parseInt(
@@ -515,7 +517,7 @@
                 }
             };
 
-            var a = new animation(
+            var a = new Animation(
                 _grow_elt, _shrink_elt, _callback
             );
             
@@ -528,7 +530,7 @@
          * implementation of fixed-frame animation; the other is
          * based upon jQuery's wall-clock animation implementation.
          */
-         stop_animation: function (_data, _animation) {
+        stop_animation: function (_data, _animation) {
 
             if (_data.fixed_speed_animation) {
                 _animation.stop();
@@ -539,7 +541,7 @@
                     }
                 }
             }
-         },
+        },
 
         /**
          * Stop all in-progress animations, except for those 
@@ -606,5 +608,5 @@
         );
     };
 
-})(jQuery);
+}(jQuery));
 

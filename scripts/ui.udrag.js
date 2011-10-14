@@ -1,3 +1,4 @@
+/*global window: false, jQuery: false*/
 /*
  * uDrag:
  *  A space-efficent drag/drop implementation for jQuery.
@@ -136,7 +137,7 @@
             var container_elt = _area.container_elt;
             var offset = (container_elt.offset() || { left: 0, top: 0 });
 
-            if (container_elt && container_elt[0] == window) {
+            if (container_elt && container_elt[0] === window) {
                 size = {
                     x: container_elt.width(),
                     y: container_elt.height()
@@ -165,7 +166,7 @@
                     /* Ignore elements that are unknown to us */
                     this.recalculate_one(area);
                 }
-            };
+            }
         },
 
         /*
@@ -222,7 +223,7 @@
                 /* Special case:
                     Scrolling container is the browser window. */
 
-                if (container_elt && container_elt[0] == window) {
+                if (container_elt && container_elt[0] === window) {
                     x -= container_elt.scrollLeft();
                     y -= container_elt.scrollTop();
                 }
@@ -576,7 +577,7 @@
                     handler won't get a chance to run between the
                     two calls, and thus autoscrolling won't restart. */
 
-                if (recent[0] && recent[0] != recent[1]) {
+                if (recent[0] && recent[0] !== recent[1]) {
                     data.autoscroll_elt = drop_area.container_elt[0];
                 }
 
@@ -586,7 +587,8 @@
                 if (!drop_area.scroll_only) {
                     if (!_skip_events) {
                         var absolute_offset = {
-                            x: _ev.pageX, y: _ev.pageY
+                            x: _ev.pageX,
+                            y: _ev.pageY
                         };
                         data.drop_allowed = $.uI.trigger_event(
                             'hover', $.uDrag.key, priv.default_hover_callback,
@@ -639,7 +641,7 @@
                 for (var i = 0, len = keys_x.length; i < len; ++i) {
                     rv.x += parseInt(_elt.css(keys_x[i]), 10);
                 }
-                for (var i = 0, len = keys_y.length; i < len; ++i) {
+                for (i = 0, len = keys_y.length; i < len; ++i) {
                     rv.y += parseInt(_elt.css(keys_y[i]), 10);
                 }
             }
@@ -773,7 +775,7 @@
                 var scroll = {
                     x: autoscroll_elt.scrollLeft(),
                     y: autoscroll_elt.scrollTop()
-                }
+                };
 
                 /* Scroll the container element */
                 autoscroll_elt.scrollLeft(scroll.x + dx);
@@ -790,7 +792,7 @@
                     Autoscrolling element is the browser window; adjust
                     {drag_elt} by {scrollDelta} to keep it stationary. */
 
-                if (autoscroll_elt && autoscroll_elt[0] == window) {
+                if (autoscroll_elt && autoscroll_elt[0] === window) {
 
                     var drag_elt = data.placeholder_elt;
                     var drag_offset = drag_elt.offset();
@@ -801,7 +803,9 @@
                     });
               
                     var ev = data.last_positioning_event;
-                    ev.pageX += dx; ev.pageY += dy;
+
+                    ev.pageX += dx;
+                    ev.pageY += dy;
 
                     priv.calculate_autoscroll_direction(
                         _elt, ev, _drop_area
@@ -840,7 +844,7 @@
 
             var priv = $.uDrag.priv;
 
-            if (_area && _area != _data.previous_highlight_area) {
+            if (_area && _area !== _data.previous_highlight_area) {
                 $.uI.trigger_event(
                     'enter', $.uDrag.key, null, _area.elt, _data.options,
                         [ _area.elt, _area.container_elt ]
@@ -859,7 +863,7 @@
             var prev_area = _data.previous_highlight_area;
 
             if (prev_area) {
-                if (!_area || _area != prev_area) {
+                if (!_area || _area !== prev_area) {
                     $.uI.trigger_event(
                         'exit', $.uDrag.key, null,
                             prev_area.elt, _data.options,
@@ -922,18 +926,16 @@
                 if possible, and selects the closest matching ancestor.
                 If that fails, {drop_elt} is used as the container. */
 
-            var locate_container_element = (
-                function (_drop_elt, _container) {
-                    switch (typeof(_container)) {
-                        case 'string':
-                            return _drop_elt.parents(_container).first();
-                        case 'object':
-                            return $(_container);
-                        default:
-                            return _drop_elt;
-                    }
+            var locate_container_element = function (_drop_elt, _container) {
+                switch (typeof(_container)) {
+                    case 'string':
+                        return _drop_elt.parents(_container).first();
+                    case 'object':
+                        return $(_container);
+                    default:
+                        return _drop_elt;
                 }
-            );
+            };
 
             /* Container locator callback:
                 The container element is a special ancestor of the drop
@@ -950,13 +952,16 @@
                         _drop_elt,
                         ($.isArray(container_option) ?
                             container_option[_i] : container_option)
-                    )
-                }
+                    );
+                };
             }
 
-            /* Drop areas: array of jQuery collections */
-            for (var i = 0, len = drop_option.length; i < len; ++i) {
-                $(drop_option[i]).each(function (j, drop_elt) {
+            /* Bind function for drop elements:
+                This binds event handlers for a single jQuery
+                selection, containing one or more droppable elements. */
+
+            var bind_drop_elts = function (_drop_elts, _i) {
+                $(_drop_elts).each(function (j, drop_elt) {
 
                     /* Find drop area element's container:
                         This is used for auto-scrolling. The container is a
@@ -964,7 +969,7 @@
                         or the same as the drop area element otherwise. */
 
                     drop_elt = $(drop_elt);
-                    var container_elt = container_callback(drop_elt, i);
+                    var container_elt = container_callback(drop_elt, _i);
 
                     if (!container_elt || !container_elt[0]) {
                         container_elt = drop_elt;
@@ -974,20 +979,23 @@
                         _elt, drop_elt, container_elt, _options
                     );
                 });
-            }
+            };
 
-            /* Scroll-only areas: array of jQuery collection objects */
-            for (var i = 0, len = scroll_option.length; i < len; ++i) {
-                $(scroll_option[i]).each(function (j, scroll_elt) {
+            /* Bind function for scroll elements:
+                This binds event handlers for a single jQuery selection,
+                containing undroppable elements requesting autoscrolling. */
+
+            var bind_scroll_elts = function (_scroll_elts, _i) {
+                $(_scroll_elts).each(function (j, scroll_elt) {
 
                     scroll_elt = $(scroll_elt);
 
                     var container_elt = $(
-                        scroll_elt[0] == document.body ?
+                        scroll_elt[0] === document.body ?
                             window : scroll_elt[0]
                     );
                     scroll_elt = $(
-                        scroll_elt[0] == window ?
+                        scroll_elt[0] === window ?
                             document.body : scroll_elt[0]
                     );
                     priv.track_drop_area(
@@ -995,6 +1003,16 @@
                             { scroll_only: true }
                     );
                 });
+            };
+
+            /* Drop areas: array of jQuery collections */
+            for (var i = 0, len = drop_option.length; i < len; ++i) {
+                bind_drop_elts(drop_option[i], i);
+            }
+
+            /* Scroll-only areas: array of jQuery collection objects */
+            for (i = 0, len = scroll_option.length; i < len; ++i) {
+                bind_scroll_elts(scroll_option[i], i);
             }
 
             return _elt;
@@ -1033,7 +1051,7 @@
          * Fill the {autoscroll_axes} member of {_elt}'s private data
          * with directional information for the autoscrolling code.
          */
-         calculate_autoscroll_direction: function (_elt, _ev, _area) {
+        calculate_autoscroll_direction: function (_elt, _ev, _area) {
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
@@ -1054,7 +1072,7 @@
             /* Special case:
                 Scrolling container is the browser window. */
 
-            if (container_elt && container_elt[0] == window) {
+            if (container_elt && container_elt[0] === window) {
                 x -= container_elt.scrollLeft();
                 y -= container_elt.scrollTop();
             }
@@ -1088,7 +1106,7 @@
             var data = priv.instance_data_for(_elt);
 
             var offset = _drop_elt.offset();
-            var is_body = (_drop_elt[0] == document.body);
+            var is_body = (_drop_elt[0] === document.body);
 
             var x = _offset.x;
             var y = _offset.y;
@@ -1152,15 +1170,20 @@
             data.placeholder_elt = wrap_elt;
 
             wrap_elt.css({
-                zIndex: 65535, position: 'absolute'
+                zIndex: 65535,
+                position: 'absolute'
             });
             
             drag_elt.width(_elt.width());
             drag_elt.height(_elt.height());
 
             drag_elt.css({
-                visibility: 'visible', position: null,
-                left: null, top: null, right: null, bottom: null
+                top: null,
+                left: null,
+                right: null,
+                bottom: null,
+                position: null,
+                visibility: 'visible'
             });
 
             $('body').append(wrap_elt);
@@ -1268,7 +1291,7 @@
             var priv = $.uDrag.priv;
 
             /* Require primary mouse button */
-            if (_ev.which != 1) {
+            if (_ev.which !== 1) {
                 return false;
             }
 
@@ -1323,5 +1346,5 @@
         );
     };
 
-})(jQuery);
+}(jQuery));
 

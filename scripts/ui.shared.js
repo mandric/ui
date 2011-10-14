@@ -1,3 +1,4 @@
+/*global window: false, jQuery: false*/
 /*
  * uI:
  *  A space-efficent user-interface component library for jQuery.
@@ -100,7 +101,8 @@
 
             for (var i = 0, len = a.length; i < len; ++i) {
                 if (!max || a[i] > max) {
-                    max = a[i]; rv = i;
+                    rv = i;
+                    max = a[i];
                 }
             }
 
@@ -128,7 +130,7 @@
         }
     };
 
-})(jQuery);
+}(jQuery));
 
 /* 
  * closestChild for jQuery

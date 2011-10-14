@@ -1,3 +1,4 @@
+/*global window: false, jQuery: false*/
 /*
  * uPopup:
  *  A space-efficent pop-up dialog implementation for jQuery.
@@ -429,7 +430,6 @@
                 popup_elt.data($.uPopup.key, null);
                 
                 _wrapper_elt.remove();
-                delete _wrapper_elt;
             };
 
             $(this).each(function (i, popup_elt) {
@@ -550,9 +550,10 @@
 
             _wrapper_elt.css({
                 display: 'none',
-                zIndex: (priv._zindex_base + priv._serial_number++)
+                zIndex: priv._zindex_base + priv._serial_number
             });
 
+            priv._serial_number += 1;
             _wrapper_elt.prependTo('body');
         },
 
@@ -786,8 +787,9 @@
                 Distance between popup's edge and arrow's edge. */
 
             var elts = {
-                wrapper: _wrapper_elt,
-                arrow: arrow_elt, inner: inner_elt
+                arrow: arrow_elt,
+                inner: inner_elt,
+                wrapper: _wrapper_elt
             };
 
             var d = data.options.style.calculate_delta(
@@ -823,16 +825,16 @@
 
                 offsets = {
                     x: [
-                        target_offset.left - wrapper_size.x + d.x
-                            + padding_size.x,
-                        target_offset.left + target_size.x - d.x
-                            - padding_size.x
+                        target_offset.left - wrapper_size.x +
+                            d.x + padding_size.x,
+                        target_offset.left + target_size.x -
+                            d.x - padding_size.x
                     ],
                     y: [
-                        target_offset.top - wrapper_size.y + d.y
-                            + padding_size.y,
-                        target_offset.top + target_size.y - d.y
-                            - padding_size.y
+                        target_offset.top - wrapper_size.y +
+                            d.y + padding_size.y,
+                        target_offset.top + target_size.y -
+                            d.y - padding_size.y
                     ]
                 };
             }
@@ -876,7 +878,7 @@
                 of the wrapper element, or otherwise make changes to it. */
 
             var events = { reposition: true };
-            var bias_key = (_bias.x << 1) + _bias.y;
+            var bias_key = (_bias.x * 2) + _bias.y;
 
             data.options.style.apply_style(elts, data, _bias);
 
@@ -916,9 +918,7 @@
             return {
                 x: offset.left + data.ratio.x * size.x,
                 y: offset.top + data.ratio.y * size.y
-            }
-
-            return { x: x, y: y };
+            };
         },
 
         /**
@@ -970,10 +970,10 @@
                 };
                 
                 _wrapper_elt.offset({
-                    top: wrapper_offset.top
-                        - (_coefficients.y[_bias.y] * arrow_size.y / 2),
-                    left: wrapper_offset.left
-                        + (_coefficients.x[_bias.x] * arrow_size.x / 2)
+                    top: wrapper_offset.top -
+                        (_coefficients.y[_bias.y] * arrow_size.y / 2),
+                    left: wrapper_offset.left +
+                        (_coefficients.x[_bias.x] * arrow_size.x / 2)
                 });
             },
 
@@ -1016,8 +1016,9 @@
                 });
 
                 return {
-                    axis: axis, side: side[axis]
-                }
+                    axis: axis,
+                    side: side[axis]
+                };
             },
 
 
@@ -1055,7 +1056,7 @@
              */
             apply_style: function (_elts, _data, _bias) {
 
-                var coefficients;
+                var coefficients, classes;
                 var helper = $.uPopup.style.helper;
 
                 /* Position arrow:
@@ -1067,7 +1068,7 @@
 
                     var is_vertical = _data.options.vertical;
 
-                    var classes = (
+                    classes = (
                         is_vertical ?
                             [ [ 'se', 'ne' ], [ 's', 'n' ] ]
                             : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
@@ -1084,9 +1085,9 @@
 
                 } else {
                
-                    var classes = {
+                    classes = {
                         x: [ 'right', 'left' ],
-                            y: [ 'below', 'above' ]
+                        y: [ 'below', 'above' ]
                     };
 
                     var pos = helper.adjust_for_centered_pointer(
@@ -1123,7 +1124,7 @@
                 if (_data.options.useCorners) {
 
                     var adjust_div = $('<div />').addClass('adjust');
-                    _elts.inner.append(adjust_div)
+                    _elts.inner.append(adjust_div);
 
                     /* Coefficients:
                         Adjust width/x, adjust height/y */
@@ -1173,7 +1174,8 @@
                 var helper = $.uPopup.style.helper;
 
                 var css = {
-                    x: [ 'left', 'right' ], y: [ 'above', 'below' ]
+                    x: [ 'left', 'right' ],
+                    y: [ 'above', 'below' ]
                 };
 
                 var pos = helper.adjust_for_centered_pointer(
@@ -1210,6 +1212,5 @@
         );
     };
 
-})(jQuery);
-
+}(jQuery));
 
