@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet"
+            href="../../../styles/ui.upopup.css" />
+        <script type="text/javascript"
+            src="../../../scripts/contrib/jquery-1.4.2.min.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.shared.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.upopup.js">
+        </script>
+        <style type="text/css">
+            html, body {
+                width: 100%;
+                height: 100%;
+                padding: 0;
+                margin: 0;
+                overflow: hidden;
+            }
+            .test-instructions {
+                width: 50%;
+                padding: 1em;
+                text-align: center;
+                margin: auto;
+            }
+            .upopup .template {
+                width: 10em;
+                height: 3em;
+                display: block;
+            }
+            .template {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript">
+            jQuery(function () {
+                $('.button').click(function (ev) {
+                    $('.template').uPopup('create', $('.button'), {});
+                    var popup = $('.template').uPopup('elements');
+                    popup.click(function (ev) {
+                        $('.template').uPopup('destroy');
+                    });
+                });
+            });
+        </script>
+        <div class="test-instructions">
+            Click one of the buttons below, and verify that a popup window
+            appears for every button on the screen. Click any one of the popup
+            windows, and verify that all popup windows disappear from the screen.
+        </div>
+        <div class="template">
+            Popup window #1
+        </div>
+        <div style="position: absolute; left: 20%; top: 50%;">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div class="template">
+            Popup window #2
+        </div>
+        <div style="position: absolute; left: 50%; top: 70%;">
+            <input class="button" type="button" value="Test" />
+        </div>
+        <div class="template">
+            Popup window #3
+        </div>
+        <div style="position: absolute; left: 80%; top: 50%;">
+            <input class="button" type="button" value="Test" />
+        </div>
+
+    </body>
+</html>
