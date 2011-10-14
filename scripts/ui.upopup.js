@@ -414,7 +414,7 @@
          * Destroys the popup that is currently wrapping the
          * selected element(s), hiding the popup first if necessary.
          */
-        destroy: function () {
+        destroy: function (_callback) {
 
             var key = $.uPopup.key;
             var priv = $.uPopup.priv;
@@ -430,6 +430,10 @@
                 popup_elt.data($.uPopup.key, null);
                 
                 _wrapper_elt.remove();
+
+                if (_callback) {
+                    _callback(_popup_elt, _wrapper_elt);
+                }
             };
 
             $(this).each(function (i, popup_elt) {

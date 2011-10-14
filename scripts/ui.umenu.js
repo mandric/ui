@@ -178,12 +178,19 @@
                     menu_elt.uSort('destroy');
                 }
 
-                menu_elt.unbind('.' + key);
-                menu_elt.uPopup('destroy');
-                menu_elt.data(key, null);
+                menu_elt.uPopup('destroy', function () {
+
+                    data.items.each(function (j, item_elt) {
+                        priv.toggle_item(menu_elt, item_elt, false);
+                    });
+
+                    menu_elt.unbind('.' + key);
+                    menu_elt.data(key, null);
+                });
+                
             });
 
-            $(window).unbind('.' + key);
+            $(document).unbind('.' + key);
             return this;
         }
 
@@ -251,11 +258,59 @@
                 For every item selected via the {items} option,
                 bind the appropriate mouse-based event handlers. */
 
-            $(_item_elts).each(function (i, item_elt) {
-                $(item_elt).bind(
-                    'mouseover.' + key, priv._handle_item_mouseover
+            var mouseover_fn = function (_ev) {
+                return priv._handle_item_mouseover.call(
+                    this, _ev, _menu_elt
                 );
+                    
+            };
+
+            $(_item_elts).each(function (_i, _item_elt) {
+                $(_item_elt).bind('mouseover.' + key, mouseover_fn);
             });
+        },
+
+        /**
+         * This function is called whenever the mouse pointer moves
+         * inside or outside of a menu item. If {_is_select} is true,
+         * this function triggers the 'select' event, which in turn
+         * provides visual feedback to the user. If {_is_select} is
+         * false, this function triggers the 'unselect' event, and
+         * removes the original visual feedback.
+         */
+        toggle_item: function (_menu_elt, _item_elt, _is_select) {
+
+            var priv = $.uMenu.priv;
+            var data = priv.instance_data_for(_menu_elt);
+
+            var default_callback = (
+                _is_select ?
+                    priv._default_select_item : priv._default_unselect_item
+            );
+
+            $.uI.trigger_event(
+                (_is_select ? 'select' : 'unselect'),
+                    $.uMenu.key, default_callback, _menu_elt,
+                    data.options, [ _menu_elt, _item_elt ]
+            );
+        },
+
+        /**
+         * Default handler for item selection; uses a CSS class.
+         * Override this by handling the 'select' event, or by
+         * providing the onSelect callback.
+         */
+        _default_select_item: function (_menu_elt, _item_elt) {
+
+            $(_item_elt).addClass('selected');
+        },
+
+        /**
+         * Default handler for unselecting items; uses a CSS class.
+         */
+        _default_unselect_item: function (_menu_elt, _item_elt) {
+
+            $(_item_elt).removeClass('selected');
         },
 
         /**
@@ -307,17 +362,17 @@
          * a uMenu item. This changes the active menu item, if
          * the item under the mouse is not currently active.
          */
-        _handle_item_mouseover: function (_ev) {
+        _handle_item_mouseover: function (_ev, _menu_elt) {
 
             var item_elt = $(this);
             var priv = $.uMenu.priv;
-            var data = priv.instance_data_for(item_elt);
+            var data = priv.instance_data_for(_menu_elt);
 
             if (data.selected_item_elt) {
-                data.selected_item_elt.removeClass('selected');
+                priv.toggle_item(_menu_elt, data.selected_item_elt, false);
             }
 
-            item_elt.addClass('selected');
+            priv.toggle_item(_menu_elt, item_elt, true);
             data.selected_item_elt = item_elt;
         }
     };

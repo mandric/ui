@@ -119,7 +119,6 @@
             var priv = $.uSort.priv;
 
             this.each(function (i, sortable_elt) {
-                
                 var data = priv.instance_data_for(sortable_elt);
 
                 data.items.uDrag('destroy');
