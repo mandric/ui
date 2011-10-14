@@ -114,10 +114,17 @@
          */
         destroy: function () {
 
+            var key = $.uSort.key;
             var priv = $.uSort.priv;
-            var data = priv.instance_data_for(this);
 
-            data.items.uDrag('destroy');
+            this.each(function (i, sortable_elt) {
+                
+                var data = priv.instance_data_for(sortable_elt);
+
+                data.items.uDrag('destroy');
+                $(sortable_elt).data(key, null);
+            });
+
             return this;
         },
 

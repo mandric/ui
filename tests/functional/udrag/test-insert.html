@@ -88,7 +88,7 @@
             var state = 0;
             jQuery(function ($) {
                 $('.drag').uDrag('create', {
-                    drop: [ $('.drop') ],
+                    drop: $('.drop'),
                     container: '.outer',
                     onInsertElement: function (_elt, _drop_elt) {
                         _drop_elt.find(

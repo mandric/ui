@@ -260,7 +260,7 @@
 
             for (var i = 0, len = _areas.length; i < len; ++i) {
                 var area = _areas[i];
-                var z = parseInt(area.elt.css('z-index'), 10);
+                var z = parseInt(area.elt.css('zIndex'), 10);
 
                 if (!rv || z > rvz) {
                     rv = area;
@@ -352,12 +352,12 @@
         destroy: function () {
 
             var key = $.uDrag.key;
+            var priv = $.uDrag.priv;
 
             $(document).unbind('.' + key);
             $(window).unbind('.' + key);
 
             this.each(function (i, elt) {
-                var priv = $.uDrag.priv;
                 var data = priv.instance_data_for(elt);
 
                 elt = $(elt);
@@ -657,9 +657,11 @@
             var priv = $.uDrag.priv;
             var delta = priv.compute_pixel_adjustment(_elt);
 
-            _elt.css('position', 'relative');
-            _elt.css('top', (_offsets.relative.y - delta.y) + 'px');
-            _elt.css('left', (_offsets.relative.x - delta.x) + 'px');
+            _elt.css({
+                position: 'relative',
+                left: (_offsets.relative.x - delta.x) + 'px',
+                top: (_offsets.relative.y - delta.y) + 'px'
+            });
 
             return _elt;
         },
@@ -1146,20 +1148,26 @@
             var drag_elt = _elt.clone(true);
 
             wrap_elt.append(drag_elt);
-            wrap_elt.css('z-index', 65535);
             wrap_elt.addClass('udrag-wrapper');
-            wrap_elt.css('position', 'absolute');
             data.placeholder_elt = wrap_elt;
 
+            wrap_elt.css({
+                zIndex: 65535, position: 'absolute'
+            });
+            
             drag_elt.width(_elt.width());
             drag_elt.height(_elt.height());
+
+            drag_elt.css({
+                visibility: 'visible', position: null,
+                left: null, top: null, right: null, bottom: null
+            });
 
             $('body').append(wrap_elt);
             priv.update_position(_elt, _ev, true);
 
             _elt.addClass('placeholder');
             _elt.css('visibility', 'hidden');
-            drag_elt.css('visibility', 'visible');
 
             return wrap_elt;
         },

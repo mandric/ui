@@ -75,7 +75,7 @@
                     items = $(items.apply(this));
                     break;
                 case 'string':
-                    items = this.find(items);
+                    items = this.children(items);
                     break;
                 default:
                 case 'object':
@@ -85,21 +85,24 @@
 
             this.each(function (i, menu_elt) {
 
-                /* Bind event handlers:
-                    Click handlers; these handle menu dismissal. */
+                menu_elt = $(menu_elt);
 
-                $(menu_elt).bind(
+                /* Event handlers:
+                    Single-click handlers for menu dismissal. */
+
+                menu_elt.bind(
                     'click.' + $.uMenu.key, priv._handle_menu_click
                 );
 
-                $(window).bind(
+                $(document).bind(
                     'click.' + $.uMenu.key,
-                        $.proxy(priv._handle_window_click, menu_elt)
+                        $.proxy(priv._handle_document_click, menu_elt)
                 );
+
             });
 
-            priv.bind_menu_items(this, items);
             data.items = items;
+            priv.bind_menu_items(this, items);
 
             this.uPopup('create', _target_elt, {
                 cssClasses: css_classes,
@@ -128,11 +131,11 @@
 
             var priv = $.uMenu.priv;
 
-            this.each(function (i, _menu_elt) {
+            this.each(function (i, menu_elt) {
                 var data = priv.instance_data_for(this);
-                var menu_elt = $(_menu_elt);
+                menu_elt = $(menu_elt);
 
-                menu_elt.uPopup('show', function (_popup_elt, _wrapper_elt) {
+                menu_elt.uPopup('show', function (_popup_elt) {
                     data.is_visible = true;
                 });
             });
@@ -145,11 +148,11 @@
 
             var priv = $.uMenu.priv;
 
-            this.each(function (i, _menu_elt) {
+            this.each(function (i, menu_elt) {
                 var data = priv.instance_data_for(this);
-                var menu_elt = $(_menu_elt);
+                menu_elt = $(menu_elt);
 
-                menu_elt.uPopup('hide', function (_popup_elt, _wrapper_elt) {
+                menu_elt.uPopup('hide', function (_popup_elt) {
                     data.is_visible = false;
                 });
             });
@@ -161,6 +164,7 @@
          */
         destroy: function () {
 
+            var key = $.uMenu.key;
             var priv = $.uMenu.priv;
 
             $(this).each(function (i, menu_elt) {
@@ -171,11 +175,12 @@
                     menu_elt.uSort('destroy');
                 }
 
-                menu_elt.unbind('.' + $.uMenu.key);
+                menu_elt.unbind('.' + key);
                 menu_elt.uPopup('destroy');
+                menu_elt.data(key, null);
             });
 
-            $(window).unbind('.' + $.uMenu.key);
+            $(window).unbind('.' + key);
             return this;
         }
 
@@ -228,11 +233,14 @@
         */
         bind_menu_items: function (_menu_elt, _item_elts) {
 
+            var key = $.uMenu.key;
+            var priv = $.uMenu.priv;
+
             /* Hide submenus for all items:
                 These will be shown on mouse-over, by instansiating
                 another instance of uMenu on the sub-menu element. */
 
-            $('.umenu', _item_elts).each(function (i, _elt) {
+            $('.' + key, _item_elts).each(function (i, _elt) {
                 $(_elt).hide();
             });
 
@@ -240,15 +248,16 @@
                 For every item selected via the {items} option,
                 bind the appropriate mouse-based event handlers. */
 
-            _item_elts.each(function (i, _item_elt) {
-
-                var item_elt = $(_item_elt);
+            $(_item_elts).each(function (i, item_elt) {
+                $(item_elt).bind(
+                    'mouseover.' + key, priv._handle_item_mouseover
+                );
             });
         },
 
         /**
          * Event handler for uPopup's {reorient} event. This is called
-         * by uPopup when the popup window changes position in response
+         * by uPopup when the popup window changes position, in response
          * to a change in the available space on any side.
          */
         _handle_drag_reorient: function (_menu_elt, _wrapper_elt) {
@@ -262,6 +271,9 @@
         },
 
         /**
+         * Event handler for uMenu's click event. This is invoked
+         * when a user selects a menu item, and stops event propogation
+         * so that {_handle_window_click} is not invoked after.
          */
         _handle_menu_click: function (_ev) {
 
@@ -272,8 +284,11 @@
         },
 
         /**
+         * Event handler for the document's click event. This is
+         * invoked whenever the user clicks anywhere outside of
+         * a uMenu instance, and responds by closing the menu.
          */
-        _handle_window_click: function (_ev) {
+        _handle_document_click: function (_ev) {
 
             var menu_elt = $(this);
             var priv = $.uMenu.priv;
@@ -282,6 +297,25 @@
             if (data.is_visible) {
                 menu_elt.uMenu('destroy');
             }
+        },
+
+        /**
+         * Handler for mouse-over events occurring inside of
+         * a uMenu item. This changes the active menu item, if
+         * the item under the mouse is not currently active.
+         */
+        _handle_item_mouseover: function (_ev) {
+
+            var item_elt = $(this);
+            var priv = $.uMenu.priv;
+            var data = priv.instance_data_for(item_elt);
+
+            if (data.selected_item_elt) {
+                data.selected_item_elt.removeClass('selected');
+            }
+
+            item_elt.addClass('selected');
+            data.selected_item_elt = item_elt;
         }
     };
  

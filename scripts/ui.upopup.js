@@ -266,7 +266,7 @@
 
             var priv = $.uPopup.priv;
             var options = (_options || {});
-            var target_elts = $.uI.listify(_target_elts);
+            var target_elts = $(_target_elts);
 
             /* Process options:
                 Add defaults for unspecified options. */
@@ -415,6 +415,7 @@
          */
         destroy: function () {
 
+            var key = $.uPopup.key;
             var priv = $.uPopup.priv;
             var teardown_fn = function (_popup_elt, _wrapper_elt) {
 
@@ -422,9 +423,9 @@
                 var data = priv.instance_data_for(popup_elt);
 
                 priv.unwrap(popup_elt);
-                $(window).unbind('.' + $.uPopup.key);
+                $(window).unbind('.' + key);
 
-                popup_elt.unbind('.' + $.uPopup.key);
+                popup_elt.unbind('.' + key);
                 popup_elt.data($.uPopup.key, null);
                 
                 _wrapper_elt.remove();
@@ -433,6 +434,7 @@
 
             $(this).each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
+
                 priv.toggle(
                     popup_elt, false, teardown_fn
                 );
@@ -445,19 +447,14 @@
          * returns a list of the 'wrapper' elements currently in use.
          */
         elements: function () {
-            return $(
+            return (
                 $(this).map(function (i, popup_elt) {
 
                     /* Convert element to instance data */
                     var data = $.uPopup.priv.instance_data_for(popup_elt);
                     var wrapper_elt = data.wrapper_elt;
 
-                    return (wrapper_elt ? wrapper_elt[0] : undefined);
-
-                }).filter(function (wrapper_elt) {
-
-                    /* Filter out undefined or empty values */
-                    return !wrapper_elt;
+                    return wrapper_elt[0];
                 })
             );
         }
@@ -551,12 +548,11 @@
             var priv = $.uPopup.priv;
             var options = (_options || {});
 
-            _wrapper_elt.css(
-                'z-index',
-                (priv._zindex_base + priv._serial_number++)
-            );
+            _wrapper_elt.css({
+                display: 'none',
+                zIndex: (priv._zindex_base + priv._serial_number++)
+            });
 
-            _wrapper_elt.css('display', 'none');
             _wrapper_elt.prependTo('body');
         },
 
