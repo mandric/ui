@@ -81,17 +81,14 @@
                     case 'function':
                         items = $(items.apply(menu_elt));
                         break;
+                    default:
                     case 'string':
                         items = menu_elt.children(items);
-                        break;
-                    default:
-                    case 'object':
-                        items = $(items);
                         break;
                 }
                 
                 data.items = items;
-                data.is_created = true;
+                data.is_destroying = false;
                 priv.bind_menu_items(this, items);
 
                 /* Event handlers:
@@ -141,16 +138,7 @@
          */
         show: function () {
 
-            var priv = $.uMenu.priv;
-
-            this.each(function (i, menu_elt) {
-                var data = priv.instance_data_for(this);
-                menu_elt = $(menu_elt);
-
-                menu_elt.uPopup('show', function (_popup_elt) {
-                    data.is_visible = true;
-                });
-            });
+            return $.uMenu.priv.toggle(this, true);
         },
 
         /**
@@ -158,17 +146,7 @@
          */
         hide: function () {
 
-            var priv = $.uMenu.priv;
-
-            this.each(function (i, menu_elt) {
-                menu_elt = $(menu_elt);
-
-                var data = priv.instance_data_for(this);
-
-                menu_elt.uPopup('hide', function (_popup_elt) {
-                    data.is_visible = false;
-                });
-            });
+            return $.uMenu.priv.toggle(this, false);
         },
 
         /**
@@ -184,27 +162,34 @@
                 menu_elt = $(menu_elt);
 
                 var data = priv.instance_data_for(menu_elt);
-                data.is_created = false;
+                var submenu_elt = data.selected_menu_elt;
+
+                data.is_destroying = true;
 
                 if (data.options.sortable) {
                     menu_elt.uSort('destroy');
                 }
 
+                if (submenu_elt) {
+                    var submenu_data = priv.instance_data_for(submenu_elt);
+                    if (!submenu_data.is_destroying) {
+                        submenu_elt.uMenu('destroy');
+                    }
+                }
+                
                 menu_elt.uPopup('destroy', function () {
-
                     data.items.each(function (j, item_elt) {
                         priv.toggle_item(menu_elt, item_elt, false);
                     });
-
-                    menu_elt.unbind('.' + key);
-                    menu_elt.data(key, null);
 
                     if (data.options.submenu) {
                         menu_elt.hide();
                     }
                 });
                 
-                $(document).unbind('click', data.document_click_fn);
+                $(document).unbind(
+                    'click', data.document_click_fn
+                );
             });
 
             return this;
@@ -256,7 +241,7 @@
             return _menu_elt.data($.uMenu.key);
         },
 
-       /**
+      /**
         * 
         */
         bind_menu_items: function (_menu_elt, _item_elts) {
@@ -288,6 +273,28 @@
             });
         },
 
+        
+        /**
+         * Show or hide the hierarchical pop-up menu(s) rooted at
+         * {_menu_elts}. If {_is_show} is true, then the popup
+         * menu will be shown; otherwise it will be hidden.
+         */
+        toggle: function (_menu_elts, _is_show) {
+
+            var priv = $.uMenu.priv;
+
+            $(_menu_elts).each(function (i, menu_elt) {
+                menu_elt = $(menu_elt);
+
+                var data = priv.instance_data_for(menu_elt);
+
+                menu_elt.uPopup(
+                    (_is_show ? 'show' : 'hide'), function (_popup_elt) {
+                        data.is_visible = _is_show;
+                    }
+                );
+            });
+        },
         /**
          * This function is called whenever the mouse pointer moves
          * inside or outside of a menu item. If {_is_select} is true,
@@ -324,15 +331,19 @@
                         'create', arrow_elt, {
                             submenu: true,
                             items: data.options.items,
+                            sortable: data.options.sortable,
                             cssClasses: data.options.cssClasses
                         }
                     );
                 }
             } else {
-                if (data.selected_menu_elt && data.is_created) {
-                    var menu_elt = data.selected_menu_elt;
-                    menu_elt.uMenu('destroy');
-                    data.selected_menu_elt = null;
+                var menu_elt = data.selected_menu_elt;
+                if (menu_elt) {
+                    var submenu_data = priv.instance_data_for(menu_elt);
+                    if (!submenu_data.is_destroying) {
+                        menu_elt.uMenu('destroy');
+                        data.selected_menu_elt = null;
+                    }
                 }
             }
 
@@ -382,7 +393,7 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(this);
 
-            _ev.stopPropagation();
+            return true;
         },
 
         /**
@@ -396,9 +407,11 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(menu_elt);
 
-            if (data.is_visible) {
+            if (data.is_visible && !data.is_destroying) {
                 menu_elt.uMenu('destroy');
             }
+
+            return false;
         },
 
         /**
@@ -419,12 +432,16 @@
 
             if (item_elt[0] !== current_elt) {
                 if (data.selected_item_elt) {
-                    priv.toggle_item(_menu_elt, data.selected_item_elt, false);
+                    priv.toggle_item(
+                        _menu_elt, data.selected_item_elt, false
+                    );
                 }
 
                 priv.toggle_item(_menu_elt, item_elt, true);
                 data.selected_item_elt = item_elt;
             }
+
+            return false;
         }
     };
  

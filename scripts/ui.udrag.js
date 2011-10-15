@@ -302,6 +302,9 @@
          */
         create: function (_options) {
 
+            var key = $.uDrag.key;
+            var priv = $.uDrag.priv;
+
             var default_options = {
                 scrollDelta: 32, /* px */
                 scrollDelay: 512, /* ms */
@@ -309,36 +312,33 @@
                 scrollEdgeExtent: 24 /* px, per side */
             };
 
-            var doc = $(document);
-            var priv = $.uDrag.priv;
+            var w = $(window), d = $(document);
             var options = $.extend(default_options, _options || {});
 
             this.each(function (i, elt) {
 
                 elt = $(elt);
-                priv.create_instance_data(elt, options);
+                var data = priv.create_instance_data(elt, options);
 
                 /* Draggable elements:
                     Register event handlers to detect drag/move events. */
 
-                doc.bind(
-                    'mousemove.' + $.uDrag.key,
-                    $.proxy(priv._handle_document_mousemove, elt)
-                );
+                data.document_mousemove_fn = function (_ev) {
+                    return priv._handle_document_mousemove.call(elt, _ev);
+                };
 
-                doc.bind(
-                    'mouseup.' + $.uDrag.key,
-                    $.proxy(priv._handle_document_mouseup, elt)
-                );
+                data.document_mouseup_fn = function (_ev) {
+                    return priv._handle_document_mouseup.call(elt, _ev);
+                };
 
-                $(window).bind(
-                    'resize.' + $.uDrag.key,
-                    $.proxy(priv._handle_document_resize, elt)
-                );
+                data.window_resize_fn = function (_ev) {
+                    return priv._handle_window_resize.call(elt, _ev);
+                };
 
-                elt.bind(
-                    'mousedown.' + $.uDrag.key, priv._handle_drag_mousedown
-                );
+                w.bind('resize.' + key, data.window_resize_fn);
+                d.bind('mouseup.' + key, data.document_mouseup_fn);
+                d.bind('mousemove.' + key, data.document_mousemove_fn);
+                elt.bind('mousedown.' + key, priv._handle_drag_mousedown)
 
                 priv.bind_drop_areas(elt, options);
             });
@@ -354,12 +354,14 @@
 
             var key = $.uDrag.key;
             var priv = $.uDrag.priv;
-
-            $(document).unbind('.' + key);
-            $(window).unbind('.' + key);
+            var d = $(document), w = $(window);
 
             this.each(function (i, elt) {
                 var data = priv.instance_data_for(elt);
+
+                d.unbind('mousemove.' + key, data.document_mousemove_fn);
+                d.unbind('mouseup.' + key, data.document_mouseup_fn);
+                w.unbind('resize.' + key, data.window_resize_fn);
 
                 elt = $(elt);
                 elt.data(key, null);
@@ -1265,7 +1267,7 @@
          * Event handler for document's mouse-move event.
          */
         _handle_document_mousemove: function (_ev) {
-
+console.log('move');
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(this);
 
@@ -1277,9 +1279,9 @@
         },
 
         /**
-         * Event handler for document's mouse-move event.
+         * Event handler for window's resize event.
          */
-        _handle_document_resize: function (_ev) {
+        _handle_window_resize: function (_ev) {
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(this);

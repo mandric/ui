@@ -94,8 +94,8 @@
                     priv.stop_other_animations(this, false);
                 },
                 onPositionElement: false,
-                onHover: $.proxy(priv.handle_drag_hover, this),
-                onRecalculate: $.proxy(priv.handle_drag_recalculate, this)
+                onHover: $.proxy(priv._handle_drag_hover, this),
+                onRecalculate: $.proxy(priv._handle_drag_recalculate, this)
             });
             
             this.addClass('usort-installed');
@@ -567,7 +567,7 @@
         /**
          * Event handler for uDrag-initiated {hover} events.
          */
-        handle_drag_hover: function (_elt, _drop_elt, _offsets) {
+        _handle_drag_hover: function (_elt, _drop_elt, _offsets) {
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
@@ -587,7 +587,7 @@
         /**
          * Event handler for uDrag-initiated {recalculate} events.
          */
-        handle_drag_recalculate: function (_elt) {
+        _handle_drag_recalculate: function (_elt) {
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
