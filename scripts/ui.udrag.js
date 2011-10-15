@@ -357,7 +357,14 @@
             var d = $(document), w = $(window);
 
             this.each(function (i, elt) {
+                elt = $(elt);
                 var data = priv.instance_data_for(elt);
+
+                /* Currently-dragging?
+                    It's possible for destroy to be called while we're in
+                    the middle of a drag operation; remove the overlay. */
+
+                priv.remove_overlay(elt, data);
 
                 d.unbind('mousemove.' + key, data.document_mousemove_fn);
                 d.unbind('mouseup.' + key, data.document_mouseup_fn);
@@ -1203,6 +1210,20 @@
         },
         
         /**
+         * Immediately remove the drag overlay, and return the
+         * original element to its former position / visibility.
+         */
+        remove_overlay: function (_elt, _data) {
+
+            if (_data.placeholder_elt) {
+                _data.placeholder_elt.remove();
+            }
+
+            _elt.removeClass('placeholder');
+            _elt.css('visibility', 'visible');
+        },
+
+        /**
          * Sets a new default position for the draggable element.
          */
         move_element: function (_elt) {
@@ -1236,10 +1257,7 @@
                 left: data.initial_position.x - data.margin.x
             }, {
                 complete: function () {
-                    drag_elt.remove();
-                    _elt.css('visibility', 'visible');
-                    _elt.removeClass('placeholder');
-
+                    priv.remove_overlay(_elt, data);
                     if (_callback) {
                         _callback.call(_elt);
                     }
