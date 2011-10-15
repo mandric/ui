@@ -345,7 +345,7 @@
                         and target elements -- and is invoked from several
                         resize, scroll, and ajax event handlers, below. */
 
-                    var reposition_fn = function (ev) {
+                    data.reposition_fn = function (ev) {
                         priv._autoposition(
                             wrapper_elt, popup_elt, target_elt
                         );
@@ -353,20 +353,20 @@
 
                     /* Browser window resize/reflow */
                     $(window).bind(
-                        'resize.' + $.uPopup.key, reposition_fn
+                        'resize.' + $.uPopup.key, data.reposition_fn
                     );
                     $(window).bind(
-                        'scroll.' + $.uPopup.key, reposition_fn
+                        'scroll.' + $.uPopup.key, data.reposition_fn
                     );
                     /* AJAX update affecting popup's content */
                     popup_elt.bind(
-                        'ajaxComplete.' + $.uPopup.key, reposition_fn
+                        'ajaxComplete.' + $.uPopup.key, data.reposition_fn
                     );
                     /* DOM element mutation, when requested */
                     if (options.useMutation) {
                         popup_elt.bind(
                             'DOMSubtreeModified.' +
-                                $.uPopup.key, reposition_fn
+                                $.uPopup.key, data.reposition_fn
                         );
                     }
                 }
@@ -424,7 +424,9 @@
                 var data = priv.instance_data_for(popup_elt);
 
                 priv.unwrap(popup_elt);
-                $(window).unbind('.' + key);
+
+                $(window).unbind('resize', data.reposition_fn);
+                $(window).unbind('scroll', data.reposition_fn);
 
                 popup_elt.unbind('.' + key);
                 popup_elt.data($.uPopup.key, null);
@@ -938,6 +940,7 @@
                 ratio: null,
                 offsets: null,
                 wrapper_elt: null,
+                reposition_fn: null,
                 original_parent: null, */
                 popup_elt: _popup_elt,
                 options: (_options || {})

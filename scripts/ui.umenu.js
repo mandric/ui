@@ -61,69 +61,77 @@
             var default_options = {};
 
             var priv = $.uMenu.priv;
-            var options = $.extend(default_options, _options || {});
-            var data = priv.create_instance_data(this, options);
-
             var css_classes = 'no-padding';
-            var items = (options.items || '.item');
+            var options = $.extend(default_options, _options || {});
 
             if (options.cssClasses) {
                 css_classes += (' ' + options.cssClasses);
             }
 
-            switch (typeof(items)) {
-                case 'function':
-                    items = $(items.apply(this));
-                    break;
-                case 'string':
-                    items = this.children(items);
-                    break;
-                default:
-                case 'object':
-                    items = $(items);
-                    break;
-            }
-
             this.each(function (i, menu_elt) {
 
                 menu_elt = $(menu_elt);
+                var data = priv.create_instance_data(menu_elt, options);
+
+                /* Item handling:
+                    Search for menu items, using one of three strategies. */
+
+                var items = (options.items || '.item');
+                switch (typeof(items)) {
+                    case 'function':
+                        items = $(items.apply(menu_elt));
+                        break;
+                    case 'string':
+                        items = menu_elt.children(items);
+                        break;
+                    default:
+                    case 'object':
+                        items = $(items);
+                        break;
+                }
+                
+                data.items = items;
+                data.is_created = true;
+                priv.bind_menu_items(this, items);
 
                 /* Event handlers:
                     Single-click handlers for menu dismissal. */
+
+                var document_click_fn = function () {
+                    priv._handle_document_click.call(menu_elt);
+                };
+            
+                $(document).bind('click.' + $.uMenu.key, document_click_fn);
+                data.document_click_fn = document_click_fn;
 
                 menu_elt.bind(
                     'click.' + $.uMenu.key, priv._handle_menu_click
                 );
 
-                $(document).bind(
-                    'click.' + $.uMenu.key,
-                        $.proxy(priv._handle_document_click, menu_elt)
-                );
+                /* Contained classes:
+                    Instansiate the popup window surrounding this menu,
+                    and, if requested, a uSort instance for reordering. */
 
-            });
-
-            data.items = items;
-            priv.bind_menu_items(this, items);
-
-            this.uPopup('create', _target_elt, {
-                center: true,
-                hidden: true,
-                useMutation: false,
-                cssClasses: css_classes,
-                onReorient: priv._handle_drag_reorient
-            });
-
-            if (!options.hidden) {
-                this.uMenu('show');
-            }
-
-            if (options.sortable) {
-                this.uSort('create', {
-                    animate: true,
-                    items: items, scroll: 'body',
-                    cssClasses: options.cssClasses
+                menu_elt.uPopup('create', _target_elt, {
+                    center: true,
+                    hidden: true,
+                    useMutation: false,
+                    cssClasses: css_classes,
+                    onReorient: priv._handle_drag_reorient
                 });
-            }
+
+                if (!options.hidden) {
+                    menu_elt.uMenu('show');
+                }
+
+                if (options.sortable) {
+                    menu_elt.uSort('create', {
+                        animate: true,
+                        items: items, scroll: 'body',
+                        cssClasses: options.cssClasses
+                    });
+                }
+            });
 
             return this;
         },
@@ -153,8 +161,9 @@
             var priv = $.uMenu.priv;
 
             this.each(function (i, menu_elt) {
-                var data = priv.instance_data_for(this);
                 menu_elt = $(menu_elt);
+
+                var data = priv.instance_data_for(this);
 
                 menu_elt.uPopup('hide', function (_popup_elt) {
                     data.is_visible = false;
@@ -173,7 +182,9 @@
 
             $(this).each(function (i, menu_elt) {
                 menu_elt = $(menu_elt);
+
                 var data = priv.instance_data_for(menu_elt);
+                data.is_created = false;
 
                 if (data.options.sortable) {
                     menu_elt.uSort('destroy');
@@ -187,11 +198,15 @@
 
                     menu_elt.unbind('.' + key);
                     menu_elt.data(key, null);
+
+                    if (data.options.submenu) {
+                        menu_elt.hide();
+                    }
                 });
                 
+                $(document).unbind('click', data.document_click_fn);
             });
 
-            $(document).unbind('.' + key);
             return this;
         }
 
@@ -230,7 +245,9 @@
 
             _menu_elt.data(
                 $.uMenu.key, {
-                    /* items: null, */
+                 /* items: null,
+                    selected_item_elt: null,
+                    selected_menu_elt: null, */
                     options: _options,
                     is_visible: false
                 }
@@ -294,6 +311,32 @@
                     $.uMenu.key, default_callback, _menu_elt,
                     data.options, [ _menu_elt, _item_elt ]
             );
+
+            if (_is_select) {
+                var submenu_elt = _item_elt.closestChild('.umenu');
+                var subitem_elts = submenu_elt.children('.item');
+                var arrow_elt = _item_elt.closestChild('.arrow');
+
+                submenu_elt.show();
+
+                if (submenu_elt[0] && subitem_elts[0]) {
+                    data.selected_menu_elt = submenu_elt.uMenu(
+                        'create', arrow_elt, {
+                            submenu: true,
+                            items: data.options.items,
+                            cssClasses: data.options.cssClasses
+                        }
+                    );
+                }
+            } else {
+                if (data.selected_menu_elt && data.is_created) {
+                    var menu_elt = data.selected_menu_elt;
+                    menu_elt.uMenu('destroy');
+                    data.selected_menu_elt = null;
+                }
+            }
+
+
         },
 
         /**
@@ -369,12 +412,19 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
 
-            if (data.selected_item_elt) {
-                priv.toggle_item(_menu_elt, data.selected_item_elt, false);
-            }
+            var current_elt = (
+                data.selected_item_elt ?
+                    data.selected_item_elt[0] : undefined
+            );
 
-            priv.toggle_item(_menu_elt, item_elt, true);
-            data.selected_item_elt = item_elt;
+            if (item_elt[0] !== current_elt) {
+                if (data.selected_item_elt) {
+                    priv.toggle_item(_menu_elt, data.selected_item_elt, false);
+                }
+
+                priv.toggle_item(_menu_elt, item_elt, true);
+                data.selected_item_elt = item_elt;
+            }
         }
     };
  
