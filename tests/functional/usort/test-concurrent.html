@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript"
+            src="../../../scripts/contrib/jquery-1.4.2.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.shared.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.udrag.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.usort.js">
+        </script>
+        <style type="text/css">
+            html, body {
+                margin: 0;
+                padding: 1em;
+            }
+            .outer {
+                height: 32em;
+                width: 45%;
+                overflow-x: hidden;
+                overflow-y: scroll;
+                border: solid 1px #ccc;
+            }
+            .first {
+                float: right;
+            }
+            .last {
+                float: left;
+            }
+            .inner {
+                margin: 1em;
+                height: 100em;
+            }
+            .number {
+                color: #aaa;
+                font-weight: bold;
+                padding: 0.5em;
+            }
+            .wrap {
+                border: solid 1px #ccc;
+                text-align: center;
+                width: 100%;
+                height: 2em;
+            }
+            .drag {
+                padding: 0.5em;
+            }
+            .right {
+                float: right;
+                padding: 0 4em;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="test-instructions">
+        </div>
+        <div class="first outer">
+            <div class="inner drop">
+                <div id="s1" class="drag">
+                    <div class="wrap">
+                        <div class="number">1</div>
+                    </div>
+                </div>
+                <div id="s2" class="drag">
+                    <div class="wrap">
+                        <div class="number">2</div>
+                    </div>
+                </div>
+                <div id="s3" class="drag">
+                    <div class="wrap">
+                        <div class="number">3</div>
+                    </div>
+                </div>
+                <div id="s4" class="drag">
+                    <div class="wrap">
+                        <div class="number">4</div>
+                    </div>
+                </div>
+                <div id="s5" class="drag">
+                    <div class="wrap">
+                        <div class="number">5</div>
+                    </div>
+                </div>
+                <div id="s6" class="drag">
+                    <div class="wrap">
+                        <div class="number">6</div>
+                    </div>
+                </div>
+                <div id="s7" class="drag">
+                    <div class="wrap">
+                        <div class="number">7</div>
+                    </div>
+                </div>
+                <div id="s8" class="drag">
+                    <div class="wrap">
+                        <div class="number">8</div>
+                    </div>
+                </div>
+                <div id="s9" class="drag">
+                    <div class="wrap">
+                        <div class="number">9</div>
+                    </div>
+                </div>
+                <div id="s10" class="drag">
+                    <div class="wrap">
+                        <div class="number">10</div>
+                    </div>
+                </div>
+               <div id="s11" class="drag">
+                    <div class="wrap">
+                        <div class="number">11</div>
+                    </div>
+                </div>
+                <div id="s12" class="drag">
+                    <div class="wrap">
+                        <div class="number">12</div>
+                    </div>
+                </div>
+                <div id="s13" class="drag">
+                    <div class="wrap">
+                        <div class="number">13</div>
+                    </div>
+                </div>
+                <div id="s14" class="drag">
+                    <div class="wrap">
+                        <div class="number">14</div>
+                    </div>
+                </div>
+                <div id="s15" class="drag">
+                    <div class="wrap">
+                        <div class="number">15</div>
+                    </div>
+                </div>
+                <div id="s16" class="drag">
+                    <div class="wrap">
+                        <div class="number">16</div>
+                    </div>
+                </div>
+                <div id="s17" class="drag">
+                    <div class="wrap">
+                        <div class="number">17</div>
+                    </div>
+                </div>
+                <div id="s18" class="drag">
+                    <div class="wrap">
+                        <div class="number">18</div>
+                    </div>
+                </div>
+                <div id="s19" class="drag">
+                    <div class="wrap">
+                        <div class="number">19</div>
+                    </div>
+                </div>
+                <div id="s20" class="drag">
+                    <div class="wrap">
+                        <div class="number">20</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="second outer">
+            <div class="inner drop">
+                <div id="ss1" class="drag">
+                    <div class="wrap">
+                        <div class="number">1</div>
+                    </div>
+                </div>
+                <div id="ss2" class="drag">
+                    <div class="wrap">
+                        <div class="number">2</div>
+                    </div>
+                </div>
+                <div id="ss3" class="drag">
+                    <div class="wrap">
+                        <div class="number">3</div>
+                    </div>
+                </div>
+                <div id="ss4" class="drag">
+                    <div class="wrap">
+                        <div class="number">4</div>
+                    </div>
+                </div>
+                <div id="ss5" class="drag">
+                    <div class="wrap">
+                        <div class="number">5</div>
+                    </div>
+                </div>
+                <div id="ss6" class="drag">
+                    <div class="wrap">
+                        <div class="number">6</div>
+                    </div>
+                </div>
+                <div id="ss7" class="drag">
+                    <div class="wrap">
+                        <div class="number">7</div>
+                    </div>
+                </div>
+                <div id="ss8" class="drag">
+                    <div class="wrap">
+                        <div class="number">8</div>
+                    </div>
+                </div>
+                <div id="ss9" class="drag">
+                    <div class="wrap">
+                        <div class="number">9</div>
+                    </div>
+                </div>
+                <div id="ss10" class="drag">
+                    <div class="wrap">
+                        <div class="number">10</div>
+                    </div>
+                </div>
+               <div id="ss11" class="drag">
+                    <div class="wrap">
+                        <div class="number">11</div>
+                    </div>
+                </div>
+                <div id="ss12" class="drag">
+                    <div class="wrap">
+                        <div class="number">12</div>
+                    </div>
+                </div>
+                <div id="ss13" class="drag">
+                    <div class="wrap">
+                        <div class="number">13</div>
+                    </div>
+                </div>
+                <div id="ss14" class="drag">
+                    <div class="wrap">
+                        <div class="number">14</div>
+                    </div>
+                </div>
+                <div id="ss15" class="drag">
+                    <div class="wrap">
+                        <div class="number">15</div>
+                    </div>
+                </div>
+                <div id="ss16" class="drag">
+                    <div class="wrap">
+                        <div class="number">16</div>
+                    </div>
+                </div>
+                <div id="ss17" class="drag">
+                    <div class="wrap">
+                        <div class="number">17</div>
+                    </div>
+                </div>
+                <div id="ss18" class="drag">
+                    <div class="wrap">
+                        <div class="number">18</div>
+                    </div>
+                </div>
+                <div id="ss19" class="drag">
+                    <div class="wrap">
+                        <div class="number">19</div>
+                    </div>
+                </div>
+                <div id="ss20" class="drag">
+                    <div class="wrap">
+                        <div class="number">20</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('.first .drop').uSort('create', {
+                    animate: true,
+                    container: '.outer', items: '.drag'
+                });
+                $('.second .drop').uSort('create', {
+                    animate: true,
+                    container: '.outer', items: '.drag'
+                });
+            });
+        </script>
+    </body>
+</html>
