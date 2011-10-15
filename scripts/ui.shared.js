@@ -71,11 +71,11 @@
                 ];
                 if (handler !== undefined) {
                     if (handler) {  /* Skip on false or null */
-                        rv = handler.apply(null, _arguments);
+                        rv = handler.apply(_elt, _arguments);
                     }
                 } else {
                     if (_default_callback) {
-                        rv = _default_callback.apply(null, _arguments);
+                        rv = _default_callback.apply(_elt, _arguments);
                     }
                 }
             }

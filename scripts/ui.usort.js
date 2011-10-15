@@ -86,12 +86,11 @@
                 scroll: options.scroll,
                 container: options.container,
                 cssClasses: options.cssClasses,
-                onInsertElement: function (_elt) {
-                    priv.stop_other_animations(this, false);
+                onInsertElement: function (_elt, _drop_elt) {
+                    priv.stop_other_animations(_drop_elt, false);
                 },
                 onDrop: function (_elt) {
                     _elt.css('display', 'block');
-                    priv.stop_other_animations(this, false);
                 },
                 onPositionElement: false,
                 onHover: $.proxy(priv._handle_drag_hover, this),
