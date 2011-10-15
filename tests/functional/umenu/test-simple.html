@@ -38,13 +38,19 @@
             }
             .top {
                 position: absolute;
-                left: 50%;
-                top: 40%;
+                top: 10%;
             }
             .bottom {
                 position: absolute;
-                left: 50%;
-                top: 60%;
+                bottom: 10%;
+            }
+            .left {
+                position: absolute;
+                left: 10%;
+            }
+            .right {
+                position: absolute;
+                right: 10%;
             }
             .umenu {
                 display: none;
@@ -177,8 +183,10 @@
                 </div>
             </div>
         </div>
-        <input class="button top" type="button" value="Test" />
-        <input class="button bottom" type="button" value="Test" />
+        <input class="button top left" type="button" value="Test" />
+        <input class="button top right" type="button" value="Test" />
+        <input class="button bottom right" type="button" value="Test" />
+        <input class="button bottom left" type="button" value="Test" />
     </body>
         <script type="text/javascript">
             jQuery(function () {
