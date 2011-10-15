@@ -1267,7 +1267,7 @@
          * Event handler for document's mouse-move event.
          */
         _handle_document_mousemove: function (_ev) {
-console.log('move');
+
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(this);
 
