@@ -182,7 +182,7 @@
     </body>
         <script type="text/javascript">
             jQuery(function () {
-                $('.button').click(function (ev) {
+                $('.button').bind('mousedown', function (ev) {
                     var elt = $('#umenu');
                     if (!elt.parents('.upopup')[0]) {
                         elt.uMenu('create', this, {
