@@ -1415,7 +1415,10 @@
             var data = priv.instance_data_for(_elt);
 
             data.areas.recalculate_all();
-            data.handle_areas.recalculate_all();
+
+            if (data.handle_areas) {
+                data.handle_areas.recalculate_all();
+            }
 
             $.uI.trigger_event(
                 'recalculate', $.uDrag.key, null, _elt, data.options,

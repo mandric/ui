@@ -69,7 +69,7 @@
             }
 
             if (!options.duration) {
-                options.duration = 250; /* ms */
+                options.duration = 150; /* ms */
             }
 
             this.each(function (i, menu_elt) {
