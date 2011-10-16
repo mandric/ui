@@ -192,7 +192,7 @@
          * the mouse pointer. The position is taken from the pageX
          * and pageY values of the supplied event object {_ev}.
          */
-        find_beneath: function (_offset) {
+        find_beneath: function (_pt) {
 
             var areas = this._areas;
             var overlapping_areas = [];
@@ -203,8 +203,13 @@
 
             for (var i = 0, len = areas.length; i < len; ++i) {
 
-                var x = _offset.x;
-                var y = _offset.y;
+                /* Offset formats:
+                    Accept two different formats. One is a jQuery
+                    event object, from which {pageX} and {pageY} are used.
+                    The other is a plain object, with {x} and {y} members. */
+
+                var x = (_pt.pageX !== undefined ? _pt.pageX : _pt.x);
+                var y = (_pt.pageY !== undefined ? _pt.pageY : _pt.y);
 
                 var area = areas[i];
                 var scroll_elt = area.scroll_elt;
@@ -319,6 +324,27 @@
 
                 elt = $(elt);
                 var data = priv.create_instance_data(elt, options);
+                var handle_elts = priv.find_drag_handles(elt, options);
+
+                if (handle_elts) {
+
+                    /* Have we been given drag handles?
+                        If so, track the area that each handle occupies; the
+                        mouse location will be checked against this before
+                        allowing the mousedown event-handling code to run. */
+
+                    data.handle_areas = new $.uDrag.AreaIndex();
+
+                    handle_elts.each(function (_i, _handle_elt) {
+                        data.handle_areas.track(_handle_elt);
+                    });
+                }
+
+                /* Index for drop areas:
+                    This data structure tracks the locations of all drop
+                    areas, and provides a fast point-in-areas operation. */
+
+                data.areas = new $.uDrag.AreaIndex();
 
                 /* Draggable elements:
                     Register event handlers to detect drag/move events. */
@@ -430,6 +456,30 @@
         },
 
         /**
+         * Locate all of the drag "handle" elements beneath {_elt}
+         * specified by the associative options array {_options}.
+         */
+         find_drag_handles: function (_elt, _options) {
+
+            var rv = false;
+            var handle_option = _options.handle;
+
+            switch (typeof(handle_option)) {
+                case 'string':
+                    rv = $(_elt.find(handle_option));
+                    break;
+                case 'function':
+                    rv = $(handle_option.apply(_elt));
+                    break;
+                case 'object':
+                    rv = $(handle_option);
+                    break;
+            }
+
+            return rv;
+        },
+
+        /**
          * Start a drag operation for {_elt}.
          */
         start_dragging: function (_elt, _ev) {
@@ -485,8 +535,7 @@
             var data = priv.instance_data_for(_elt);
 
             var drop_area = data.areas.find_beneath(
-                { x: _ev.pageX, y: _ev.pageY },
-                    [ data.placeholder_elt ]
+                _ev, [ data.placeholder_elt ]
             );
 
             priv.exit_drop_area(null, data);
@@ -554,8 +603,7 @@
             }
 
             var drop_area = data.areas.find_beneath(
-                { x: _ev.pageX, y: _ev.pageY },
-                    [ data.placeholder_elt ]
+                _ev, [ data.placeholder_elt ]
             );
 
             var recent = data.recent_drop_area_containers = [
@@ -896,6 +944,8 @@
             _elt.data(
                 $.uDrag.key, {
                 /*  elt: null,
+                    areas: null,
+                    handle_areas: null,
                     autoscroll_elt: null,
                     placeholder_elt: null,
                     last_positioning_event: null,
@@ -905,7 +955,6 @@
                     has_scrolled_recently: false, */
                     is_created: true,
                     options: _options,
-                    areas: new $.uDrag.AreaIndex(),
                     autoscroll_axes: { x: 0, y: 0 },
                     recent_drop_area_containers: []
                 }
@@ -1318,10 +1367,22 @@
         _handle_drag_mousedown: function (_ev) {
 
             var priv = $.uDrag.priv;
+            var data = priv.instance_data_for(this);
 
             /* Require primary mouse button */
+
             if (_ev.which !== 1) {
                 return false;
+            }
+
+            /* Were any drag handles specified?
+                If so, verify that the drag operation starts
+                inside of at least one handle's occupied area. */
+
+            if (data.handle_areas) {
+                if (!data.handle_areas.find_beneath(_ev)) {
+                    return false;
+                }
             }
 
             priv.start_dragging(this, _ev);
@@ -1354,6 +1415,7 @@
             var data = priv.instance_data_for(_elt);
 
             data.areas.recalculate_all();
+            data.handle_areas.recalculate_all();
 
             $.uI.trigger_event(
                 'recalculate', $.uDrag.key, null, _elt, data.options,
