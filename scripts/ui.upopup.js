@@ -301,6 +301,10 @@
                 options.direction = {};
             }
 
+            if (!options.duration) {
+                options.duration = 250;
+            }
+
             $(this).each(function (i, popup_elt) {
 
                 /* Target element:
@@ -613,9 +617,9 @@
                         callback();
                     };
                     if (_is_show) {
-                        wrapper_elt.fadeIn(options.duration || 250, f);
+                        wrapper_elt.fadeIn(options.duration, f);
                     } else {
-                        wrapper_elt.fadeOut(options.duration || 250, f);
+                        wrapper_elt.fadeOut(options.duration, f);
                     }
                 } else {
                     if (_is_show) {

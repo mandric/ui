@@ -94,7 +94,7 @@ exports.squeeze = function (_data) {
  * Program entry point
  */
 exports.compress(
-    'scripts/jquery.udrag.js', function (rv) {
+    'scripts/ui.udrag.js', function (rv) {
         console.log(exports.squeeze(rv));
     }
 );
