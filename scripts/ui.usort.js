@@ -121,6 +121,10 @@
             this.each(function (i, sortable_elt) {
                 var data = priv.instance_data_for(sortable_elt);
 
+                if (!data.is_created) {
+                    return;
+                }
+
                 data.items.uDrag('destroy');
                 $(sortable_elt).data(key, null);
             });
@@ -190,6 +194,7 @@
                  /* elt: null,
                     items: null, */
                     animations: {},
+                    is_created: true,
                     animation_count: 0,
                     animate: !!(_options.animate),
                     areas: new $.uDrag.AreaIndex(),

@@ -68,7 +68,7 @@
                 css_classes += (' ' + options.cssClasses);
             }
 
-            if (options.duration) {
+            if (!options.duration) {
                 options.duration = 100; /* ms */
             }
 
@@ -170,6 +170,22 @@
         },
 
         /**
+         * Stops any in-progress show/hide animations running on
+         * behalf of {this}, or any descendent uMenu elements.
+         */
+        stop: function () {
+
+            var priv = $.uMenu.priv;
+            var data = priv.instance_data_for(this);
+
+            this.uPopup('elements').stop(false, true);
+
+            if (data.selected_menu_elt) {
+                data.selected_menu_elt.uMenu('stop');
+            }
+        },
+
+        /**
          * Removes the uMenu-managed event handlers from each element
          * in {this}, restoring it to its pre-instansiation state.
          */
@@ -184,32 +200,35 @@
                 var data = priv.instance_data_for(menu_elt);
                 var submenu_elt = data.selected_menu_elt;
 
-                data.is_destroying = true;
+                if (data.is_created) {
+                    data.is_destroying = true;
 
-                if (data.options.sortable) {
-                    menu_elt.uSort('destroy');
-                }
-
-                if (submenu_elt) {
-                    var submenu_data = priv.instance_data_for(submenu_elt);
-                    if (!submenu_data.is_destroying) {
-                        submenu_elt.uMenu('destroy');
+                    if (data.options.sortable) {
+                        menu_elt.uSort('destroy');
                     }
-                }
-                
-                menu_elt.uPopup('destroy', function () {
-                    data.items.each(function (j, item_elt) {
-                        priv.toggle_item(menu_elt, $(item_elt), false);
+                    if (submenu_elt) {
+                        var submenu_data = priv.instance_data_for(
+                            submenu_elt
+                        );
+                        if (!submenu_data.is_destroying) {
+                            submenu_elt.uMenu('destroy');
+                        }
+                    }
+                    menu_elt.uPopup('destroy', function () {
+
+                        data.items.each(function (j, item_elt) {
+                            priv.toggle_item(menu_elt, $(item_elt), false);
+                        });
+
+                        if (data.options.submenu) {
+                            menu_elt.hide();
+                        }
                     });
-
-                    if (data.options.submenu) {
-                        menu_elt.hide();
-                    }
-                });
-                
-                $(document).unbind(
-                    'click', data.document_click_fn
-                );
+                    
+                    $(document).unbind(
+                        'click', data.document_click_fn
+                    );
+                }
             });
 
             return this;
@@ -254,6 +273,7 @@
                     is_visible: false,
                     selected_item_elt: null,
                     selected_menu_elt: null, */
+                    is_created: true,
                     options: _options,
                     active_animations: []
                 }
@@ -357,8 +377,7 @@
                 var animate_elt = animations[item_data.index];
 
                 if (animate_elt) {
-                    var wrapper_elt = animate_elt.uPopup('elements');
-                    wrapper_elt.stop(false, true);
+                    animate_elt.uMenu('stop');
                 }
             }
 

@@ -360,19 +360,22 @@
                 elt = $(elt);
                 var data = priv.instance_data_for(elt);
 
-                /* Currently-dragging?
-                    It's possible for destroy to be called while we're in
-                    the middle of a drag operation; remove the overlay. */
+                if (data.is_created) {
 
-                priv.remove_overlay(elt, data);
+                    /* Currently-dragging?
+                        It's possible for destroy to be called while we're
+                        performing a drag operation; remove the overlay. */
 
-                d.unbind('mousemove.' + key, data.document_mousemove_fn);
-                d.unbind('mouseup.' + key, data.document_mouseup_fn);
-                w.unbind('resize.' + key, data.window_resize_fn);
+                    priv.remove_overlay(elt, data);
 
-                elt = $(elt);
-                elt.data(key, null);
-                elt.unbind('.' + key);
+                    d.unbind('mousemove.' + key, data.document_mousemove_fn);
+                    d.unbind('mouseup.' + key, data.document_mouseup_fn);
+                    w.unbind('resize.' + key, data.window_resize_fn);
+
+                    elt = $(elt);
+                    elt.data(key, null);
+                    elt.unbind('.' + key);
+                }
             });
 
             return this;
@@ -900,6 +903,7 @@
                     drop_allowed: false,
                     is_autoscrolling: false,
                     has_scrolled_recently: false, */
+                    is_created: true,
                     options: _options,
                     areas: new $.uDrag.AreaIndex(),
                     autoscroll_axes: { x: 0, y: 0 },

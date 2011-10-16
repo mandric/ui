@@ -461,9 +461,9 @@
             $(this).each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
 
-                priv.toggle(
-                    popup_elt, false, teardown_fn
-                );
+                if (data.is_created) {
+                    priv.toggle(popup_elt, false, teardown_fn);
+                }
             });
 
         },
@@ -516,7 +516,8 @@
 
             if (!rv) {
                 rv = {};
-                _elt.data(key, rv);
+                console.log([ 'there', _elt ]);
+                elt.data(key, rv);
             }
 
             return rv;
@@ -980,6 +981,7 @@
                 wrapper_elt: null,
                 reposition_fn: null,
                 original_parent: null, */
+                is_created: true,
                 popup_elt: _popup_elt,
                 options: (_options || {})
             });
