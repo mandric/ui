@@ -69,7 +69,7 @@
             }
 
             if (!options.duration) {
-                options.duration = 100; /* ms */
+                options.duration = 250; /* ms */
             }
 
             this.each(function (i, menu_elt) {
@@ -201,19 +201,23 @@
                 var submenu_elt = data.selected_menu_elt;
 
                 if (data.is_created) {
+
                     data.is_destroying = true;
 
                     if (data.options.sortable) {
                         menu_elt.uSort('destroy');
                     }
+
                     if (submenu_elt) {
                         var submenu_data = priv.instance_data_for(
                             submenu_elt
                         );
+
                         if (!submenu_data.is_destroying) {
                             submenu_elt.uMenu('destroy');
                         }
                     }
+
                     menu_elt.uPopup('destroy', function () {
 
                         data.items.each(function (j, item_elt) {
