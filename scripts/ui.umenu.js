@@ -113,6 +113,7 @@
                     center: true,
                     hidden: true,
                     useMutation: false,
+                    direction: { x: 1 },
                     cssClasses: css_classes,
                     onReorient: priv._handle_drag_reorient
                 });
@@ -231,10 +232,10 @@
             _menu_elt.data(
                 $.uMenu.key, {
                  /* items: null,
+                    is_visible: false,
                     selected_item_elt: null,
                     selected_menu_elt: null, */
-                    options: _options,
-                    is_visible: false
+                    options: _options
                 }
             );
 

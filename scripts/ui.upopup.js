@@ -141,6 +141,18 @@
      *                  uPopup to take on the native appearance and
      *                  positioning logic of other CSS libraries / designs.
      *
+     *              direction:
+     *                  An object, containing an {x} and/or {y} attribute,
+     *                  containing preferred placement directions for the
+     *                  uPopup window. If {x} or {y} is positive, uPopup
+     *                  will attempt to place the popup window to the right
+     *                  or bottom of the target element, respectively. If
+     *                  {x} or {y} is zero or negative, uPopup will attempt
+     *                  to place the popup window to the left or top of the
+     *                  target element, respectively. If there is not enough
+     *                  room to accommodate the requested {direction}, then
+     *                  uPopup will fall back to the usual auto-placement.
+     *
      *              fx:
      *                  A boolean value. True (default) if uPopup should be
      *                  permitted to use jQuery effects when showing/hiding
@@ -284,6 +296,10 @@
             if (options.useMutation !== false) {
                 options.useMutation = true;
             }
+            
+            if (!options.direction) {
+                options.direction = {};
+            }
 
             $(this).each(function (i, popup_elt) {
 
@@ -402,10 +418,10 @@
         hide: function (_callback) {
 
             var priv = $.uPopup.priv;
-            priv.toggle(this, false, _callback);
 
             $(this).each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
+                priv.toggle(popup_elt, false, _callback);
                 data.ratio = null;
             });
         },
@@ -647,7 +663,8 @@
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
 
-            var ev = data.options.eventData;
+            var options = data.options;
+            var ev = options.eventData;
             var container_elt = $(document);
 
             /* Precompute sizes, offsets:
@@ -663,6 +680,11 @@
             var target_size = {
                 x: _target_elt.outerWidth(),
                 y: _target_elt.outerHeight()
+            };
+
+            var wrapper_size = {
+                x: _wrapper_elt.outerWidth(),
+                y: _wrapper_elt.outerHeight()
             };
 
             /* Compute available space on each side:
@@ -743,8 +765,25 @@
                 y: $.uI.index_of_max(avail.y)
             };
 
+            /* Direction preference:
+                If the caller noted a preferred direction along either
+                axis, try to accommodate the request. If there is not
+                enough space for {_wrapper_elt} to fit along a particular
+                axis, ignore the preference and use the automatic value. */
+
+            var dir = options.direction;
+
+            for (var k in { x: 0, y: 0 }) {
+                if (dir[k] !== undefined && dir[k] !== null) {
+                    var i = (dir[k] > 0 ? 1 : 0);
+                    if (avail[k][i] >= wrapper_size[k]) {
+                        bias[k] = i;
+                    }
+                }
+            }
+
             return priv.reposition(
-                _wrapper_elt, _popup_elt, _target_elt, bias
+                _wrapper_elt, wrapper_size, _popup_elt, _target_elt, bias
             );
         },
 
@@ -757,7 +796,7 @@
          * {priv.wrap}; _x and _y are boolean values denoting left/right
          * and top/bottom (each zero/one or false/true, respectively).
          */
-        reposition: function (_wrapper_elt,
+        reposition: function (_wrapper_elt, _wrapper_size,
                               _popup_elt, _target_elt, _bias) {
             var offsets;
             var priv = $.uPopup.priv;
@@ -773,19 +812,14 @@
                     
             var target_offset = _target_elt.offset();
 
-            var wrapper_size = {
-                x: _wrapper_elt.outerWidth(),
-                y: _wrapper_elt.outerHeight()
-            };
-
             var target_size = {
                 x: _target_elt.outerWidth(),
                 y: _target_elt.outerHeight()
             };
 
             var padding_size = {
-                x: (wrapper_size.x - inner_elt.width()) / 2,
-                y: (wrapper_size.y - inner_elt.height()) / 2
+                x: (_wrapper_size.x - inner_elt.width()) / 2,
+                y: (_wrapper_size.y - inner_elt.height()) / 2
             };
 
 
@@ -815,11 +849,11 @@
 
                 offsets = {
                     x: [
-                        pt.x - wrapper_size.x  + d.x,
+                        pt.x - _wrapper_size.x  + d.x,
                         pt.x - d.x
                     ],
                     y: [
-                        pt.y - wrapper_size.y + d.y,
+                        pt.y - _wrapper_size.y + d.y,
                         pt.y - d.y
                     ]
                 };
@@ -831,13 +865,13 @@
 
                 offsets = {
                     x: [
-                        target_offset.left - wrapper_size.x +
+                        target_offset.left - _wrapper_size.x +
                             d.x + padding_size.x,
                         target_offset.left + target_size.x -
                             d.x - padding_size.x
                     ],
                     y: [
-                        target_offset.top - wrapper_size.y +
+                        target_offset.top - _wrapper_size.y +
                             d.y + padding_size.y,
                         target_offset.top + target_size.y -
                             d.y - padding_size.y
@@ -869,7 +903,7 @@
                 and may need access to our offset calculations. */
 
             data.offsets = offsets;
-            data.size = wrapper_size;
+            data.size = _wrapper_size;
 
             /* Finally, reposition:
                 Write the actual style change to the DOM element. */
