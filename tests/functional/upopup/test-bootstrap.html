@@ -63,7 +63,7 @@
                         style: $.uPopup.style.bootstrap,
                         center: !!$(this).hasClass('danger')
                     });
-                    var popup = elt.uPopup('elements');
+                    var popup = elt.uPopup('wrapper');
                     popup.click(function (ev) {
                         $(elt).uPopup('destroy');
                     });

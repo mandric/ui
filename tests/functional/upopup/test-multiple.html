@@ -41,7 +41,7 @@
             jQuery(function () {
                 $('.button').click(function (ev) {
                     $('.template').uPopup('create', $('.button'), {});
-                    var popup = $('.template').uPopup('elements');
+                    var popup = $('.template').uPopup('wrapper');
                     popup.click(function (ev) {
                         $('.template').uPopup('destroy');
                     });

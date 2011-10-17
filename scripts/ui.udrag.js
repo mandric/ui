@@ -262,19 +262,41 @@
          */
         _find_topmost_area: function (_areas) {
 
-            var rv = null, rvz = null;
+            /* Phase one:
+                Element depth; select the set of elements
+                with the maximal number of parent elements. */
+
+            var rv1 = [], rv1_max = 0;
 
             for (var i = 0, len = _areas.length; i < len; ++i) {
                 var area = _areas[i];
-                var z = parseInt(area.elt.css('zIndex'), 10);
+                var depth = area.elt.parents().length;
 
-                if (!rv || z > rvz) {
-                    rv = area;
-                    rvz = z;
+                if (depth === rv1_max) {
+                    rv1.push(area);
+                } else if (depth > rv1_max) {
+                    rv1 = [ area ];
+                    rv1_max = depth;
                 }
             }
 
-            return rv;
+            /* Phase two:
+                Z-index order; using the list from phase one,
+                select the single element with the highest z-index. */
+
+            var rv2, rv2_max;
+
+            for (i = 0, len = rv1.length; i < len; ++i) {
+                var area = rv1[i];
+                var z = parseInt(area.elt.css('zIndex'), 10);
+
+                if (rv2 === undefined || z > rv2_max) {
+                    rv2 = area;
+                    rv2_max = z;
+                }
+            }
+
+            return rv2;
         },
 
         /**
@@ -366,7 +388,7 @@
                 d.bind('mousemove.' + key, data.document_mousemove_fn);
                 elt.bind('mousedown.' + key, priv._handle_drag_mousedown)
 
-                priv.bind_drop_areas(elt, options);
+                elt.uDrag('add', options);
             });
 
             return this;
@@ -423,6 +445,26 @@
                 if (data.areas) {
                     data.areas.recalculate_all();
                 }
+            });
+
+            return this;
+        },
+
+        /**
+         * Add additional drop zones to a uDrag instance, after it
+         * has already been created and initialized. The {this} argument
+         * should be a selection of elements that have been initialized
+         * by uDrag's {create} method; the {_options} argument should
+         * contain a {drop} option, formatted in the same way as it is
+         * in the {create} method. Other allowed options are {container}
+         * and {scroll}.
+         */
+        add: function (_options) {
+            
+            var priv = $.uDrag.priv;
+
+            this.each(function (i, elt) {
+                priv.bind_drop_areas(elt, _options);
             });
 
             return this;
@@ -1098,7 +1140,6 @@
                     $.proxy(priv._handle_ancestor_scroll, _elt)
                 );
             }
-
             /* Cache a single drop area:
                 This fills in details about the drop area,
                 and prepares it for fast indexed retrieval. */

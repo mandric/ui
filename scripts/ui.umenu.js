@@ -178,7 +178,7 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(this);
 
-            this.uPopup('elements').stop(false, true);
+            this.uPopup('wrapper').stop(false, true);
 
             if (data.selected_menu_elt) {
                 data.selected_menu_elt.uMenu('stop');

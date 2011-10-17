@@ -40,7 +40,7 @@
                         centerX: !!($(this).hasClass('center-x')),
                         centerY: !!($(this).hasClass('center-y'))
                     });
-                    var popup = elt.uPopup('elements');
+                    var popup = elt.uPopup('wrapper');
                     popup.click(function (ev) {
                         $(elt).uPopup('destroy');
                     });

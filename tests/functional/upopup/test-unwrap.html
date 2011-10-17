@@ -52,7 +52,7 @@
                 $('.button').click(function (ev) {
                     if (!elt.parents('.upopup')[0]) {
                         elt.uPopup('create', this, {});
-                        var popup = elt.uPopup('elements');
+                        var popup = elt.uPopup('wrapper');
                         popup.click(function (ev) {
                             elt.uPopup('destroy');
                         });

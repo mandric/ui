@@ -36,7 +36,7 @@
                     elt.uPopup('create', this, {
                         vertical: !!($(this).hasClass('vertical'))
                     });
-                    var popup = elt.uPopup('elements');
+                    var popup = elt.uPopup('wrapper');
                     popup.click(function (ev) {
                         $(elt).uPopup('destroy');
                     });

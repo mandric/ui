@@ -472,7 +472,7 @@
          * Given a list of originally-provided elements, this method
          * returns a list of the 'wrapper' elements currently in use.
          */
-        elements: function () {
+        wrapper: function () {
             return (
                 $(this).map(function (i, popup_elt) {
 
