@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript"
+            src="../../../scripts/contrib/jquery-1.4.2.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.shared.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.udrag.js">
+        </script>
+        <style type="text/css">
+            body {
+                margin: 1em;
+                padding: 1em;
+                overflow-x: hidden;
+                overflow-y: scroll;
+                height: 250em;
+            }
+            .outer {
+                margin: 0.5em;
+                padding: 0.5em;
+                height: 25em;
+            }
+            .drag {
+                max-width: 10em;
+                border: solid 7px #00f;
+                background-color: #f04;
+            }
+            .scroll, .another-scroll {
+                width: 45%;
+                height: 10em;
+                overflow: scroll;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                border: solid 1px #aaa;
+            }
+            .tall {
+                height: 100em;
+            }
+            .right {
+                float: right;
+                height: 25em;
+                width: 45%;
+            }
+            .inner {
+                width: 100%;
+                margin: 0;
+                height: 10em;
+                top: 50em;
+            }
+            .break {
+                margin-top: 2em;
+            }
+            .hover {
+                border: solid 2px #f00;
+            }
+            body.hover {
+                border: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="test-instructions">
+        </div>
+        <div class="right">
+            <div class="outer">
+                <div id="d1" class="tall">
+                    <div class="scroll inner">
+                        <div class="outer">
+                            <div id="d11" class="tall drop">
+                                <div class="drag">
+                                    This is a test.<br />
+                                    This is a test.<br />
+                                    This is a test.<br />
+                                    This is a test.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scroll inner break">
+                        <div class="outer">
+                            <div id="d12" class="tall drop">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="another-scroll">
+            <div class="outer">
+                <div id="d3" class="tall another-drop">
+                </div>
+            </div>
+        </div>
+        <div style="height: 5em;">
+        </div>
+        <div class="another-scroll">
+            <div class="outer">
+                <div id="d4" class="tall another-drop">
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('.drag').uDrag('create', {
+                    scroll: 'body',
+                    drop: '.drop',
+                    container: '.scroll',
+                    onEnter: function (_elt, _container_elt) {
+                        _container_elt.addClass('hover');
+                    },
+                    onExit: function (_elt, _container_elt) {
+                        _container_elt.removeClass('hover');
+                    }
+                });
+                setTimeout(function () {
+                    var f = function (v) {
+                        $('.another-scroll').css('background-color', v);
+                    }
+                    f('#ff7');
+                    setTimeout(function () {
+                        $('.drag').uDrag('add', {
+                            drop: '.another-drop',
+                            container: '.another-scroll',
+                            scroll: 'body'
+                        });
+                        f(null);
+                    }, 500);
+                }, 5000);
+            });
+        </script>
+    </body>
+</html>
