@@ -404,13 +404,16 @@
         show: function (_callback) {
 
             var priv = $.uPopup.priv;
-            priv.toggle(this, true, _callback);
 
             $(this).each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
-                priv.autoposition(
-                    data.wrapper_elt, popup_elt, data.target_elt
-                );
+
+                if (data.is_created) {
+                    priv.toggle(popup_elt, true, _callback);
+                    priv.autoposition(
+                        data.wrapper_elt, popup_elt, data.target_elt
+                    );
+                }
             });
         },
 
@@ -425,8 +428,11 @@
 
             $(this).each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
-                priv.toggle(popup_elt, false, _callback);
-                data.ratio = null;
+
+                if (data.is_created) {
+                    priv.toggle(popup_elt, false, _callback);
+                    data.ratio = null;
+                }
             });
         },
 
@@ -473,16 +479,20 @@
          * returns a list of the 'wrapper' elements currently in use.
          */
         wrapper: function () {
-            return (
-                $(this).map(function (i, popup_elt) {
+            var rv = [];
+            
+            $(this).each(function (i, popup_elt) {
 
-                    /* Convert element to instance data */
-                    var data = $.uPopup.priv.instance_data_for(popup_elt);
-                    var wrapper_elt = data.wrapper_elt;
+                /* Convert element to instance data */
+                var data = $.uPopup.priv.instance_data_for(popup_elt);
+                var wrapper_elt = data.wrapper_elt;
 
-                    return wrapper_elt[0];
-                })
-            );
+                if (data.is_created) {
+                    rv.push(wrapper_elt[0]);
+                }
+            });
+
+            return $(rv);
         }
     };
 
@@ -516,7 +526,6 @@
 
             if (!rv) {
                 rv = {};
-                console.log([ 'there', _elt ]);
                 elt.data(key, rv);
             }
 
@@ -557,10 +566,12 @@
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
 
-            if (data.original_sibling[0]) {
-                _popup_elt.insertBefore(data.original_sibling);
-            } else if (data.original_parent[0]) {
-                data.original_parent.append(_popup_elt);
+            if (data.is_created) {
+                if (data.original_sibling[0]) {
+                    _popup_elt.insertBefore(data.original_sibling);
+                } else if (data.original_parent[0]) {
+                    data.original_parent.append(_popup_elt);
+                }
             }
         },
 

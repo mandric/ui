@@ -92,7 +92,6 @@
                 }
                 
                 data.items = items;
-                data.is_destroying = false;
                 priv.bind_menu_items(this, items);
 
                 /* Event handlers:
@@ -124,7 +123,7 @@
                 });
 
                 if (!options.hidden) {
-                    menu_elt.uMenu('show');
+                    priv.toggle(menu_elt, true);
                 }
 
                 if (options.sortable) {
@@ -140,33 +139,35 @@
         },
 
         /**
-         * Show the hierarchical pop-up menu(s) rooted at {this}.
+         * Show the hierarchical pop-up menu rooted at {this}.
          */
         show: function (_callback) {
 
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(this);
+            var submenus = data.active_submenus;
 
-            if (data.selected_menu_elt) {
-                data.selected_menu_elt.uMenu('show');
+            for (var k in submenus) {
+                submenus[k].uMenu('show');
             }
 
-            return $.uMenu.priv.toggle(this, true, _callback);
+            return priv.toggle(this, true, _callback);
         },
 
         /**
-         * Hide the hierarchical pop-up menu(s) rooted at {this}.
+         * Hide the hierarchical pop-up menu rooted at {this}.
          */
         hide: function (_callback) {
 
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(this);
+            var submenus = data.active_submenus;
 
-            if (data.selected_menu_elt) {
-                data.selected_menu_elt.uMenu('hide');
+            for (var k in submenus) {
+                submenus[k].uMenu('hide');
             }
 
-            return $.uMenu.priv.toggle(this, false, _callback);
+            return priv.toggle(this, false, _callback);
         },
 
         /**
@@ -177,11 +178,12 @@
 
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(this);
+            var submenus = data.active_submenus;
 
             this.uPopup('wrapper').stop(false, true);
 
-            if (data.selected_menu_elt) {
-                data.selected_menu_elt.uMenu('stop');
+            for (var k in submenus) {
+                submenus[k].uMenu('stop');
             }
         },
 
@@ -189,49 +191,52 @@
          * Removes the uMenu-managed event handlers from each element
          * in {this}, restoring it to its pre-instansiation state.
          */
-        destroy: function () {
+        destroy: function (_callback) {
 
             var key = $.uMenu.key;
             var priv = $.uMenu.priv;
 
             $(this).each(function (i, menu_elt) {
-                menu_elt = $(menu_elt);
 
+                menu_elt = $(menu_elt);
                 var data = priv.instance_data_for(menu_elt);
-                var submenu_elt = data.selected_menu_elt;
+                var submenus = data.active_submenus;
 
                 if (data.is_created) {
 
-                    data.is_destroying = true;
+                    data.is_created = false;
 
                     if (data.options.sortable) {
                         menu_elt.uSort('destroy');
                     }
 
-                    if (submenu_elt) {
-                        var submenu_data = priv.instance_data_for(
-                            submenu_elt
-                        );
+                    for (var k in submenus) {
+                        var submenu_elt = submenus[k];
+                        var sub_data = priv.instance_data_for(submenu_elt);
 
-                        if (!submenu_data.is_destroying) {
-                            submenu_elt.uMenu('destroy');
-                        }
+                        submenu_elt.uMenu('destroy');
                     }
 
                     menu_elt.uPopup('destroy', function () {
 
                         data.items.each(function (j, item_elt) {
-                            priv.toggle_item(menu_elt, $(item_elt), false);
+                            item_elt = $(item_elt);
+                            priv.toggle_item(menu_elt, item_elt, false);
+                            item_elt.unbind('.' + key);
+                            item_elt.data('.' + key, null);
                         });
 
                         if (data.options.submenu) {
                             menu_elt.hide();
                         }
+
+                        menu_elt.unbind('.' + key);
+                        $(document).unbind('click', data.document_click_fn);
+
+                        if (_callback) {
+                            _callback.call(menu_elt, menu_elt)
+                        }
                     });
-                    
-                    $(document).unbind(
-                        'click', data.document_click_fn
-                    );
                 }
             });
 
@@ -275,11 +280,10 @@
                 $.uMenu.key, {
                  /* items: null,
                     is_visible: false,
-                    selected_item_elt: null,
-                    selected_menu_elt: null, */
+                    selected_item_elt: null, */
                     is_created: true,
                     options: _options,
-                    active_animations: []
+                    active_submenus: {}
                 }
             );
 
@@ -345,7 +349,7 @@
                             data.options, [ _menu_elt, _popup_elt ]
                         );
                         if (_callback) {
-                            _callback(_menu_elt, _popup_elt);
+                            _callback.call(_menu_elt, _menu_elt, _popup_elt);
                         }
                     }
                 );
@@ -364,7 +368,7 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
             var item_data = _item_elt.data($.uMenu.key);
-            var animations = data.active_animations;
+            var submenus = data.active_submenus;
 
             var default_callback = (
                 _is_select ?
@@ -378,7 +382,7 @@
             );
 
             if (item_data) {
-                var animate_elt = animations[item_data.index];
+                var animate_elt = submenus[item_data.index];
 
                 if (animate_elt) {
                     animate_elt.uMenu('stop');
@@ -394,7 +398,7 @@
                 submenu_elt.show();
 
                 if (submenu_elt[0] && subitem_elts[0]) {
-                    data.selected_menu_elt = submenu_elt.uMenu(
+                    submenus[item_data.index] = submenu_elt.uMenu(
                         'create', arrow_elt, {
                             hidden: true,
                             submenu: true,
@@ -403,27 +407,24 @@
                             cssClasses: data.options.cssClasses
                         }
                     );
-                    submenu_elt.uMenu('show', function () {
-                        delete animations[item_data.index];
-                    });
-                    animations[item_data.index] = submenu_elt;
+                    priv.toggle(submenu_elt, true);
                 }
 
-            } else {
+            } else if (item_data) {
 
-                var submenu_elt = data.selected_menu_elt;
+                var submenu_elt = submenus[item_data.index];
 
                 if (submenu_elt) {
                     var submenu_data = priv.instance_data_for(submenu_elt);
 
-                    if (!submenu_data.is_destroying) {
-                        data.selected_menu_elt = null;
-                        submenu_elt.uMenu('hide', function () {
-                            submenu_elt.uMenu('destroy');
-                            delete animations[item_data.index];
+                    submenu_elt.uMenu('stop');
+                    submenus[item_data.index] = submenu_elt;
+
+                    priv.toggle(submenu_elt, false, function () {
+                        submenu_elt.uMenu('destroy', function () {
+                            delete submenus[item_data.index];
                         });
-                        animations[item_data.index] = submenu_elt;
-                    }
+                    });
                 }
             }
 
@@ -487,7 +488,7 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(menu_elt);
 
-            if (data.is_visible && !data.is_destroying) {
+            if (data.is_visible) {
                 menu_elt.uMenu('destroy');
             }
 
