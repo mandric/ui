@@ -86,14 +86,14 @@
                 scroll: options.scroll,
                 container: options.container,
                 cssClasses: options.cssClasses,
-                onInsertElement: function (_elt, _drop_elt) {
+                onInsertElement: function (_drop_elt) {
                     priv.stop_other_animations(_drop_elt, false);
                 },
-                onDrop: function (_elt) {
-                    _elt.css('display', 'block');
+                onDrop: function () {
+                    this.css('display', 'block');
                 },
                 onPositionElement: false,
-                onHover: $.proxy(priv._handle_drag_hover, this),
+                onHover: priv._handle_drag_hover,
                 onRecalculate: $.proxy(priv._handle_drag_recalculate, this)
             });
             
@@ -571,18 +571,18 @@
         /**
          * Event handler for uDrag-initiated {hover} events.
          */
-        _handle_drag_hover: function (_elt, _drop_elt, _offsets) {
+        _handle_drag_hover: function (_drop_elt, _offsets) {
 
             var priv = $.uSort.priv;
-            var data = priv.instance_data_for(this);
-            var src_area = data.areas.element_to_area(_elt);
+            var data = priv.instance_data_for(_drop_elt);
+            var src_area = data.areas.element_to_area(this);
 
             var target_area = data.areas.find_beneath(
                 _offsets.absolute
             );
 
             if (target_area && !target_area.elt.hasClass('placeholder')) {
-                priv.insert_element(this, src_area, target_area);
+                priv.insert_element(_drop_elt, src_area, target_area);
             }
 
             return true; /* Allow drop operation */
@@ -591,7 +591,7 @@
         /**
          * Event handler for uDrag-initiated {recalculate} events.
          */
-        _handle_drag_recalculate: function (_elt) {
+        _handle_drag_recalculate: function () {
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);

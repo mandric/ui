@@ -108,10 +108,10 @@
                     scroll: 'body',
                     drop: '.drop',
                     container: '.scroll',
-                    onEnter: function (_elt, _container_elt) {
+                    onEnter: function (_container_elt) {
                         _container_elt.addClass('hover');
                     },
-                    onExit: function (_elt, _container_elt) {
+                    onExit: function (_container_elt) {
                         _container_elt.removeClass('hover');
                     }
                 });

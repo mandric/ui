@@ -98,6 +98,17 @@
                 data.items = items;
                 priv.bind_menu_items(this, items);
 
+                /* Generator function for directional bias:
+                    If a direction option isn't provided, have all menu
+                    popups and submenu popups point the same way as
+                    this initial root menu, if it's possible to do so. */
+
+                var bias_fn = function () {
+                    return priv._determine_popup_bias.call(this, menu_elt);
+                };
+
+                data.bias = (options.direction || bias_fn);
+
                 /* Event handlers:
                     Single-click handlers for menu dismissal. */
 
@@ -120,10 +131,10 @@
                     center: true,
                     hidden: true,
                     useMutation: false,
-                    direction: { x: 1 },
+                    direction: data.bias,
                     cssClasses: css_classes,
                     duration: options.duration,
-                    onReorient: priv._handle_drag_reorient
+                    onReorient: priv._handle_drag_reorient,
                 });
 
                 if (!options.hidden) {
@@ -238,7 +249,7 @@
                         $(document).unbind('click', data.document_click_fn);
 
                         if (_callback) {
-                            _callback.call(menu_elt, menu_elt)
+                            _callback.call(menu_elt)
                         }
                     });
                 }
@@ -295,7 +306,8 @@
         },
 
       /**
-        * 
+        * Bind event handlers, and otherwise initialize, all
+        * menu items in {_item_elts} rooted at {_menu_elt}.
         */
         bind_menu_items: function (_menu_elt, _item_elts) {
 
@@ -306,7 +318,6 @@
                 return priv._handle_item_mouseover.call(
                     this, _ev, _menu_elt
                 );
-                    
             };
 
             /* Hide submenus for all items:
@@ -362,10 +373,10 @@
                         data.is_visible = _is_show;
                         $.uI.trigger_event(
                             op, $.uMenu.key, null, _menu_elt,
-                            data.options, [ _menu_elt, _popup_elt ]
+                            data.options, [ _popup_elt ]
                         );
                         if (_callback) {
-                            _callback.call(_menu_elt, _menu_elt, _popup_elt);
+                            _callback.call(_menu_elt, _popup_elt);
                         }
                     }
                 );
@@ -416,7 +427,7 @@
                 $.uI.trigger_event(
                     (_is_select ? 'select' : 'unselect'),
                         $.uMenu.key, default_callback, _menu_elt,
-                        data.options, [ _menu_elt, _item_elt ]
+                        data.options, [ _item_elt ]
                 );
             }
         },
@@ -455,6 +466,7 @@
                         'create', arrow_elt, {
                             hidden: true,
                             submenu: true,
+                            direction: data.bias,
                             items: data.options.items,
                             sortable: data.options.sortable,
                             cssClasses: data.options.cssClasses
@@ -487,11 +499,54 @@
         },
 
         /**
+         * Modify the CSS classes of {_menu_elt} to conform to the
+         * directional bias data stored in {_bias}. For more information
+         * on the bias value and its function, see the uPopup documentation.
+         */
+        set_direction: function (_menu_elt, _bias) {
+
+            var key = $.uMenu.key;
+            _menu_elt.removeClass(key + '-right ' + key + '-left');
+
+            if (_bias.x) {
+                _menu_elt.addClass(key + '-right');
+            } else {
+                _menu_elt.addClass(key + '-left');
+            }
+        },
+
+        /**
+         * Query a uPopup instance provided in {_menu_elt} for its
+         * current directional bias data. Use that instance's preferred
+         * expansion direction to change the apparence of the arrow
+         * symbols in the uMenu instance rooted at {this}. Return a
+         * set of directional bias data to be used by the uPopup instance
+         * rooted at {this}.
+         */
+        _determine_popup_bias: function (_menu_elt)
+        {
+            var priv = $.uMenu.priv;
+            var bias = (_menu_elt.uPopup('direction') || [])[0];
+
+            if (bias) {
+                priv.set_direction(this, bias);
+            }
+
+            /* Return bias data:
+                uPopup uses this value to determine a preferred
+                direction when expanding popups representing submenus. */
+
+            return {
+                x: (bias ? bias.x : 1)
+            };
+        },
+
+        /**
          * Default handler for item selection; uses a CSS class.
          * Override this by handling the 'select' event, or by
          * providing the onSelect callback.
          */
-        _default_select_item: function (_menu_elt, _item_elt) {
+        _default_select_item: function (_item_elt) {
 
             $(_item_elt).addClass('selected');
         },
@@ -499,7 +554,7 @@
         /**
          * Default handler for unselecting items; uses a CSS class.
          */
-        _default_unselect_item: function (_menu_elt, _item_elt) {
+        _default_unselect_item: function (_item_elt) {
 
             $(_item_elt).removeClass('selected');
         },
@@ -509,13 +564,13 @@
          * by uPopup when the popup window changes position, in response
          * to a change in the available space on any side.
          */
-        _handle_drag_reorient: function (_menu_elt, _wrapper_elt) {
+        _handle_drag_reorient: function (_wrapper_elt) {
 
             var priv = $.uMenu.priv;
-            var data = priv.instance_data_for(_menu_elt);
+            var data = priv.instance_data_for(this);
 
             if (data.options.sortable) {
-                $(_menu_elt).uSort('recalculate');
+                $(this).uSort('recalculate');
             }
         },
 

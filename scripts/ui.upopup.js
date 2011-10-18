@@ -152,6 +152,8 @@
      *                  target element, respectively. If there is not enough
      *                  room to accommodate the requested {direction}, then
      *                  uPopup will fall back to the usual auto-placement.
+     *                  If {direction} is a function, it should return a
+     *                  value in the format described above.
      *
      *              fx:
      *                  A boolean value. True (default) if uPopup should be
@@ -444,9 +446,9 @@
 
             var key = $.uPopup.key;
             var priv = $.uPopup.priv;
-            var teardown_fn = function (_popup_elt, _wrapper_elt) {
+            var teardown_fn = function (_wrapper_elt) {
 
-                var popup_elt = $(_popup_elt);
+                var popup_elt = $(this);
                 var data = priv.instance_data_for(popup_elt);
 
                 priv.unwrap(popup_elt);
@@ -460,7 +462,7 @@
                 _wrapper_elt.remove();
 
                 if (_callback) {
-                    _callback(_popup_elt, _wrapper_elt);
+                    _callback(popup_elt, _wrapper_elt);
                 }
             };
 
@@ -479,6 +481,7 @@
          * returns a list of the 'wrapper' elements currently in use.
          */
         wrapper: function () {
+
             var rv = [];
             
             $(this).each(function (i, popup_elt) {
@@ -487,12 +490,37 @@
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
                 var wrapper_elt = data.wrapper_elt;
 
-                if (data.is_created) {
-                    rv.push(wrapper_elt[0]);
-                }
+                rv.push(
+                    $(data.is_created ? wrapper_elt[0] : [])
+                );
             });
 
             return $(rv);
+        },
+
+        /**
+         * Given a list of originally-provided elements, this method
+         * returns a list of objects, each containing directional bias
+         * information for the corresponding uPopup element. The bias
+         * data is returned in the format { x: i, y: j }, where {i} and
+         * {j} are zero if pointing left and up, respectively, or one
+         * if pointing right and down, respectively -- or a combination.
+         */
+        direction: function () {
+
+            var rv = [];
+            
+            $(this).each(function (i, popup_elt) {
+
+                /* Convert element to instance data */
+                var data = $.uPopup.priv.instance_data_for(popup_elt);
+
+                rv.push(
+                    (data.is_created ? data.bias : {})
+                );
+            });
+
+            return rv;
         }
     };
 
@@ -606,6 +634,8 @@
             /* Multiple elements are allowed */
             $(_popup_elt).each(function (i, popup_elt) {
 
+                popup_elt = $(popup_elt);
+
                 /* Retrieve instance state data */
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
                 var options = (data.options || {});
@@ -614,7 +644,7 @@
                 /* Build callback */
                 var callback = function () {
                     if (_callback) {
-                        _callback.call(null, $(popup_elt), wrapper_elt);
+                        _callback.call(popup_elt, wrapper_elt);
                     }
                 };
 
@@ -624,7 +654,7 @@
                         $.uI.trigger_event(
                             (_is_show ? 'show' : 'hide'),
                             $.uPopup.key, null, popup_elt, data.options,
-                            [ popup_elt, wrapper_elt ]
+                            [ wrapper_elt ]
                         );
                         callback();
                     };
@@ -776,7 +806,7 @@
                 Each value is an index for `avail` and `offsets`;
                 zero is the minimal side of an axis, one the maximal. */
 
-            var bias = {
+            data.bias = {
                 x: $.uI.index_of_max(avail.x),
                 y: $.uI.index_of_max(avail.y)
             };
@@ -789,17 +819,22 @@
 
             var dir = options.direction;
 
+            if ($.isFunction(dir)) {
+                dir = dir.call($(_popup_elt), $(_wrapper_elt));
+            }
+
             for (var k in { x: 0, y: 0 }) {
                 if (dir[k] !== undefined && dir[k] !== null) {
                     var i = (dir[k] > 0 ? 1 : 0);
                     if (avail[k][i] >= wrapper_size[k]) {
-                        bias[k] = i;
+                        data.bias[k] = i;
                     }
                 }
             }
 
             return priv.reposition(
-                _wrapper_elt, wrapper_size, _popup_elt, _target_elt, bias
+                _wrapper_elt, wrapper_size,
+                    _popup_elt, _target_elt, data.bias
             );
         },
 
@@ -946,7 +981,7 @@
             for (var k in events) {
                 $.uI.trigger_event(
                     k, $.uPopup.key, null, _popup_elt,
-                        data.options, [ _popup_elt, _wrapper_elt ]
+                        data.options, [ _wrapper_elt ]
                 );
             }
 

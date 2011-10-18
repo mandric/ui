@@ -58,7 +58,8 @@
             var rv = null;
 
             if (_elt) {
-                $(_elt).trigger(_key + ':' + _name);
+                _elt = $(_elt);
+                _elt.trigger(_key + ':' + _name);
             }
 
             if (_options) {
@@ -71,11 +72,11 @@
                 ];
                 if (handler !== undefined) {
                     if (handler) {  /* Skip on false or null */
-                        rv = handler.apply(_elt, _arguments);
+                        rv = handler.apply(_elt, _arguments || []);
                     }
                 } else {
                     if (_default_callback) {
-                        rv = _default_callback.apply(_elt, _arguments);
+                        rv = _default_callback.apply(_elt, _arguments || []);
                     }
                 }
             }

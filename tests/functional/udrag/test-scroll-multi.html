@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <link rel="stylesheet"
-            href="../../../styles/ui.udrag.css" />
         <script type="text/javascript"
             src="../../../scripts/contrib/jquery-1.4.2.js">
         </script>
@@ -108,10 +106,10 @@
                     scroll: 'body',
                     drop: [ $('.drop'), '.another-drop' ],
                     container: [ '.scroll', $('.another-scroll') ],
-                    onEnter: function (_elt, _container_elt) {
+                    onEnter: function (_container_elt) {
                         _container_elt.addClass('hover');
                     },
-                    onExit: function (_elt, _container_elt) {
+                    onExit: function (_container_elt) {
                         _container_elt.removeClass('hover');
                     }
                 });

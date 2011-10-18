@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <link rel="stylesheet"
-            href="../../../styles/ui.udrag.css" />
         <script type="text/javascript"
             src="../../../scripts/contrib/jquery-1.4.2.js">
         </script>
@@ -92,13 +90,13 @@
                 $('.drag').uDrag('create', {
                     drop: '.drop', container: '.outer',
                     onPositionElement: null,
-                    onRecalculate: function (_elt) {
+                    onRecalculate: function () {
                         areas.recalculate_all();
                     },
-                    onInsertElement: function (_elt, _drop_elt, _offsets) {
+                    onInsertElement: function (_drop_elt, _offsets) {
                         var inner = areas.find_beneath(_offsets.absolute);
                         if (inner) {
-                            inner.elt.append(_elt);
+                            inner.elt.append(this);
                         }
                     }
                 });

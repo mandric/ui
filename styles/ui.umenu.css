@@ -3,10 +3,10 @@
     max-width: 20em;
 }
 
-.umenu .item .inner,
-.udrag-wrapper .item .inner,
-.upopup .inner .umenu .item .inner {
-    padding: 0.75em 1.75em 0.75em 0.75em;
+.umenu .inner,
+.udrag-wrapper .inner,
+.upopup .inner .umenu .inner {
+    padding: 0.75em 1.5em 0.75em 0.75em;
     border-top: 0;
     border-left: 0;
     border-right: 0;
@@ -16,11 +16,16 @@
     border-bottom: solid 1px #ccc;
 }
 
+.umenu-left .item .inner,
+.upopup .inner .umenu-left .item .inner {
+    padding: 0.75em 0.75em 0.75em 1.5em;
+}
+
 .udrag-wrapper .item .inner {
     border-color: transparent;
 }
 
-.udrag-wrapper .small .inner {
+.udrag-wrapper .small {
     font-size: 0.75em;
 }
 
@@ -55,15 +60,24 @@
 }
 
 .umenu .item .arrow,
-.udrag .item .arrow,
 .udrag-wrapper .item .arrow {
     right: -0.5em;
     position: absolute;
-    margin: 0.25em 1em 0 0;
+    margin: 1em 1em 0 0;
     border: 0.4em solid #444 !important;
     border-top-color: transparent !important;
     border-bottom-color: transparent !important;
     border-right-color: transparent !important;
+}
+
+.umenu-left .item .arrow {
+    left: 0.5em;
+    position: absolute;
+    margin: 1em 1em 0 0;
+    border: 0.4em solid #444 !important;
+    border-top-color: transparent !important;
+    border-bottom-color: transparent !important;
+    border-left-color: transparent !important;
 }
 
 .upopup .inner .umenu .item .inner {
@@ -90,5 +104,10 @@
 .umenu .selected .arrow,
 .udrag-wrapper .selected .arrow {
     border-left-color: #fff !important;
+}
+
+.upopup .umenu-left .selected .arrow {
+    border-right-color: #fff !important;
+    border-left-color: transparent !important;
 }
 
