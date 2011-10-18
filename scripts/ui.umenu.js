@@ -238,7 +238,7 @@
                         $(document).unbind('click', data.document_click_fn);
 
                         if (_callback) {
-                            _callback.call(menu_elt, menu_elt)
+                            _callback.call(menu_elt)
                         }
                     });
                 }
@@ -362,10 +362,10 @@
                         data.is_visible = _is_show;
                         $.uI.trigger_event(
                             op, $.uMenu.key, null, _menu_elt,
-                            data.options, [ _menu_elt, _popup_elt ]
+                            data.options, [ _popup_elt ]
                         );
                         if (_callback) {
-                            _callback.call(_menu_elt, _menu_elt, _popup_elt);
+                            _callback.call(_menu_elt, _popup_elt);
                         }
                     }
                 );
@@ -416,7 +416,7 @@
                 $.uI.trigger_event(
                     (_is_select ? 'select' : 'unselect'),
                         $.uMenu.key, default_callback, _menu_elt,
-                        data.options, [ _menu_elt, _item_elt ]
+                        data.options, [ _item_elt ]
                 );
             }
         },

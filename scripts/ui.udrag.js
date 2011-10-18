@@ -531,7 +531,7 @@
             var data = priv.instance_data_for(_elt);
 
             var offset = elt.offset();
-            var adjust = priv.compute_pixel_adjustment($(_elt));
+            var adjust = priv.compute_pixel_adjustment(_elt);
 
             if (data.is_dragging) {
                 return false;
@@ -584,7 +584,7 @@
 
             $.uI.trigger_event(
                 'drop', $.uDrag.key, priv.default_drop_callback,
-                    _elt, data.options, [ _elt ]
+                    _elt, data.options
             );
 
             if (drop_area && !drop_area.scroll_only && data.drop_allowed) {
@@ -613,7 +613,7 @@
                 for (var k in events) {
                     $.uI.trigger_event(
                         k, $.uDrag.key, events[k], _elt, data.options,
-                        [ _elt, drop_elt, offsets ]
+                        [ drop_elt, offsets ]
                     );
                 }
 
@@ -695,7 +695,7 @@
                         data.drop_allowed = $.uI.trigger_event(
                             'hover', $.uDrag.key, priv.default_hover_callback,
                             _elt, data.options, [
-                                _elt, drop_elt, {
+                                drop_elt, {
                                     absolute: absolute_offset,
                                     relative: priv.relative_drop_offset(
                                         _elt, drop_elt, absolute_offset
@@ -730,6 +730,7 @@
          */
         compute_pixel_adjustment: function (_elt) {
 
+            var elt = $(_elt);
             var rv = { x: 0, y: 0 };
 
             if (jQuery.browser.webkit) {
@@ -741,10 +742,10 @@
                 ];
 
                 for (var i = 0, len = keys_x.length; i < len; ++i) {
-                    rv.x += parseInt(_elt.css(keys_x[i]), 10);
+                    rv.x += parseInt(elt.css(keys_x[i]), 10);
                 }
                 for (i = 0, len = keys_y.length; i < len; ++i) {
-                    rv.y += parseInt(_elt.css(keys_y[i]), 10);
+                    rv.y += parseInt(elt.css(keys_y[i]), 10);
                 }
             }
 
@@ -756,38 +757,38 @@
          * If not overridden, this will use relative positioning to
          * (visually) maintain the dropped element's position.
          */
-        default_position_callback: function (_elt, _drop_elt, _offsets) {
+        default_position_callback: function (_drop_elt, _offsets) {
 
             var priv = $.uDrag.priv;
-            var delta = priv.compute_pixel_adjustment(_elt);
+            var delta = priv.compute_pixel_adjustment(this);
 
-            _elt.css({
+            this.css({
                 position: 'relative',
                 left: (_offsets.relative.x - delta.x) + 'px',
                 top: (_offsets.relative.y - delta.y) + 'px'
             });
 
-            return _elt;
+            return this;
         },
        
         /**
          * The default implementation of the insertElement event.
          */
-        default_insert_callback: function (_elt, _drop_elt) {
-            _drop_elt.prepend(_elt);
+        default_insert_callback: function (_drop_elt) {
+            _drop_elt.prepend(this);
         },
               
         /**
          * The default implementation of the hover event.
          */
-        default_hover_callback: function (_elt, _drop_elt, _offsets) {
+        default_hover_callback: function (_drop_elt, _offsets) {
             return true;
         },
               
         /**
          * The default implementation of the drop event.
          */
-        default_drop_callback: function (_elt, _drop_elt, _offsets) {
+        default_drop_callback: function (_drop_elt, _offsets) {
             return true;
         },
 
@@ -949,7 +950,7 @@
             if (_area && _area !== _data.previous_highlight_area) {
                 $.uI.trigger_event(
                     'enter', $.uDrag.key, null, _area.elt, _data.options,
-                        [ _area.elt, _area.container_elt ]
+                        [ _area.container_elt ]
                 );
                 _data.previous_highlight_area = _area;
             }
@@ -969,7 +970,7 @@
                     $.uI.trigger_event(
                         'exit', $.uDrag.key, null,
                             prev_area.elt, _data.options,
-                            [ prev_area.elt, prev_area.container_elt ]
+                                [ prev_area.container_elt ]
                     );
                     _data.previous_highlight_area = null;
                 }
