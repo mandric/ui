@@ -8,7 +8,7 @@ submodules:
 	git submodule update --init --recursive
 
 prep: 
-	mkdir -p build/output
+	test -d build/output || mkdir build/output
 
 clean:
 	rm -rf build/output/*
