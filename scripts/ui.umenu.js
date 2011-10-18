@@ -72,6 +72,10 @@
                 options.duration = 150; /* ms */
             }
 
+            if (!options.delay) {
+                options.delay = 60; /* ms */
+            }
+
             this.each(function (i, menu_elt) {
 
                 menu_elt = $(menu_elt);
@@ -318,7 +322,19 @@
                 bind the appropriate mouse-based event handlers. */
 
             $(_item_elts).each(function (_i, _item_elt) {
+
                 var item_elt = $(_item_elt);
+                var arrow_elt = item_elt.closestChild('.arrow');
+                var submenu_elt = item_elt.closestChild('.umenu');
+
+                /* Manage arrow element:
+                    If we don't have any sub-menus, hide the arrow symbol. */
+
+                if (submenu_elt[0]) {
+                    arrow_elt.show();
+                } else {
+                    arrow_elt.hide();
+                }
 
                 item_elt.data($.uMenu.key, { index: _i });
                 item_elt.bind('mouseover.' + key, mouseover_fn);
@@ -368,18 +384,55 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
             var item_data = _item_elt.data($.uMenu.key);
-            var submenus = data.active_submenus;
 
             var default_callback = (
                 _is_select ?
                     priv._default_select_item : priv._default_unselect_item
             );
 
-            $.uI.trigger_event(
-                (_is_select ? 'select' : 'unselect'),
-                    $.uMenu.key, default_callback, _menu_elt,
-                    data.options, [ _menu_elt, _item_elt ]
-            );
+            /* Submenu toggling:
+                The creation of submenus is optionally delayed by a small
+                span of time; creation of any submenu will be stopped if
+                another item is selected before the delay timeout occurs.
+                Submenu destruction is immediate, with no delay setting. */
+
+            var select_fn = function () {
+                if (item_data.is_delaying) {
+                    priv.toggle_item_submenu(
+                        _menu_elt, _item_elt, _is_select
+                    );
+                }
+            };
+
+            if (item_data) {
+                if (_is_select) {
+                    item_data.is_delaying = true;
+                    setTimeout(select_fn, data.options.delay);
+                } else {
+                    item_data.is_delaying = false;
+                    priv.toggle_item_submenu(_menu_elt, _item_elt, _is_select);
+                }
+
+                $.uI.trigger_event(
+                    (_is_select ? 'select' : 'unselect'),
+                        $.uMenu.key, default_callback, _menu_elt,
+                        data.options, [ _menu_elt, _item_elt ]
+                );
+            }
+        },
+
+        /**
+         * This function is used by {toggle_item} to open or close a
+         * submenu rooted at {_item_elt}. This function is fully
+         * asynchronous, and can manage multiple overlapping {select}
+         * and {unselect} operations.
+         */
+        toggle_item_submenu: function (_menu_elt, _item_elt, _is_select) {
+
+            var priv = $.uMenu.priv;
+            var data = priv.instance_data_for(_menu_elt);
+            var item_data = _item_elt.data($.uMenu.key);
+            var submenus = data.active_submenus;
 
             if (item_data) {
                 var animate_elt = submenus[item_data.index];
@@ -391,13 +444,13 @@
 
             if (_is_select) {
 
-                var submenu_elt = _item_elt.closestChild('.umenu');
-                var subitem_elts = submenu_elt.children('.item');
+                /* Selection case:
+                    Show the submenu rooted at {item_elt}. */
+
                 var arrow_elt = _item_elt.closestChild('.arrow');
+                var submenu_elt = _item_elt.closestChild('.umenu');
 
-                submenu_elt.show();
-
-                if (submenu_elt[0] && subitem_elts[0]) {
+                if (submenu_elt[0] && data.items.length > 0) {
                     submenus[item_data.index] = submenu_elt.uMenu(
                         'create', arrow_elt, {
                             hidden: true,
@@ -407,10 +460,14 @@
                             cssClasses: data.options.cssClasses
                         }
                     );
+                    submenu_elt.show();
                     priv.toggle(submenu_elt, true);
                 }
 
             } else if (item_data) {
+
+                /* De-selection case:
+                    Hide the submenu rooted at {item_elt}. */
 
                 var submenu_elt = submenus[item_data.index];
 
@@ -427,8 +484,6 @@
                     });
                 }
             }
-
-
         },
 
         /**
