@@ -462,7 +462,7 @@
                 _wrapper_elt.remove();
 
                 if (_callback) {
-                    _callback(_popup_elt, _wrapper_elt);
+                    _callback(popup_elt, _wrapper_elt);
                 }
             };
 
@@ -481,6 +481,7 @@
          * returns a list of the 'wrapper' elements currently in use.
          */
         wrapper: function () {
+
             var rv = [];
             
             $(this).each(function (i, popup_elt) {
@@ -489,12 +490,37 @@
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
                 var wrapper_elt = data.wrapper_elt;
 
-                if (data.is_created) {
-                    rv.push(wrapper_elt[0]);
-                }
+                rv.push(
+                    $(data.is_created ? wrapper_elt[0] : [])
+                );
             });
 
             return $(rv);
+        },
+
+        /**
+         * Given a list of originally-provided elements, this method
+         * returns a list of objects, each containing directional bias
+         * information for the corresponding uPopup element. The bias
+         * data is returned in the format { x: i, y: j }, where {i} and
+         * {j} are zero if pointing left and up, respectively, or one
+         * if pointing right and down, respectively -- or a combination.
+         */
+        direction: function () {
+
+            var rv = [];
+            
+            $(this).each(function (i, popup_elt) {
+
+                /* Convert element to instance data */
+                var data = $.uPopup.priv.instance_data_for(popup_elt);
+
+                rv.push(
+                    (data.is_created ? data.bias : {})
+                );
+            });
+
+            return rv;
         }
     };
 
@@ -794,7 +820,7 @@
             var dir = options.direction;
 
             if ($.isFunction(dir)) {
-                dir = dir.call(_popup_elt, _wrapper_elt);
+                dir = dir.call($(_popup_elt), $(_wrapper_elt));
             }
 
             for (var k in { x: 0, y: 0 }) {
