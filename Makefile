@@ -1,11 +1,14 @@
 
-all: submodules upopup udrag usort
-upopup: minify_upopup compress_upopup
-udrag: minify_udrag compress_udrag
-usort: minify_usort compress_usort
+all: submodules prep upopup udrag usort
+upopup: prep minify_upopup compress_upopup
+udrag: prep minify_udrag compress_udrag
+usort: prep minify_usort compress_usort
 
 submodules:
 	git submodule update --init --recursive
+
+prep: 
+	mkdir -p build/output
 
 clean:
 	rm -rf build/output/*
