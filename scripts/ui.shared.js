@@ -100,7 +100,7 @@
          */
         flatten: function (_selections) {
 
-            return jQuery.map(function (_sel) {
+            return $.map(function (_sel) {
                 return _sel.toArray();
             });
         },
@@ -137,7 +137,15 @@
 
             var elt = $(_start_elt);
             var stop_elt = $(_stop_elt);
+
+            /* Early exit:
+                Bail out if {_start_elt} and {_stop_elt} are the same. */
+
             var stop = (elt[0] === stop_elt[0]);
+
+            if (stop) {
+                return $([ elt[0] ]);
+            }
 
             /* Outer loop termination condition:
                 End when we reach the root, when we reach the document's
