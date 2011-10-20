@@ -93,6 +93,133 @@
         },
 
         /**
+         * Flatten an array, by merging each child array into 
+         * the top-level array (but not other descendants, i.e.
+         * only between level zero and level one). This function 
+         * relies on jQuery's flattening map function.
+         */
+        flatten: function (_selections) {
+
+            return jQuery.map(function (_sel) {
+                return _sel.toArray();
+            });
+        },
+
+        /**
+         * Remove all zero-item or unmatched selections from the
+         * array-like list of jQuery selections in {_selections}.
+         */
+        compact: function (_selections) {
+
+            return _selections.filter(function (_sel) {
+                return (_sel[0] !== undefined && _sel[0] !== null);
+            });
+        },
+
+        /**
+         * Search for elements that match {_selector}, in the inclusive
+         * interval betweeen {_start_elt} and {_stop_elt}. If {_direction}
+         * is false-like, search backward in the document across all
+         * elements; otherwise search forward across all elements. This
+         * function searches nodes by repeatedly searching siblings' subtrees
+         * in one direction (either back or forward in the document),
+         * proceeding recursively up the DOM tree until {stop_elt} (or the
+         * document's body) is encountered. This function returns a
+         * selection of all elements matched by {_selector}, in document
+         * order. If {_stop_elt} is found, it will be the last matched
+         * element in the returned selection.
+         */
+        directional_find: function (_start_elt, _stop_elt,
+                                    _selector, _direction) {
+            var rv = [];
+            var body_elt = $('body');
+            var f = (_direction ? 'nextAll' : 'prevAll');
+
+            var elt = $(_start_elt);
+            var stop_elt = $(_stop_elt);
+            var stop = (elt[0] === stop_elt[0]);
+
+            /* Outer loop termination condition:
+                End when we reach the root, when we reach the document's
+                <body> element, or when we have encountered {stop_elt}. */
+
+            while (elt[0] && elt[0] !== body_elt && !stop) {
+
+                /* Check head of sibling list:
+                    If it matches, emit it before any siblings. */
+
+                var match = elt.filter(_selector);
+
+                if (match[0]) {
+                    rv.push(elt[0]);
+                }
+
+                /* For all siblings:
+                    This searches either prevAll or nextAll, depending
+                    the direction requested in the {_direction} argument. */
+
+                rv = rv.concat($.map(
+                    elt[f].call(elt).toArray(), function (_el) {
+
+                        /* Check termination condition:
+                            Don't continue on to another sibling if this
+                            sibling exactly matches the stop element. */
+
+                        var el = $(_el);
+
+                        if (stop) {
+                            return [];
+                        }
+
+                        if (el[0] === stop_elt[0]) {
+                            stop = true;
+                            return el[0];
+                        }
+
+                        /* Check sibling at root of subtree:
+                            We check the contents of its subtree below. */
+
+                        var match = el.filter(_selector);
+
+                        if (match[0]) {
+                            rv.push(el[0]);
+                        }
+
+                        /* Flattening {map} function:
+                            Find elements matching the specified selector in
+                            the subtree rooted at {el}, in document order.
+                            We exclude matched elements beyond {stop_elt}. */
+
+                        return $.map(
+                            el.find(_selector).toArray().reverse(),
+                            function (_e) {
+                                if (_e === stop_elt[0]) {
+                                    stop = true; return _e;
+                                }
+                                return (stop ? [] : _e);
+                            }
+                        );
+                    }
+                ));
+
+                /* Check new parent:
+                    We've already checked the subtree beneath it. */
+
+                elt = $(elt.parent());
+                match = elt.filter(_selector);
+
+                if (!stop && match[0]) {
+                    if (elt[0] === stop_elt[0]) {
+                        stop = true;
+                    }
+                    rv.push(elt[0]);
+                }
+            }
+
+            return $(rv);
+        },
+
+        /**
          * Returns the array offset (i.e. index) that contains the
          * largest value in the array.
          */
