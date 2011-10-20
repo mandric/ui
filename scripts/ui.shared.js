@@ -166,14 +166,15 @@
                             sibling exactly matches the stop element. */
 
                         var el = $(_el);
-
-                        if (stop) {
-                            return [];
-                        }
+                        var i_rv = [];
 
                         if (el[0] === stop_elt[0]) {
                             stop = true;
                             return el[0];
+                        }
+
+                        if (stop) {
+                            return [];
                         }
 
                         /* Check sibling at root of subtree:
@@ -182,7 +183,7 @@
                         var match = el.filter(_selector);
 
                         if (match[0]) {
-                            rv.push(el[0]);
+                            i_rv.push(el[0]);
                         }
 
                         /* Flattening {map} function:
@@ -190,7 +191,7 @@
                             the subtree rooted at {el}, in document order.
                             We exclude matched elements beyond {stop_elt}. */
 
-                        return $.map(
+                        return i_rv.concat($.map(
                             el.find(_selector).toArray().reverse(),
                             function (_e) {
                                 if (_e === stop_elt[0]) {
@@ -198,7 +199,7 @@
                                 }
                                 return (stop ? [] : _e);
                             }
-                        );
+                        ));
                     }
                 ));
 
