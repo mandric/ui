@@ -69,11 +69,11 @@
             }
 
             if (!options.duration) {
-                options.duration = 150; /* ms */
+                options.duration = 200; /* ms */
             }
 
             if (!options.delay) {
-                options.delay = 50; /* ms */
+                options.delay = 60; /* ms */
             }
 
             this.each(function () {
