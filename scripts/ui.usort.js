@@ -61,7 +61,6 @@
             var default_options = {
                 direction: 'vertical'
             };
-
             var priv = $.uSort.priv;
             var options = $.extend(default_options, _options || {});
             var data = priv.create_instance_data(this, options);
@@ -100,8 +99,10 @@
             this.addClass('usort-installed');
 
             items.each(function (i, elt) {
+                elt = $(elt);
+                elt.addClass('usort-item');
                 data.areas.track(elt, {
-                    sortable_elt: $(elt).parents('.usort-installed').first()
+                    sortable_elt: elt.parents('.usort-installed').first()
                 });
             });
 
@@ -230,12 +231,14 @@
             var src_elt = _src_area.elt;
             var target_elt = _target_area.elt;
             var target_index = areas.element_to_index(target_elt);
+            var item_selector = '.usort-item:not(.animation)';
 
-            var i_dst = target_elt.prevAll(':not(.animation)').length;
-            var i_elt = src_elt.prevAll(':not(.animation)').length;
+            var between_elts = $.uI.directional_find(
+                src_elt, target_elt, item_selector, false
+            );
 
             var different_parent = false;
-            var is_backward = (i_dst < i_elt);
+            var is_backward = ((between_elts.last())[0] === target_elt[0]);
 
             /* Change of parent?
                 If the {src_elt} is being dropped on a different parent
@@ -286,11 +289,8 @@
                     next_elt.nextAll().add(target_elt.nextAll()).toArray()
                 );
             } else {
-                recalc_elts = $.uI.find_elements_between.apply(
-                    null, (
-                        is_backward ?
-                            [ target_elt, src_elt ] : [ src_elt, target_elt ]
-                    )
+                recalc_elts = $.uI.directional_find(
+                   target_elt, src_elt, item_selector, is_backward
                 );
             }
 
