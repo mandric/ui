@@ -87,9 +87,17 @@
                 cssClasses: options.cssClasses,
                 onInsertElement: function (_drop_elt) {
                     priv.stop_other_animations(_drop_elt, false);
+                    $.uI.trigger_event(
+                        'insert', $.uSort.key, null,
+                            this, options, [ _drop_elt ]
+                    );
                 },
-                onDrop: function () {
+                onDrop: function (_drop_elt) {
                     this.css('display', 'block');
+                    $.uI.trigger_event(
+                        'drop', $.uSort.key, null,
+                            this, options, [ _drop_elt ]
+                    );
                 },
                 onPositionElement: false,
                 onHover: priv._handle_drag_hover,
@@ -585,6 +593,11 @@
                 priv.insert_element(_drop_elt, src_area, target_area);
             }
 
+            $.uI.trigger_event(
+                'hover', $.uSort.key, null,
+                    this, data.options, [ _drop_elt, _offsets ]
+            );
+
             return true; /* Allow drop operation */
         },
 
@@ -595,6 +608,11 @@
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
+
+            $.uI.trigger_event(
+                'recalculate',
+                    $.uSort.key, null, this, data.options
+            );
 
             data.areas.recalculate_all();
             return true;

@@ -238,7 +238,7 @@
 
                     priv.unbind_menu_items(menu_elt);
 
-                    if (data.options.submenu) {
+                    if (data.options.parentMenu) {
                         menu_elt.hide();
                     }
 
@@ -252,8 +252,39 @@
             });
 
             return this;
-        }
+        },
 
+        /**
+         * Removes the uMenu-managed event handlers from the entire
+         * menu hierarchy containing an element in the selection {this}.
+         * Elements and objects are restored to their original state.
+         */
+        destroyAll: function (_callback) {
+
+            var priv = $.uMenu.priv;
+
+            $(this).each(function (_i, _elt) {
+
+                var elt = $(_elt);
+
+                /* Find menu root:
+                    From there, we can recursively destroy the menu. */
+
+                for (;;) {
+
+                    var data = priv.instance_data_for(_elt);
+                    var parent_elt = data.options.parentMenu;
+
+                    if (!parent_elt) {
+                        break;
+                    }
+
+                    _elt = $(parent_elt);
+                }
+
+                _elt.uMenu('destroy');
+            });
+        }
     };
 
     /**
@@ -333,6 +364,12 @@
                 var arrow_elt = item_elt.closestChild('.arrow');
                 var submenu_elt = item_elt.closestChild('.umenu');
 
+                var click_fn = function (_ev) {
+                    return priv._handle_item_click.call(
+                        this, _ev, _menu_elt
+                    );
+                };
+
                 /* Manage arrow element:
                     If we don't have any sub-menus, hide the arrow symbol. */
 
@@ -344,6 +381,7 @@
 
                 item_elt.data($.uMenu.key, { index: _i });
                 item_elt.bind('mouseover.' + key, mouseover_fn);
+                item_elt.bind('click.' + key, click_fn);
             });
         },
 
@@ -451,8 +489,9 @@
 
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
-            var item_data = _item_elt.data($.uMenu.key);
+
             var submenus = data.active_submenus;
+            var item_data = _item_elt.data($.uMenu.key);
 
             if (item_data) {
                 var animate_elt = submenus[item_data.index];
@@ -474,8 +513,8 @@
                     submenus[item_data.index] = submenu_elt.uMenu(
                         'create', arrow_elt, {
                             hidden: true,
-                            submenu: true,
                             direction: data.bias,
+                            parentMenu: _menu_elt,
                             items: data.options.items,
                             sortable: data.options.sortable,
                             cssClasses: data.options.cssClasses
@@ -584,8 +623,8 @@
         },
 
         /**
-         * Event handler for uMenu's click event. This is invoked
-         * when a user selects a menu item, and stops event propogation
+         * Event handler for the outermost uMenu element, which
+         * contains the uMenu items. This stops event propogation
          * so that {_handle_window_click} is not invoked after.
          */
         _handle_menu_click: function (_ev) {
@@ -593,7 +632,8 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(this);
 
-            return true;
+            _ev.stopPropagation();
+            return false;
         },
 
         /**
@@ -611,6 +651,28 @@
                 menu_elt.uMenu('destroy');
             }
 
+            return false;
+        },
+
+        /**
+         * Handler for mouse click events occurring inside of
+         * a uMenu item. This forwards the click event to callbacks
+         * and/or event listeners, and then closes the menu.
+         */
+        _handle_item_click: function (_ev, _menu_elt) {
+
+            var menu_elt = $(_menu_elt);
+
+            var item_elt = $(this);
+            var priv = $.uMenu.priv;
+            var data = priv.instance_data_for(_menu_elt);
+
+            $.uI.trigger_event(
+                'click', $.uMenu.key, null,
+                    menu_elt, data.options, [ item_elt ]
+            );
+
+            menu_elt.uMenu('destroyAll');
             return false;
         },
 

@@ -575,6 +575,7 @@
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
+            var drop_elt = (drop_area || {}).elt;
 
             var drop_area = data.areas.find_beneath(
                 _ev, [ data.placeholder_elt ]
@@ -584,13 +585,12 @@
 
             $.uI.trigger_event(
                 'drop', $.uDrag.key, priv.default_drop_callback,
-                    _elt, data.options
+                    _elt, data.options, [ (drop_area || {}).elt ]
             );
 
-            if (drop_area && !drop_area.scroll_only && data.drop_allowed) {
+            if (drop_elt && !drop_area.scroll_only && data.drop_allowed) {
 
                 var options = data.options;
-                var drop_elt = drop_area.elt;
                 var absolute_offset = { x: _ev.pageX, y: _ev.pageY };
 
                 var offsets = {
