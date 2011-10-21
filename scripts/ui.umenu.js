@@ -132,9 +132,10 @@
                     hidden: true,
                     useMutation: false,
                     direction: data.bias,
+                    style: options.style,
                     cssClasses: css_classes,
                     duration: options.duration,
-                    onReorient: priv._handle_drag_reorient,
+                    onReorient: priv._handle_drag_reorient
                 });
 
                 if (!options.hidden) {

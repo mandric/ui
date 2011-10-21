@@ -1,6 +1,11 @@
 
 .umenu {
+    display: none;
     max-width: 20em;
+}
+
+.upopup .umenu, .popover .umenu {
+    display: block;
 }
 
 .umenu .inner,
@@ -55,6 +60,7 @@
 }
 
 .umenu .item:last-child .inner,
+.popover .inner .umenu .item:last-child .inner,
 .upopup .inner .umenu .item:last-child .inner {
     border-bottom: none;
 }

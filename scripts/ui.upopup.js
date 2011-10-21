@@ -482,20 +482,15 @@
          */
         wrapper: function () {
 
-            var rv = [];
-            
-            $(this).each(function (i, popup_elt) {
+            /* Use flattening map function */
+            return $($.map(this, function (popup_elt) {
 
                 /* Convert element to instance data */
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
                 var wrapper_elt = data.wrapper_elt;
 
-                rv.push(
-                    $(data.is_created ? wrapper_elt[0] : [])
-                );
-            });
-
-            return $(rv);
+                return (data.is_created ? wrapper_elt[0] : []);
+            }));
         },
 
         /**
@@ -827,7 +822,7 @@
                 if (dir[k] !== undefined && dir[k] !== null) {
                     var i = (dir[k] > 0 ? 1 : 0);
                     if (avail[k][i] >= wrapper_size[k]) {
-                        data.bias[k] = i;
+                        data.forced_bias[k] = data.bias[k] = i;
                     }
                 }
             }
@@ -872,7 +867,6 @@
                 x: (_wrapper_size.x - inner_elt.width()) / 2,
                 y: (_wrapper_size.y - inner_elt.height()) / 2
             };
-
 
             /* Delta value:
                 Distance between popup's edge and arrow's edge. */
@@ -1027,6 +1021,7 @@
                 wrapper_elt: null,
                 reposition_fn: null,
                 original_parent: null, */
+                forced_bias: {},
                 is_created: true,
                 popup_elt: _popup_elt,
                 options: (_options || {})
@@ -1076,27 +1071,22 @@
              * one axis, rather than in a corner of {_wrapper_elt}.
              */
             adjust_for_centered_pointer: function (_wrapper_elt,
-                                                   _inner_elt,
-                                                   _data, _bias) {
+                                                   _inner_elt, _data, _bias) {
                 var avail = _data.avail;
                 var offsets = _data.offsets;
                 var size = _data.size;
 
-                /* Select preferred side and axis:
-                    Together, these determine placement entirely. */
-
-                var side = {
-                    x: (avail.x[0] > avail.x[1] ? 0 : 1),
-                    y: (avail.y[0] > avail.y[1] ? 0 : 1)
-                };
+                /* Select preferred axis:
+                    Together with {_bias}, this determines placement. */
 
                 var axis = (
-                    avail.x[side.x] > avail.y[side.y] ? 'x' : 'y'
+                    _data.options.vertical ? 'y' :
+                        ((avail.x[_bias.x] > avail.y[_bias.y]) ? 'x' : 'y')
                 );
 
                 /* Adjustment factor:
-                    This transforms the popup placement, centering it
-                    along the placement axis that we did not select. */
+                    This transforms the popup placement, by centering
+                    it along the placement axis that we did not select. */
 
                 var coeff = {
                     x: (axis === 'y' ? (_bias.x ? -1 : 1) : 0),
@@ -1108,10 +1098,7 @@
                     left: offsets.x[_bias.x] + ((size.x / 2) * coeff.x)
                 });
 
-                return {
-                    axis: axis,
-                    side: side[axis]
-                };
+                return { axis: axis, bias: _bias[axis] };
             },
 
 
@@ -1195,7 +1182,7 @@
 
                     var e = _elts.inner;
                     e.removeClass('right left top bottom above below');
-                    e.addClass(classes[pos.axis][pos.side]);
+                    e.addClass(classes[pos.axis][pos.bias]);
                 }
 
                 helper.adjust_for_arrow(
@@ -1276,7 +1263,7 @@
                 );
 
                 _elts.wrapper.removeClass('left right above below');
-                _elts.wrapper.addClass(css[pos.axis][pos.side]);
+                _elts.wrapper.addClass(css[pos.axis][pos.bias]);
 
                 helper.adjust_for_arrow(
                     _elts.wrapper, _elts.arrow, _bias,
