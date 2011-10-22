@@ -33,8 +33,8 @@
 }
 
 .umenu-small,
-.udrag-wrapper .umenu-small {
-    font-size: 0.75em;
+.umenu-small .umenu-inner {
+    font-size: 0.85em;
 }
 
 .umenu .umenu-item:last-child {
@@ -72,8 +72,8 @@
 .udrag-wrapper .umenu-arrow {
     right: -0.5em;
     position: absolute;
-    margin: 1em 1em 0 0;
-    border: 0.4em solid #444 !important;
+    margin: 0.85em 1em 0 0;
+    border: 0.3em solid #444 !important;
     border-top-color: transparent !important;
     border-bottom-color: transparent !important;
     border-right-color: transparent !important;
@@ -83,7 +83,7 @@
     left: 0.5em;
     position: absolute;
     margin: 1em 1em 0 0;
-    border: 0.4em solid #444 !important;
+    border: 0.3em solid #444 !important;
     border-top-color: transparent !important;
     border-bottom-color: transparent !important;
     border-left-color: transparent !important;
@@ -93,6 +93,11 @@
 .udrag-wrapper .umenu-disabled {
     color: #999;
 }
+
+.umenu .umenu-disabled .umenu-arrow,
+.udrag-wrapper .umenu-disabled .umenu-arrow {
+}
+
 
 .upopup .inner .umenu .umenu-item .umenu-inner {
     background-color: transparent;
@@ -134,22 +139,8 @@
     width: auto !important;
 }
 
-.popover .upopup-format .upopup-inner,
-.popover .upopup-format label {
-    font-size: 8.5pt;
-}
-
 .popover .upopup-format .upopup-inner .umenu {
     background-color: #fff;
-}
-
-.popover label {
-    float: none !important;
-    width: auto !important;
-    color: #000;
-}
-.popover .umenu-selected label {
-    color: #fff;
 }
 
 .popover .umenu .umenu-item:first-child,
@@ -167,9 +158,34 @@
 
 .popover .umenu-right .umenu-item .umenu-arrow {
     margin: 1.2em 1.35em 0 0;
+    border-width: 0.4em !important;
 }
 
 .popover .umenu-left .umenu-item .umenu-arrow {
     margin: 1.2em 0 0 0.5em;
+    border-width: 0.4em !important;
+}
+
+.umenu-style-bootstrap {
+    font-size: 1em;
+}
+
+.popover .upopup-format,
+.popover .upopup-format label,
+.umenu-style-bootstrap .umenu-inner,
+.umenu-style-bootstrap .umenu-inner label {
+    font-size: 8.75pt;
+}
+
+.popover label,
+.umenu-style-bootstrap label {
+    float: none !important;
+    width: auto !important;
+    color: #000;
+}
+
+.popover .umenu-selected label,
+.udrag-wrapper .umenu-selected label {
+    color: #fff;
 }
 

@@ -61,6 +61,7 @@
             var default_options = {
                 direction: 'vertical'
             };
+
             var priv = $.uSort.priv;
             var options = $.extend(default_options, _options || {});
             var data = priv.create_instance_data(this, options);

@@ -145,11 +145,17 @@
                     priv.toggle(menu_elt, true);
                 }
 
+                var style = menu_elt.uPopup('style')[0];
+
+                css_classes += (
+                    (style ? ' ' + key + '-style-' + style : '')
+                );
+
                 if (options.sortable) {
                     menu_elt.uSort('create', {
                         animate: true,
                         items: items, scroll: 'body',
-                        cssClasses: options.cssClasses
+                        cssClasses: css_classes
                     });
                 }
             });

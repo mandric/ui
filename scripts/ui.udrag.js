@@ -372,15 +372,15 @@
                     Register event handlers to detect drag/move events. */
 
                 data.document_mousemove_fn = function (_ev) {
-                    return priv._handle_document_mousemove.call(elt, _ev);
+                    priv._handle_document_mousemove.call(elt, _ev);
                 };
 
                 data.document_mouseup_fn = function (_ev) {
-                    return priv._handle_document_mouseup.call(elt, _ev);
+                    priv._handle_document_mouseup.call(elt, _ev);
                 };
 
                 data.window_resize_fn = function (_ev) {
-                    return priv._handle_window_resize.call(elt, _ev);
+                    priv._handle_window_resize.call(elt, _ev);
                 };
 
                 w.bind('resize.' + key, data.window_resize_fn);
@@ -1269,13 +1269,13 @@
 
             var wrap_elt = $('<div />');
             var drag_elt = _elt.clone(true);
-            
+
             if (options.cssClasses) {
-                drag_elt.addClass(options.cssClasses);
+                wrap_elt.addClass(options.cssClasses);
             }
 
             wrap_elt.append(drag_elt);
-            wrap_elt.addClass('udrag-wrapper');
+            wrap_elt.addClass($.uDrag.key + '-wrapper');
             data.placeholder_elt = wrap_elt;
 
             wrap_elt.css({
@@ -1358,6 +1358,8 @@
                     }
                 }
             });
+
+            return _elt;
         },
 
 
@@ -1372,8 +1374,6 @@
             if (data.is_dragging) {
                 priv.stop_dragging($(this), _ev);
             }
-            
-            return false;
         },
 
         /**
@@ -1387,8 +1387,6 @@
             if (data.is_dragging) {
                 priv.update_position(this, _ev);
             }
-
-            return false;
         },
 
         /**
@@ -1400,7 +1398,6 @@
             var data = priv.instance_data_for(this);
 
             priv.recalculate_all(this);
-            return false;
         },
 
         /**
@@ -1414,7 +1411,7 @@
             /* Require primary mouse button */
 
             if (_ev.which !== 1) {
-                return false;
+                return;
             }
 
             /* Were any drag handles specified?
@@ -1423,12 +1420,11 @@
 
             if (data.handle_areas) {
                 if (!data.handle_areas.find_beneath(_ev)) {
-                    return false;
+                    return;
                 }
             }
 
             priv.start_dragging(this, _ev);
-            return false;
         },
 
         /**
@@ -1443,8 +1439,6 @@
             if (data.is_dragging) {
                 priv.update_position(this);
             }
-
-            return false;
         },
 
         /**

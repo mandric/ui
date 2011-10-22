@@ -485,7 +485,6 @@
             /* Use flattening map function */
             return $($.map(this, function (popup_elt) {
 
-                /* Convert element to instance data */
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
                 var wrapper_elt = data.wrapper_elt;
 
@@ -507,16 +506,30 @@
             
             $(this).each(function (i, popup_elt) {
 
-                /* Convert element to instance data */
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
-
-                rv.push(
-                    (data.is_created ? data.bias : {})
-                );
+                rv.push((data.is_created ? data.bias : {}));
             });
 
             return rv;
-        }
+        },
+
+        /**
+         * Returns the type of {$.uPopup.Style} object currently in
+         * use by this uPopup instance. This is useful for passing
+         * style information to components that can make use of it.
+         */
+         style: function () {
+ 
+            var rv = [];
+
+            $(this).each(function (i, popup_elt) {
+
+                var data = $.uPopup.priv.instance_data_for(popup_elt);
+                rv.push(data.options.style.name.call());
+            });
+
+            return rv;
+         }
     };
 
     /**
@@ -1111,6 +1124,13 @@
         regular: {
 
             /**
+             * Introspection function: Return this name of this class.
+             */
+            name: function () {
+                return 'regular';
+            },
+
+            /**
              * Create an element that will surround the user-provided
              * element. Content will be inserted under the element
              * that has a CSS class of {.inner}.
@@ -1239,6 +1259,14 @@
          * library, which provides a 'popover' class.
          */
         bootstrap: {
+
+            /**
+             * Introspection function: Return this name of this class.
+             */
+            name: function () {
+                return 'bootstrap';
+            },
+
             /**
              * Create an element that will surround the user-provided
              * element. Content will be inserted under the element
