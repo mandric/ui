@@ -83,7 +83,7 @@
                 var data = priv.create_instance_data(menu_elt, options);
 
                 /* Item handling:
-                    Search for menu items, using one of three strategies. */
+                    Search for menu items, using one of two strategies. */
 
                 var items = (options.items || '.' + key + '-item');
 
@@ -134,6 +134,7 @@
                     hidden: true,
                     useMutation: false,
                     direction: data.bias,
+                    vertical: options.vertical,
                     style: options.style,
                     cssClasses: css_classes,
                     duration: options.duration,
@@ -502,6 +503,7 @@
             var key = $.uMenu.key;
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
+            var options = data.options;
 
             var submenus = data.active_submenus;
             var item_data = _item_elt.data(key);
@@ -526,11 +528,13 @@
                     submenus[item_data.index] = submenu_elt.uMenu(
                         'create', arrow_elt, {
                             hidden: true,
+                            vertical: false,
                             direction: data.bias,
                             parentMenu: _menu_elt,
-                            items: data.options.items,
-                            sortable: data.options.sortable,
-                            cssClasses: data.options.cssClasses
+                            style: options.style,
+                            items: options.items,
+                            sortable: options.sortable,
+                            cssClasses: options.cssClasses
                         }
                     );
                     submenu_elt.show();

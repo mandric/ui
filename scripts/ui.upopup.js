@@ -54,7 +54,7 @@
      *  (pipe characters denote mutually-exclusive alternatives):
      *
      *    <div class="upopup">
-     *      <div class="format direction {n|s|e|w|nw|...|wnw|wsw|ene|ese}">
+     *      <div class="format {n|s|e|w|nw|...|wnw|wsw|ene|ese}">
      *        <div class="arrow first-arrow" />
      *        <div class="border">
      *          <div class="inner">
@@ -74,8 +74,8 @@
      *  asterisks indicate centered-arrow styles, which may have
      *  suboptimal placement due to the position of the arrow).
      *
-     *                              (top *
-     *                    (n | nw)   | above)    (ne)
+     *                               (above) *
+     *                    (n | nw)      |       (ne)
      *                       ^          ^        ^
      *               (wnw) < +--------------------+ > (ene)
      *                       |                    |
@@ -83,8 +83,7 @@
      *                       |                    |
      *               (wsw) < +--------------------+ > (ese)
      *                       v          v         v
-     *                    (s | sw)   (below *    (se)
-     *                                | bottom)
+     *                    (s | sw)   (below) *    (se)
      *
      *  To modify the appearance of any uPopup-managed element, use a
      *  custom stylesheet to override properties found in the default

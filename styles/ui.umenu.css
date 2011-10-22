@@ -2,9 +2,11 @@
 .umenu {
     display: none;
     max-width: 20em;
+    overflow: hidden;
 }
 
-.upopup .umenu, .popover .umenu {
+.upopup .umenu,
+.popover .umenu {
     display: block;
 }
 
@@ -66,8 +68,8 @@
     border-bottom: none;
 }
 
-.umenu .umenu-item .umenu-arrow,
-.udrag-wrapper .umenu-item .umenuarrow {
+.umenu-right .umenu-item .umenu-arrow,
+.udrag-wrapper .umenu-arrow {
     right: -0.5em;
     position: absolute;
     margin: 1em 1em 0 0;
@@ -116,5 +118,52 @@
 .upopup .umenu-left .umenu-selected .umenu-arrow {
     border-right-color: #fff !important;
     border-left-color: transparent !important;
+}
+
+
+/* Support for Twitter's Bootstrap {popover} style:
+    These rules are intended to be used alongside the usual
+    uMenu and uPopup rules, and adapt them to fit the popovers. */
+
+.popover .upopup-inner {
+    width: auto !important;
+}
+
+.popover .upopup-format .upopup-inner,
+.popover .upopup-format label {
+    font-size: 8.5pt;
+}
+
+.popover .upopup-format .upopup-inner .umenu {
+    background-color: #fff;
+}
+
+.popover label {
+    float: none !important;
+    color: #000;
+}
+.popover .umenu-selected label {
+    color: #fff;
+}
+
+.popover .umenu .umenu-item:first-child,
+.popover .umenu .umenu-item:last-child {
+    border-radius: 0;
+    -moz-border-radius: 0;
+    -webkit-border-radius: 0;
+}
+
+.popover .upopup-format .upopup-inner .umenu {
+    border-radius: 0.45em;
+    -moz-border-radius: 0.45em;
+    -webkit-border-radius: 0.45em;
+}
+
+.popover .umenu-right .umenu-item .umenu-arrow {
+    margin: 1.2em 1.35em 0 0;
+}
+
+.popover .umenu-left .umenu-item .umenu-arrow {
+    margin: 1.2em 0 0 0.5em;
 }
 
