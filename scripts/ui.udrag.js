@@ -1411,7 +1411,7 @@
             /* Require primary mouse button */
 
             if (_ev.which !== 1) {
-                return;
+                return false;
             }
 
             /* Were any drag handles specified?
@@ -1420,11 +1420,12 @@
 
             if (data.handle_areas) {
                 if (!data.handle_areas.find_beneath(_ev)) {
-                    return;
+                    return false;
                 }
             }
 
             priv.start_dragging(this, _ev);
+            return false;
         },
 
         /**
