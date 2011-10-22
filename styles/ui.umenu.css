@@ -140,6 +140,7 @@
 
 .popover label {
     float: none !important;
+    width: auto !important;
     color: #000;
 }
 .popover .umenu-selected label {
