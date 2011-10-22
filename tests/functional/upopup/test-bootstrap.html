@@ -58,8 +58,8 @@
                         '</div>'
                     );
                     elt.uPopup('create', this, {
-                        vertical: true,
                         style: $.uPopup.style.bootstrap,
+                        direction: { y: 0 },
                         center: !!$(this).hasClass('danger')
                     });
                     var popup = elt.uPopup('wrapper');

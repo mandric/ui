@@ -60,6 +60,7 @@
 
             var default_options = {};
 
+            var key = $.uMenu.key;
             var priv = $.uMenu.priv;
             var css_classes = 'no-padding';
             var options = $.extend(default_options, _options || {});
@@ -84,7 +85,8 @@
                 /* Item handling:
                     Search for menu items, using one of three strategies. */
 
-                var items = (options.items || '.item');
+                var items = (options.items || '.' + key + '-item');
+
                 switch (typeof(items)) {
                     case 'function':
                         items = $(items.apply(menu_elt));
@@ -116,11 +118,11 @@
                     priv._handle_document_click.call(menu_elt);
                 };
             
-                $(document).bind('click.' + $.uMenu.key, document_click_fn);
+                $(document).bind('click.' + key, document_click_fn);
                 data.document_click_fn = document_click_fn;
 
                 menu_elt.bind(
-                    'click.' + $.uMenu.key, priv._handle_menu_click
+                    'click.' + key, priv._handle_menu_click
                 );
 
                 /* Contained classes:
@@ -265,7 +267,7 @@
 
             $(this).each(function (_i, _elt) {
 
-                var elt = $(_elt);
+                _elt = $(_elt);
 
                 /* Find menu root:
                     From there, we can recursively destroy the menu. */
@@ -318,8 +320,10 @@
          */
         create_instance_data: function (_menu_elt, _options) {
 
+            var key = $.uMenu.key;
+
             _menu_elt.data(
-                $.uMenu.key, {
+                key, {
                  /* items: null,
                     is_visible: false,
                     selected_item_elt: null, */
@@ -328,7 +332,7 @@
                 }
             );
 
-            return _menu_elt.data($.uMenu.key);
+            return _menu_elt.data(key);
         },
 
       /**
@@ -361,8 +365,8 @@
             $(_item_elts).each(function (_i) {
 
                 var item_elt = $(this);
-                var arrow_elt = item_elt.closestChild('.arrow');
-                var submenu_elt = item_elt.closestChild('.umenu');
+                var submenu_elt = item_elt.closestChild('.' + key);
+                var arrow_elt = item_elt.closestChild('.' + key + '-arrow');
 
                 var click_fn = function (_ev) {
                     return priv._handle_item_click.call(
@@ -371,15 +375,20 @@
                 };
 
                 /* Manage arrow element:
-                    If we don't have any sub-menus, hide the arrow symbol. */
+                    If we don't have any sub-menus, hide the arrow symbol,
+                    and add a CSS class to easily locate empty subtrees. */
+
+                var s = key + '-empty';
 
                 if (submenu_elt[0]) {
                     arrow_elt.show();
+                    item_elt.removeClass(s);
                 } else {
                     arrow_elt.hide();
+                    item_elt.addClass(s);
                 }
 
-                item_elt.data($.uMenu.key, { index: _i });
+                item_elt.data(key, { index: _i });
                 item_elt.bind('mouseover.' + key, mouseover_fn);
                 item_elt.bind('click.' + key, click_fn);
             });
@@ -439,9 +448,12 @@
          */
         toggle_item: function (_menu_elt, _item_elt, _is_select) {
 
+            _item_elt = $(_item_elt);
+
+            var key = $.uMenu.key;
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
-            var item_data = _item_elt.data($.uMenu.key);
+            var item_data = _item_elt.data(key);
 
             var default_callback = (
                 _is_select ?
@@ -463,7 +475,7 @@
             };
 
             if (item_data) {
-                if (_is_select) {
+                if (_is_select && !_item_elt.hasClass(key + '-disabled')) {
                     item_data.is_delaying = true;
                     setTimeout(select_fn, data.options.delay);
                 } else {
@@ -473,7 +485,7 @@
 
                 $.uI.trigger_event(
                     (_is_select ? 'select' : 'unselect'),
-                        $.uMenu.key, default_callback, _menu_elt,
+                        key, default_callback, _menu_elt,
                         data.options, [ _item_elt ]
                 );
             }
@@ -487,11 +499,12 @@
          */
         toggle_item_submenu: function (_menu_elt, _item_elt, _is_select) {
 
+            var key = $.uMenu.key;
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
 
             var submenus = data.active_submenus;
-            var item_data = _item_elt.data($.uMenu.key);
+            var item_data = _item_elt.data(key);
 
             if (item_data) {
                 var animate_elt = submenus[item_data.index];
@@ -506,8 +519,8 @@
                 /* Selection case:
                     Show the submenu rooted at {item_elt}. */
 
-                var arrow_elt = _item_elt.closestChild('.arrow');
-                var submenu_elt = _item_elt.closestChild('.umenu');
+                var submenu_elt = _item_elt.closestChild('.' + key);
+                var arrow_elt = _item_elt.closestChild('.' + key + '-arrow');
 
                 if (submenu_elt[0] && data.items.length > 0) {
                     submenus[item_data.index] = submenu_elt.uMenu(
@@ -596,7 +609,7 @@
          */
         _default_select_item: function (_item_elt) {
 
-            $(_item_elt).addClass('selected');
+            $(_item_elt).addClass($.uMenu.key + '-selected');
         },
 
         /**
@@ -604,7 +617,7 @@
          */
         _default_unselect_item: function (_item_elt) {
 
-            $(_item_elt).removeClass('selected');
+            $(_item_elt).removeClass($.uMenu.key + '-selected');
         },
 
         /**
@@ -667,13 +680,30 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
 
-            $.uI.trigger_event(
-                'click', $.uMenu.key, null,
+            var is_finished = $.uI.trigger_event(
+                'click', $.uMenu.key, priv._handle_default_item_click,
                     menu_elt, data.options, [ item_elt ]
             );
 
-            menu_elt.uMenu('destroyAll');
+            if (is_finished) {
+                menu_elt.uMenu('destroyAll');
+            }
+
             return false;
+        },
+
+        /**
+         * Default handler for mouse click events occuring inside
+         * of a uMenu item. This handler closes the menu if and
+         * only if it is a leaf node (i.e. has no submenus).
+         */
+        _handle_default_item_click: function (_item_elt) {
+
+            var priv = $.uMenu.priv;
+            var item_elt = $(_item_elt);
+            var data = priv.instance_data_for(this);
+
+            return item_elt.hasClass($.uMenu.key + '-empty');
         },
 
         /**

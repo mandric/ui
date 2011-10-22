@@ -279,6 +279,7 @@
          */
         create: function (_target_elts, _options) {
 
+            var key = $.uPopup.key;
             var priv = $.uPopup.priv;
             var options = (_options || {});
             var target_elts = $(_target_elts);
@@ -344,7 +345,7 @@
                     Add classes that affect size/shape before reposition. */
 
                 if (options.cssClasses) {
-                    wrapper_elt.closestChild('.format').addClass(
+                    wrapper_elt.closestChild('.' + key + '-format').addClass(
                         options.cssClasses
                     );
                 }
@@ -565,7 +566,7 @@
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
 
-            var wrap_selector = '.inner';
+            var wrap_selector = '.' + $.uPopup.key + '-inner';
             var wrap_elt = $(_options.style.create_wrapper());
 
             data.original_parent = _popup_elt.parent();
@@ -845,13 +846,14 @@
         reposition: function (_wrapper_elt, _wrapper_size,
                               _popup_elt, _target_elt, _bias) {
             var offsets;
+            var key = $.uPopup.key;
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
 
             var options = data.options;
             var ev = options.eventData;
-            var inner_elt = _wrapper_elt.closestChild('.format');
-            var arrow_elt = inner_elt.closestChild('.arrow');
+            var inner_elt = _wrapper_elt.closestChild('.' + key + '-format');
+            var arrow_elt = inner_elt.closestChild('.' + key + '-arrow');
 
             /* Precompute sizes:
                 These figures are used in the placement algorithm. */
@@ -1115,15 +1117,20 @@
              * that has a CSS class of {.inner}.
              */
             create_wrapper: function () {
+
+                var key = $.uPopup.key;
+
                 return $(
-                    '<div class="' + $.uPopup.key + '">' +
-                        '<div class="format direction">' +
-                            '<div class="arrow first-arrow" />' +
-                            '<div class="border">' +
-                                '<div class="inner" />' +
+                    '<div class="' + key + '">' +
+                        '<div class="' + key + '-format">' +
+                            '<div class="' + key +
+                                '-arrow ' + key + '-first-arrow" />' +
+                            '<div class="' + key + '-border">' +
+                                '<div class="' + key + '-inner" />' +
                             '</div>' +
-                            '<div class="arrow last-arrow" />' +
-                            '<div class="clear" />' +
+                            '<div class="' + key +
+                                '-arrow ' + key + '-last-arrow" />' +
+                            '<div class="' + key + '-clear" />' +
                         '</div>' +
                     '</div>'
                 );
@@ -1136,6 +1143,7 @@
              */
             apply_style: function (_elts, _data, _bias) {
 
+                var key = $.uPopup.key;
                 var coefficients, classes;
                 var helper = $.uPopup.style.helper;
 
@@ -1150,8 +1158,10 @@
 
                     classes = (
                         is_vertical ?
-                            [ [ 'se', 'ne' ], [ 's', 'n' ] ]
-                            : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
+                            [ [ key + '-se', key + '-ne' ],
+                                [ key + '-s', key + '-n' ] ] :
+                            [ [ key + '-ese', key + '-e' ],
+                                [ key + '-wsw', key + '-w' ] ]
                     );
 
                     coefficients = (
@@ -1160,14 +1170,17 @@
                             : { x: [ -1, 1 ], y: [ -1, 1 ] }
                     );
 
-                    _elts.inner.removeClass('se ne s n ese e wsw w');
+                    _elts.inner.removeClass(
+                        classes[0].concat(classes[1]).join(' ')
+                    );
+
                     _elts.inner.addClass(classes[_bias.x][_bias.y]);
 
                 } else {
                
                     classes = {
-                        x: [ 'right', 'left' ],
-                        y: [ 'below', 'above' ]
+                        x: [ key + '-right', key + '-left' ],
+                        y: [ key + '-below', key + '-above' ]
                     };
 
                     var pos = helper.adjust_for_centered_pointer(
@@ -1181,7 +1194,7 @@
                     );
 
                     var e = _elts.inner;
-                    e.removeClass('right left top bottom above below');
+                    e.removeClass(classes.x.concat(classes.y).join(' '));
                     e.addClass(classes[pos.axis][pos.bias]);
                 }
 
@@ -1199,11 +1212,12 @@
              */
             calculate_delta: function (_elts, _data, _bias)
             {
+                var key = $.uPopup.key;
                 var delta = { x: 0, y: 0 };
 
                 if (_data.options.useCorners) {
 
-                    var adjust_div = $('<div />').addClass('adjust');
+                    var adjust_div = $('<div />').addClass(key + '-adjust');
                     _elts.inner.append(adjust_div);
 
                     /* Coefficients:
@@ -1234,9 +1248,9 @@
             create_wrapper: function () {
                 return $(
                     '<div class="popover">' +
-                        '<div class="format">' +
-                            '<div class="arrow" />' +
-                                '<div class="inner" />' +
+                        '<div class="format upopup-format">' +
+                            '<div class="arrow upopup-arrow" />' +
+                                '<div class="inner upopup-inner" />' +
                             '</div>' +
                         '</div>' +
                     '</div>'
@@ -1251,6 +1265,7 @@
              */
             apply_style: function (_elts, _data, _bias) {
 
+                var key = $.uPopup.key;
                 var helper = $.uPopup.style.helper;
 
                 var css = {
@@ -1262,7 +1277,7 @@
                     _elts.wrapper, _elts.wrapper, _data, _bias
                 );
 
-                _elts.wrapper.removeClass('left right above below');
+                _elts.wrapper.removeClass(css.x.concat(css.y).join(' '));
                 _elts.wrapper.addClass(css[pos.axis][pos.bias]);
 
                 helper.adjust_for_arrow(
