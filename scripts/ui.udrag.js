@@ -575,12 +575,12 @@
 
             var priv = $.uDrag.priv;
             var data = priv.instance_data_for(_elt);
-            var drop_elt = (drop_area || {}).elt;
 
             var drop_area = data.areas.find_beneath(
                 _ev, [ data.placeholder_elt ]
             );
 
+            var drop_elt = (drop_area || {}).elt;
             priv.exit_drop_area(null, data);
 
             $.uI.trigger_event(
