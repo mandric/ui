@@ -449,11 +449,11 @@
          */
         toggle_item: function (_menu_elt, _item_elt, _is_select) {
 
-            _item_elt = $(_item_elt);
-
             var key = $.uMenu.key;
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
+            
+            var item_elt = $(_item_elt);
             var item_data = _item_elt.data(key);
 
             var default_callback = (
@@ -476,14 +476,15 @@
             };
 
             if (item_data) {
-                if (_is_select && !_item_elt.hasClass(key + '-disabled')) {
+                if (_is_select) {
                     item_data.is_delaying = true;
                     setTimeout(select_fn, data.options.delay);
                 } else {
                     item_data.is_delaying = false;
-                    priv.toggle_item_submenu(_menu_elt, _item_elt, _is_select);
+                    priv.toggle_item_submenu(
+                        _menu_elt, _item_elt, _is_select
+                    );
                 }
-
                 $.uI.trigger_event(
                     (_is_select ? 'select' : 'unselect'),
                         key, default_callback, _menu_elt,
@@ -725,6 +726,10 @@
                 data.selected_item_elt ?
                     data.selected_item_elt[0] : undefined
             );
+
+            if (item_elt.hasClass($.uMenu.key + '-disabled')) {
+                return false;
+            }
 
             if (item_elt[0] !== current_elt) {
                 if (data.selected_item_elt) {

@@ -89,6 +89,11 @@
     border-left-color: transparent !important;
 }
 
+.umenu .umenu-disabled,
+.udrag-wrapper .umenu-disabled {
+    color: #999;
+}
+
 .upopup .inner .umenu .umenu-item .umenu-inner {
     background-color: transparent;
 }
