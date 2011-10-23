@@ -46,14 +46,14 @@
     height: 0;
     width: 0;
     position: absolute;
-    border: 1.15em solid transparent;
+    border: 1.135em solid transparent;
     background-color: transparent;
 }
 .upopup .upopup-last-arrow {
     border-color: #f5f5f5;
 }
 .upopup .upopup-border {
-    border: solid 0.1em #999;
+    border: solid 0.125em #999;
     border-radius: 0.85em;
     -moz-border-radius: 0.85em;
     -webkit-border-radius: 0.85em;

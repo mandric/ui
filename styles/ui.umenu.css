@@ -82,7 +82,7 @@
 .umenu-left .umenu-item .umenu-arrow {
     left: 0.5em;
     position: absolute;
-    margin: 1em 1em 0 0;
+    margin: 0.9em 1em 0 0;
     border: 0.3em solid #444 !important;
     border-top-color: transparent !important;
     border-bottom-color: transparent !important;
@@ -94,10 +94,14 @@
     color: #999;
 }
 
-.umenu .umenu-disabled .umenu-arrow,
+.umenu-left .umenu-disabled .umenu-arrow,
 .udrag-wrapper .umenu-disabled .umenu-arrow {
+    border-right-color: #bbb !important;
 }
 
+.umenu-right .umenu-disabled .umenu-arrow {
+    border-left-color: #bbb !important;
+}
 
 .upopup .inner .umenu .umenu-item .umenu-inner {
     background-color: transparent;
