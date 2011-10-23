@@ -66,8 +66,8 @@
             var options = $.extend(default_options, _options || {});
             var data = priv.create_instance_data(this, _options);
 
+            this.addClass($.uSort.key + '-track');
             priv.bind_drag_elements(this, options);
-            this.addClass('usort-track');
 
             return this;
         },
@@ -119,6 +119,34 @@
 
             /* Allow existing items to drop on new instance {_elt} */
             data.items.uDrag('add', $.extend(_options, { drop: _elt }));
+
+            return this;
+        },
+
+        /**
+         * This function allows for the dynamic deletion of sortable
+         * containers/items -- after a sortable element has been
+         * created. Given an existing uSort instance in {this}, the
+         * {remove} function detaches items beneath {_elt} from the
+         * uSort instance {this}, using the item location instructions
+         * provied in {_options}.
+         */
+        remove: function (_elt, _options) {
+
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(this);
+            var items = priv.parse_items_option(_elt, _options);
+
+            items.each(function () {
+                var item_data = $(this).data($.uSort.key + '-item');
+                if (item_data) {
+                    data.areas.untrack(data.items[item_data.index]);
+                    data.items[item_data.index] = null;
+                }
+            });
+
+            data.items.uDrag('remove', $.extend(_options, { drop: _elt }));
+            items.uDrag('destroy');
 
             return this;
         },
@@ -211,7 +239,16 @@
                 )
             });
 
-            data.items = (data.items || $([])).add(
+            /* Compact items array:
+                This array might be sparse if we've removed drop areas
+                previously. Clean out the empty entries before calling
+                {add}, as jQuery requires that all entries be defined. */
+
+            data.items = (data.items || $([])).filter(
+                function (i, elt) { return !elt; }
+            );
+
+            data.items = data.items.add(
                 priv.bind_sort_items(sortable_elt, items)
             );
 
@@ -257,14 +294,21 @@
             var key = $.uSort.key;
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(_sortable_elt);
-            var item_elts = $(_item_elts);
 
-            item_elts.each(function () {
+            var item_elts = $(_item_elts);
+            var base_index = (data.items || []).length;
+
+            item_elts.each(function (_i) {
                 var item_elt = $(this);
-                item_elt.addClass(key + '-item');
+                var item_key = key + '-item';
+
+                item_elt.addClass(item_key);
+                item_elt.data(item_key, { index: _i + base_index });
 
                 data.areas.track(item_elt, {
-                    sortable_elt: $(_sortable_elt)
+                    sortable_elt: (
+                        item_elt.parents('.' + key + '-track').first()
+                    )
                 });
             });
 
