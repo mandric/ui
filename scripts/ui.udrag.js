@@ -717,7 +717,6 @@
 
                 priv.stop_autoscroll(_elt);
                 data.drop_allowed = false;
-
             }
 
             return _elt;

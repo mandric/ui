@@ -64,58 +64,11 @@
 
             var priv = $.uSort.priv;
             var options = $.extend(default_options, _options || {});
-            var data = priv.create_instance_data(this, options);
+            var data = priv.create_instance_data(this, _options);
 
-            var items = options.items;
+            priv.bind_drag_elements(this, options);
+            this.addClass('usort-track');
 
-            switch (typeof(items)) {
-                case 'function':
-                    items = $(items.apply(this));
-                    break;
-                case 'string':
-                    items = this.find(items);
-                    break;
-                default:
-                case 'object':
-                    items = $(items);
-                    break;
-            }
-
-            items.uDrag('create', {
-                drop: this,
-                scroll: options.scroll,
-                container: options.container,
-                cssClasses: options.cssClasses,
-                onInsertElement: function (_drop_elt) {
-                    priv.stop_other_animations(_drop_elt, false);
-                    $.uI.trigger_event(
-                        'insert', $.uSort.key, null,
-                            this, options, [ _drop_elt ]
-                    );
-                },
-                onDrop: function (_drop_elt) {
-                    this.css('display', 'block');
-                    $.uI.trigger_event(
-                        'drop', $.uSort.key, null,
-                            this, options, [ _drop_elt ]
-                    );
-                },
-                onPositionElement: false,
-                onHover: priv._handle_drag_hover,
-                onRecalculate: $.proxy(priv._handle_drag_recalculate, this)
-            });
-            
-            this.addClass('usort-installed');
-
-            items.each(function (i, elt) {
-                elt = $(elt);
-                elt.addClass('usort-item');
-                data.areas.track(elt, {
-                    sortable_elt: elt.parents('.usort-installed').first()
-                });
-            });
-
-            data.items = items;
             return this;
         },
 
@@ -138,6 +91,34 @@
                 data.items.uDrag('destroy');
                 $(sortable_elt).data(key, null);
             });
+
+            return this;
+        },
+
+        /**
+         * This function allows for the dynamic addition of sortable
+         * containers and items, after a sortable element has been
+         * created. Given an existing uSort instance in {this}, add
+         * items beneath {_elt} to the uSort instance {this}, using
+         * the item location instructions given in {_options}.
+         */
+        add: function (_elt, _options) {
+            
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(this);
+            var items = priv.parse_items_option(_elt, _options);
+
+            /* Copy data on to new uSort container */
+            _elt.data($.uSort.key, data);
+
+            /* Set up sorting within {_elt} */
+            priv.bind_drag_elements(_elt, _options);
+
+            /* Allow new items to drop on existing instance */
+            items.uDrag('add', { drop: this });
+
+            /* Allow existing items to drop on new instance {_elt} */
+            data.items.uDrag('add', { drop: _elt });
 
             return this;
         },
@@ -194,11 +175,56 @@
         },
 
         /**
+         */
+        bind_drag_elements: function (_sortable_elt, _options) {
+    
+            var key = $.uSort.key;
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(_sortable_elt);
+
+            var sortable_elt = $(_sortable_elt);
+            var items = priv.parse_items_option(sortable_elt, _options);
+
+            items.uDrag('create', {
+                drop: sortable_elt,
+                scroll: _options.scroll,
+                container: _options.container,
+                cssClasses: _options.cssClasses,
+                onInsertElement: function (_drop_elt) {
+                    priv.stop_other_animations(_drop_elt, false);
+                    $.uI.trigger_event(
+                        'insert', key, null,
+                            sortable_elt, _options, [ _drop_elt ]
+                    );
+                },
+                onDrop: function (_drop_elt) {
+                    sortable_elt.css('display', 'block');
+                    $.uI.trigger_event(
+                        'drop', key, null,
+                            sortable_elt, _options, [ _drop_elt ]
+                    );
+                },
+                onPositionElement: false,
+                onHover: priv._handle_drag_hover,
+                onRecalculate: $.proxy(
+                    priv._handle_drag_recalculate, sortable_elt
+                )
+            });
+
+            data.items = (data.items || $([])).add(
+                priv.bind_sort_items(sortable_elt, items)
+            );
+
+            return data;
+        },
+
+        /**
          * Initialize private storage on the element _elt, setting
          * all private fields to their original default values. This
          * must be called before any sortables can be modified.
          */
         create_instance_data: function (_sortable_elt, _options) {
+
             _sortable_elt.data(
                 $.uSort.key, {
                  /* elt: null,
@@ -222,6 +248,49 @@
             );
 
             return _sortable_elt.data($.uSort.key);
+        },
+
+        /**
+         */
+        bind_sort_items: function (_sortable_elt, _item_elts) {
+
+            var key = $.uSort.key;
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(_sortable_elt);
+            var item_elts = $(_item_elts);
+
+            item_elts.each(function () {
+                var item_elt = $(this);
+                item_elt.addClass(key + '-item');
+
+                data.areas.track(item_elt, {
+                    sortable_elt: $(_sortable_elt)
+                });
+            });
+
+            return item_elts;
+        },
+
+        /**
+         */
+        parse_items_option: function (_sortable_elt, _options) {
+
+            var rv = _options.items;
+
+            switch (typeof(rv)) {
+                case 'function':
+                    rv = $(rv.apply(_sortable_elt));
+                    break;
+                case 'string':
+                    rv = _sortable_elt.find(rv);
+                    break;
+                default:
+                case 'object':
+                    rv = $(rv);
+                    break;
+            }
+
+            return rv;
         },
 
         /*
