@@ -115,10 +115,10 @@
             priv.bind_drag_elements(_elt, _options);
 
             /* Allow new items to drop on existing instance */
-            items.uDrag('add', { drop: this });
+            items.uDrag('add', $.extend(_options, { drop: this }));
 
             /* Allow existing items to drop on new instance {_elt} */
-            data.items.uDrag('add', { drop: _elt });
+            data.items.uDrag('add', $.extend(_options, { drop: _elt }));
 
             return this;
         },

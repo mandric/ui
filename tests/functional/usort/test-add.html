@@ -270,19 +270,20 @@
 
         <script type="text/javascript">
             jQuery(function ($) {
-                var x = $('.first .drop').uSort('create', {
+                var options = {
                     animate: true,
                     container: '.outer', items: '.drag'
-                });
+                };
+                $('.first .drop').uSort('create', options);
                 setTimeout(function () {
                     var f = function (v) {
                         $('.second').css('background-color', v);
                     }
                     f('#ff7');
                     setTimeout(function () {
-                        $('.first .drop').uSort('add', $('.second .drop'), {
-                            items: '.drag'
-                        });
+                        $('.first .drop').uSort(
+                            'add', $('.second .drop'), options
+                        );
                         f(null);
                     }, 500);
                 }, 5000);

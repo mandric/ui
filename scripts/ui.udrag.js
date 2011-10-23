@@ -110,6 +110,44 @@
         },
 
         /**
+         * Stop tracking the area of the page occupied by {_elt},
+         * free any references to {_elt}, and remove all associated
+         * data. This function does not compact the internal area
+         * index; if you need to do that due to memory pressure,
+         * use the {compact} method.
+         */
+        untrack: function (_elt) {
+
+            var elt = $(_elt);
+            var index = this.element_to_index(elt);
+
+            if (index !== undefined) {
+                this._areas[index] = null;
+                elt.data($.uDrag.key + '.area', {});
+            }
+
+            return elt;
+        },
+
+        /**
+         * Remove any unused entries from the internal area index,
+         * freeing some memory, and allowing for reuse of indices.
+         */
+        compact: function () {
+
+            var rv = [];
+            var areas = this._areas;
+
+            for (var i = 0, len = areas.length; i < len; ++i) {
+                if (areas[i] !== null) {
+                    rv.push(areas[i]);
+                }
+            }
+
+            this._areas = rv;
+        },
+
+        /**
          * Recalculates position and extent information for
          * the {drop_areas} structure. This structure is used to
          * map page coordinates to specific drop area elements.
@@ -132,6 +170,18 @@
          * drop area elements.
          */
         recalculate_one: function (_area) {
+
+            /* Skip untracked entries:
+                The {untrack} method simply writes a null in the internal
+                {_areas} array; free space is not compacted until {compact}
+                is called. Skip items that have been voided by {untrack}. */
+
+            if (_area === null) {
+                return this;
+            }
+
+            /* Otherwise, update:
+                This an active entry, so go ahead and recalculate. */
 
             var size = { x: 0, y: 0 };
             var container_elt = _area.container_elt;
@@ -212,6 +262,11 @@
                 var y = (_pt.pageY !== undefined ? _pt.pageY : _pt.y);
 
                 var area = areas[i];
+
+                if (!area) {
+                    continue;
+                }
+
                 var scroll_elt = area.scroll_elt;
                 var container_elt = area.container_elt;
 
@@ -468,6 +523,27 @@
             });
 
             return this;
+        },
+
+        /**
+         * Remove drop zones from a uDrag instance, after it has already
+         * been created and initialized. The {this} argument should be a
+         * selection of elements that have previously been initialized
+         * by uDrag's {create} method; the {_options} argument should
+         * contain a {drop} option, formatted in the same way as it is
+         * in the {create} method. The drop zones within {this} referred
+         * to by {drop} will be stripped of event handlers, and the
+         * underlying $.uDrag.AreaIndex will remove references to them.
+         */
+        remove: function (_options) {
+            
+            var priv = $.uDrag.priv;
+
+            this.each(function (i, elt) {
+                priv.unbind_drop_areas(elt, _options);
+            });
+
+            return this;
         }
     };
 
@@ -503,8 +579,7 @@
          */
          find_drag_handles: function (_elt, _options) {
 
-            var rv = false;
-            var handle_option = _options.handle;
+            var rv, handle_option = _options.handle;
 
             switch (typeof(handle_option)) {
                 case 'string':
@@ -1013,52 +1088,17 @@
         bind_drop_areas: function (_elt, _options) {
 
             var priv = $.uDrag.priv;
-            var drop_option = (_options.drop || []);
-            var scroll_option = (_options.scroll || []);
-
-            var container_option = (_options.container || false);
-            var container_callback = null;
 
             /* Argument processing:
                 Array-ize any non-array arguments */
 
-            drop_option = $.uI.listify(drop_option);
-            scroll_option = $.uI.listify(scroll_option);
+            var drop_option = $.uI.listify(_options.drop || []);
+            var scroll_option = $.uI.listify(_options.scroll || []);
 
-            /* Base implementation of container locator function:
-                This function treats container_option as a jQuery selector
-                if possible, and selects the closest matching ancestor.
-                If that fails, {drop_elt} is used as the container. */
+            /* Generate container location function:
+                If a function wasn't already provided, generate one. */
 
-            var locate_container_element = function (_drop_elt, _container) {
-                switch (typeof(_container)) {
-                    case 'string':
-                        return _drop_elt.parents(_container).first();
-                    case 'object':
-                        return $(_container);
-                    default:
-                        return _drop_elt;
-                }
-            };
-
-            /* Container locator callback:
-                The container element is a special ancestor of the drop
-                element, and is used for auto-scrolling features. If a
-                callback is provided, we use it to locate the container
-                element for each drop element. If not, apply the default
-                callback to the option (or the appropriate array item). */
-
-            if ($.isFunction(container_option)) {
-                container_callback = container_option;
-            } else {
-                container_callback = function (_drop_elt, _i) {
-                    return locate_container_element(
-                        _drop_elt,
-                        ($.isArray(container_option) ?
-                            container_option[_i] : container_option)
-                    );
-                };
-            }
+            container_callback = priv.parse_container_option(_options);
 
             /* Bind function for drop elements:
                 This binds event handlers for a single jQuery
@@ -1092,15 +1132,13 @@
             var bind_scroll_elts = function (_scroll_elts, _i) {
                 $(_scroll_elts).each(function (j, scroll_elt) {
 
-                    scroll_elt = $(scroll_elt);
-
                     var container_elt = $(
                         scroll_elt[0] === document.body ?
-                            window : scroll_elt[0]
+                            window : scroll_elt
                     );
                     scroll_elt = $(
-                        scroll_elt[0] === window ?
-                            document.body : scroll_elt[0]
+                        scroll_elt === window ?
+                            document.body : scroll_elt
                     );
                     priv.track_drop_area(
                         _elt, scroll_elt, container_elt, _options,
@@ -1120,6 +1158,50 @@
             }
 
             return _elt;
+        },
+
+        /**
+         */
+        parse_container_option: function (_options) {
+
+            var rv, container_option = (_options.container || false);
+
+            /* Base implementation of container locator function:
+                This function treats container_option as a jQuery selector
+                if possible, and selects the closest matching ancestor.
+                If that fails, {drop_elt} is used as the container. */
+
+            var locate_container_element = function (_drop_elt, _container) {
+                switch (typeof(_container)) {
+                    case 'string':
+                        return _drop_elt.parents(_container).first();
+                    case 'object':
+                        return $(_container);
+                    default:
+                        return _drop_elt;
+                }
+            };
+
+            /* Container locator callback:
+                The container element is a special ancestor of the drop
+                element, and is used for auto-scrolling features. If a
+                callback is provided, we use it to locate the container
+                element for each drop element. If not, apply the default
+                callback to the option (or the appropriate array item). */
+
+            if ($.isFunction(container_option)) {
+                rv = container_option;
+            } else {
+                rv = function (_drop_elt, _i) {
+                    return locate_container_element(
+                        _drop_elt,
+                        ($.isArray(container_option) ?
+                            container_option[_i] : container_option)
+                    );
+                };
+            }
+
+            return rv;
         },
 
         /**
@@ -1148,6 +1230,22 @@
                 container_elt: _container_elt,
                 ancestor_elts: ancestor_elts
             }));
+        },
+
+        /**
+         */
+        unbind_drop_areas: function (_elt, _options) {
+
+            var key = $.uDrag.key;
+            var priv = $.uDrag.priv;
+            var data = priv.instance_data_for(_elt);
+            var drop_option = $.uI.listify(_options.drop || []);
+
+            for (var i = 0, len = drop_option.length; i < len; ++i) {
+                $(drop_option[i]).each(function () {
+                    data.areas.untrack(this);
+                });
+            }
         },
 
         /**
