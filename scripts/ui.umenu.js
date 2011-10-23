@@ -672,7 +672,9 @@
             var data = priv.instance_data_for(menu_elt);
 
             if (data.is_visible) {
-                menu_elt.uMenu('destroy');
+                menu_elt.uMenu('destroy', function () {
+                    menu_elt.css('display', null);
+                });
             }
 
             return false;
