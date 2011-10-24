@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet"
+            href="../../../styles/ui.upopup.css" />
+        <script type="text/javascript"
+            src="../../../scripts/contrib/jquery-1.4.2.min.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.shared.js">
+        </script>
+        <script type="text/javascript"
+            src="../../../scripts/ui.upopup.js">
+        </script>
+        <style type="text/css">
+            body {
+                margin: 0;
+            }
+            .test-instructions, .center {
+                padding: 3em;
+            }
+            .center {
+                text-align: center;
+            }
+            .hover {
+                width: 50%;
+                height: 10em;
+                background-color: #888;
+                margin: 0 auto;
+            }
+            .popup {
+                display: none;
+            }
+            .upopup .popup {
+                display: block !important;
+                width: 15em;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="test-instructions">
+            Hover over the shaded rectangle below. A popup window should
+            appear, and follow your mouse pointer as long as you remain within
+            the shaded area.  When your mouse pointer leaves the shaded area,
+            ensure that the popup disappears.
+        </div>
+        <div class="popup">
+            This is a test of a uPopup instance, being driven by a mouse-over
+            event. Notice how the popup follows the mouse cursor's position.
+        </div>
+        <script type="text/javascript">
+            var popup = null;
+            jQuery(function ($) {
+                $('body').bind('click', function (ev) {
+                    if (popup) {
+                        popup.uPopup('destroy', function () {
+                            console.log('here');
+                            popup = null;
+                        });
+                    }
+                });
+                $('.hover').bind('mousemove', function (ev) {
+                    if (popup) {
+                        popup.uPopup('recalculate', { eventData: ev });
+                    } else {
+                        popup = $('.popup').uPopup('create', this, {
+                            eventData: ev, useCorners: false,
+                            cssClasses: $(['square', 'white', 'small']).map(
+                                /* This is obnoxious; please fix */
+                                function (i, s) { return 'upopup-' + s; }
+                            ).toArray().join(' ')
+                        });
+                    }
+                });
+            });
+        </script>
+        <div class="center">
+            <div class="hover">
+            </div>
+        </div>
+    </body>
+</html>
