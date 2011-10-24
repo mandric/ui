@@ -465,9 +465,8 @@
             var recalc_elts;
 
             if (different_parent) {
-                var next_elt = src_elt.next();
-                recalc_elts = [ src_elt[0], next_elt[0], target_elt[0] ].concat(
-                    next_elt.nextAll().add(target_elt.nextAll()).toArray()
+                recalc_elts = [ src_elt[0], target_elt[0] ].concat(
+                    src_elt.nextAll().add(target_elt.nextAll()).toArray()
                 );
             } else {
                 recalc_elts = $.uI.directional_find(
@@ -516,7 +515,15 @@
                     if ((--data.animation_count) === 0) {
                         src_elt.css('display', 'block');
                     }
-                    
+
+                    /* Two types of recalculation:
+                        The first recalculates the large area(s) that
+                        contain the individual sortable elements, since they
+                        may have changed size due to the element insertion.
+                        The second call recalculates positions of individual
+                        sortable elements, managed by this uSort instance. */
+
+                    src_elt.uDrag('recalculate');
                     areas.recalculate_element_areas(recalc_elts);
 
                     invoke_callback();

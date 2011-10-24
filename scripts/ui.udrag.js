@@ -212,10 +212,7 @@
 
             for (var i = 0, len = _elts.length; i < len; ++i) {
                 var area = this.element_to_area(_elts[i]);
-                if (area) {
-                    /* Ignore elements that are unknown to us */
-                    this.recalculate_one(area);
-                }
+                this.recalculate_one(area);
             }
         },
 
