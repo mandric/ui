@@ -1,11 +1,18 @@
 
 .umenu {
+    display: none;
     max-width: 20em;
+    overflow: hidden;
 }
 
-.umenu .inner,
-.udrag-wrapper .inner,
-.upopup .inner .umenu .inner {
+.upopup .umenu,
+.popover .umenu {
+    display: block;
+}
+
+.umenu .umenu-inner,
+.udrag-wrapper .umenu-inner,
+.upopup .inner .umenu .umenu-inner {
     padding: 0.75em 1.5em 0.75em 0.75em;
     border-top: 0;
     border-left: 0;
@@ -16,20 +23,33 @@
     border-bottom: solid 1px #ccc;
 }
 
-.umenu-left .item .inner,
-.upopup .inner .umenu-left .item .inner {
+.umenu .umenu-empty .umenu-inner,
+.umenu .umenu-empty .umenu-inner label {
+    cursor: pointer;
+}
+
+.umenu-item .umenu-inner,
+.umenu-item .umenu-inner label,
+.umenu .umenu-disabled .umenu-inner,
+.umenu .umenu-disabled .umenu-inner label {
+    cursor: default;
+}
+
+.umenu-left .umenu-item .umenu-inner,
+.upopup .inner .umenu-left .umenu-item .umenu-inner {
     padding: 0.75em 0.75em 0.75em 1.5em;
 }
 
-.udrag-wrapper .item .inner {
+.udrag-wrapper .umenu-item .umenu-inner {
     border-color: transparent;
 }
 
-.udrag-wrapper .small {
-    font-size: 0.75em;
+.umenu-small,
+.umenu-small .umenu-inner {
+    font-size: 0.85em;
 }
 
-.umenu .item:last-child {
+.umenu .umenu-item:last-child {
     border-bottom-right-radius: 0.85em;
     -moz-border-bottom-right-radius: 0.85em;
     -webkit-border-bottom-right-radius: 0.85em;
@@ -38,7 +58,7 @@
     -webkit-border-bottom-left-radius: 0.85em;
 }
 
-.umenu .item:first-child {
+.umenu .umenu-item:first-child {
     border-top-right-radius: 0.85em;
     -moz-border-top-right-radius: 0.85em;
     -webkit-border-top-right-radius: 0.85em;
@@ -47,45 +67,60 @@
     -webkit-border-top-left-radius: 0.85em;
 }
 
-.udrag-wrapper .selected {
+.udrag-wrapper .umenu-selected {
     border-radius: 0.45em;
     -moz-border-radius: 0.45em;
     -webkit-border-radius: 0.45em;
     border-color: transparent;
 }
 
-.umenu .item:last-child .inner,
-.upopup .inner .umenu .item:last-child .inner {
+.umenu .umenu-item:last-child .umenu-inner,
+.popover .inner .umenu .umenu-item:last-child .umenu-inner,
+.upopup .inner .umenu .umenu-item:last-child .umenu-inner {
     border-bottom: none;
 }
 
-.umenu .item .arrow,
-.udrag-wrapper .item .arrow {
+.umenu-right .umenu-item .umenu-arrow,
+.udrag-wrapper .umenu-arrow {
     right: -0.5em;
     position: absolute;
-    margin: 1em 1em 0 0;
-    border: 0.4em solid #444 !important;
+    margin: 0.85em 1em 0 0;
+    border: 0.3em solid #444 !important;
     border-top-color: transparent !important;
     border-bottom-color: transparent !important;
     border-right-color: transparent !important;
 }
 
-.umenu-left .item .arrow {
+.umenu-left .umenu-item .umenu-arrow {
     left: 0.5em;
     position: absolute;
-    margin: 1em 1em 0 0;
-    border: 0.4em solid #444 !important;
+    margin: 0.9em 1em 0 0;
+    border: 0.3em solid #444 !important;
     border-top-color: transparent !important;
     border-bottom-color: transparent !important;
     border-left-color: transparent !important;
 }
 
-.upopup .inner .umenu .item .inner {
+.umenu .umenu-disabled,
+.udrag-wrapper .umenu-disabled {
+    color: #999;
+}
+
+.umenu-left .umenu-disabled .umenu-arrow,
+.udrag-wrapper .umenu-disabled .umenu-arrow {
+    border-right-color: #bbb !important;
+}
+
+.umenu-right .umenu-disabled .umenu-arrow {
+    border-left-color: #bbb !important;
+}
+
+.upopup .inner .umenu .umenu-item .umenu-inner {
     background-color: transparent;
 }
 
-.umenu .selected,
-.udrag-wrapper .selected {
+.umenu .umenu-selected,
+.udrag-wrapper .umenu-selected {
     color: #fff;
     background-image: -moz-linear-gradient(top, #586068, #50535c);
     background-image: -ms-linear-gradient(top, #586068, #50535c);
@@ -101,13 +136,72 @@
     );
 }
 
-.umenu .selected .arrow,
-.udrag-wrapper .selected .arrow {
+.umenu .umenu-selected .umenu-arrow,
+.udrag-wrapper .umenu-selected .umenu-arrow {
     border-left-color: #fff !important;
 }
 
-.upopup .umenu-left .selected .arrow {
+.upopup .umenu-left .umenu-selected .umenu-arrow {
     border-right-color: #fff !important;
     border-left-color: transparent !important;
+}
+
+
+/* Support for Twitter's Bootstrap {popover} style:
+    These rules are intended to be used alongside the usual
+    uMenu and uPopup rules, and adapt them to fit the popovers. */
+
+.popover .upopup-inner {
+    width: auto !important;
+}
+
+.popover .upopup-format .upopup-inner .umenu {
+    background-color: #fff;
+}
+
+.popover .umenu .umenu-item:first-child,
+.popover .umenu .umenu-item:last-child {
+    border-radius: 0;
+    -moz-border-radius: 0;
+    -webkit-border-radius: 0;
+}
+
+.popover .upopup-format .upopup-inner .umenu {
+    border-radius: 0.45em;
+    -moz-border-radius: 0.45em;
+    -webkit-border-radius: 0.45em;
+}
+
+.popover .umenu-right .umenu-item .umenu-arrow {
+    margin: 1.2em 1.35em 0 0;
+    border-width: 0.4em !important;
+}
+
+.popover .umenu-left .umenu-item .umenu-arrow {
+    margin: 1.2em 0 0 0.5em;
+    border-width: 0.4em !important;
+}
+
+.umenu-style-bootstrap {
+    font-size: 1em;
+}
+
+.popover .upopup-format,
+.popover .upopup-format label,
+.umenu-style-bootstrap .umenu-inner,
+.umenu-style-bootstrap .umenu-inner label {
+    font-size: 8.75pt;
+}
+
+.popover label,
+.umenu-style-bootstrap label {
+    float: none !important;
+    width: auto !important;
+    color: #000;
+}
+
+.popover .umenu-selected label,
+.udrag-wrapper .umenu-selected label {
+    color: #fff;
 }
 

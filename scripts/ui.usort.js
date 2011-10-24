@@ -61,52 +61,14 @@
             var default_options = {
                 direction: 'vertical'
             };
+
             var priv = $.uSort.priv;
             var options = $.extend(default_options, _options || {});
-            var data = priv.create_instance_data(this, options);
+            var data = priv.create_instance_data(this, _options);
 
-            var items = options.items;
+            this.addClass($.uSort.key + '-track');
+            priv.bind_drag_elements(this, options);
 
-            switch (typeof(items)) {
-                case 'function':
-                    items = $(items.apply(this));
-                    break;
-                case 'string':
-                    items = this.find(items);
-                    break;
-                default:
-                case 'object':
-                    items = $(items);
-                    break;
-            }
-
-            items.uDrag('create', {
-                drop: this,
-                scroll: options.scroll,
-                container: options.container,
-                cssClasses: options.cssClasses,
-                onInsertElement: function (_drop_elt) {
-                    priv.stop_other_animations(_drop_elt, false);
-                },
-                onDrop: function () {
-                    this.css('display', 'block');
-                },
-                onPositionElement: false,
-                onHover: priv._handle_drag_hover,
-                onRecalculate: $.proxy(priv._handle_drag_recalculate, this)
-            });
-            
-            this.addClass('usort-installed');
-
-            items.each(function (i, elt) {
-                elt = $(elt);
-                elt.addClass('usort-item');
-                data.areas.track(elt, {
-                    sortable_elt: elt.parents('.usort-installed').first()
-                });
-            });
-
-            data.items = items;
             return this;
         },
 
@@ -120,14 +82,107 @@
             var priv = $.uSort.priv;
 
             this.each(function (i, sortable_elt) {
+
                 var data = priv.instance_data_for(sortable_elt);
+                var items = data.items;
 
                 if (!data.is_created) {
                     return;
                 }
 
-                data.items.uDrag('destroy');
+                for (var i = 0, len = items.length; i < len; ++i) {
+                    $(items[i]).uDrag('destroy');
+                }
+
                 $(sortable_elt).data(key, null);
+            });
+
+            return this;
+        },
+
+        /**
+         * This function allows for the dynamic addition of sortable
+         * containers and items, after a sortable element has been
+         * created. Given an existing uSort instance in {this}, add
+         * items beneath {_elt} to the uSort instance {this}, using
+         * the item location instructions given in {_options}.
+         */
+        add: function (_elt, _options) {
+            
+            var priv = $.uSort.priv;
+            var add_items = priv.parse_items_option(_elt, _options);
+
+            this.each(function () {
+
+                var data = priv.instance_data_for(this);
+                var items = data.items;
+
+                /* Copy data on to new uSort container */
+                _elt.data($.uSort.key, data);
+
+                /* Set up sorting within {_elt} */
+                priv.bind_drag_elements(_elt, _options);
+
+                /* Allow new items to drop on existing instance */
+
+                /* Fix me:
+                    We need to dynamically discover the drop element;
+                    `this` might contain elements from other parents. */
+                    
+                for (var i = 0, len = add_items.length; i < len; ++i) {
+                    $(add_items[i]).uDrag('add', { drop: this });
+                }
+
+                /* Allow existing items to drop on new instance {_elt} */
+                for (i = 0, len = items.length; i < len; ++i) {
+                    $(items[i]).uDrag('add', { drop: _elt });
+                }
+            });
+
+            return this;
+        },
+
+        /**
+         * This function allows for the dynamic deletion of sortable
+         * containers/items -- after a sortable element has been
+         * created. Given an existing uSort instance in {this}, the
+         * {remove} function detaches items beneath {_elt} from the
+         * uSort instance {this}, using the item location instructions
+         * provied in {_options}.
+         */
+        remove: function (_elt, _options) {
+
+            var priv = $.uSort.priv;
+            var remove_items = priv.parse_items_option(_elt, _options);
+
+            this.each(function () {
+
+                var data = priv.instance_data_for(this);
+                var items = data.items;
+
+                if (!items) {
+
+                    /* Fix me:
+                        This should never be the case; find the caller. */
+
+                    return;
+                }
+
+                for (var i = 0, len = remove_items.length; i < len; ++i) {
+                    var remove_elt = $(remove_items[i]);
+                    var item_data = remove_elt.data($.uSort.key + '-item');
+
+                    if (item_data) {
+                        data.areas.untrack(remove_elt);
+                        items[item_data.index] = null;
+                    }
+
+                    $(remove_items[i]).uDrag('destroy');
+                };
+
+                for (i = 0, len = items.length; i < len; ++i) {
+                    $(items[i]).uDrag('remove', { drop: _elt });
+                }
             });
 
             return this;
@@ -142,14 +197,17 @@
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
+            var items = data.items;
 
             /* Instance data may not be set yet:
                 This might be invoked from an early subtree-modified
                 event, firing before the instance data has been created.
                 Check for the presence of each member; ignore if missing. */
 
-            if (data.items) {
-                data.items.uDrag('recalculate');
+            if (items) {
+                for (var i = 0, len = items.length; i < len; ++i) {
+                    $(items[i]).uDrag('recalculate');
+                }
             }
 
             if (data.areas) {
@@ -157,6 +215,30 @@
             }
 
             return this;
+        },
+
+        /**
+         * Return true if any of the sortable items managed by the
+         * uSort element {this} are currently being dragged by the
+         * user, otherwise yield false.
+         */
+        dragging: function () {
+
+            var rv = false;
+            var priv = $.uSort.priv;
+
+            this.each(function () {
+                var data = priv.instance_data_for(this);
+                var items = data.items;
+
+                for (var i = 0, len = items.length; i < len; ++i) {
+                    if ($(items[i]).uDrag('dragging')) {
+                        rv = true;
+                    }
+                }
+            });
+
+            return rv;
         }
     };
 
@@ -185,15 +267,66 @@
         },
 
         /**
+         */
+        bind_drag_elements: function (_sortable_elt, _options) {
+    
+            var key = $.uSort.key;
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(_sortable_elt);
+
+            var sortable_elt = $(_sortable_elt);
+            var items = priv.parse_items_option(sortable_elt, _options);
+
+            for (var i = 0, len = items.length; i < len; ++i) {
+                $(items[i]).uDrag('create', {
+                    drop: sortable_elt,
+                    scroll: _options.scroll,
+                    container: _options.container,
+                    cssClasses: _options.cssClasses,
+                    onInsertElement: function (_drop_elt) {
+                        priv.stop_other_animations(_drop_elt, false);
+                        $.uI.trigger_event(
+                            'insert', key, null,
+                                sortable_elt, _options, [ _drop_elt ]
+                        );
+                    },
+                    onDrop: function (_drop_elt) {
+                        sortable_elt.css('display', 'block');
+                        $.uI.trigger_event(
+                            'drop', key, null,
+                                sortable_elt, _options, [ _drop_elt ]
+                        );
+                    },
+                    onPositionElement: false,
+                    onHover: priv._handle_drag_hover,
+                    onRecalculate: $.proxy(
+                        priv._handle_drag_recalculate, sortable_elt
+                    )
+                });
+            }
+
+            /* Compact items array:
+                This array might be sparse if we've removed drop areas
+                previously. Clean out the empty entries before calling
+                {add}, as jQuery requires that all entries be defined. */
+
+            priv.compact_sortable_items(sortable_elt);
+            priv.bind_sort_items(sortable_elt, items);
+
+            return data;
+        },
+
+        /**
          * Initialize private storage on the element _elt, setting
          * all private fields to their original default values. This
          * must be called before any sortables can be modified.
          */
         create_instance_data: function (_sortable_elt, _options) {
+
             _sortable_elt.data(
                 $.uSort.key, {
-                 /* elt: null,
-                    items: null, */
+                 /* elt: null, */
+                    items: [],
                     animations: {},
                     is_created: true,
                     animation_count: 0,
@@ -213,6 +346,54 @@
             );
 
             return _sortable_elt.data($.uSort.key);
+        },
+
+        /**
+         */
+        bind_sort_items: function (_sortable_elt, _item_elts) {
+
+            var key = $.uSort.key;
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(_sortable_elt);
+            var base_index = data.items.length;
+
+            for (var i = 0, len = _item_elts.length; i < len; ++i) {
+
+                var item_elt = $(_item_elts[i]);
+                var item_key = key + '-item';
+
+                item_elt.addClass(item_key);
+                item_elt.data(item_key, { index: i + base_index });
+                data.items.push(item_elt);
+
+                data.areas.track(item_elt, {
+                    sortable_elt: (
+                        item_elt.parents('.' + key + '-track').first()
+                    )
+                });
+            }
+        },
+
+        /**
+         */
+        parse_items_option: function (_sortable_elt, _options) {
+
+            var rv = _options.items;
+
+            switch (typeof(rv)) {
+                case 'function':
+                    rv = $(rv.apply(_sortable_elt));
+                    break;
+                case 'string':
+                    rv = _sortable_elt.find(rv);
+                    break;
+                default:
+                case 'object':
+                    rv = $(rv);
+                    break;
+            }
+
+            return rv.toArray();
         },
 
         /*
@@ -239,6 +420,7 @@
 
             var different_parent = false;
             var is_backward = ((between_elts.last())[0] === target_elt[0]);
+            var insert_before = (is_backward || target_elt.prev().length <= 0);
 
             /* Change of parent?
                 If the {src_elt} is being dropped on a different parent
@@ -252,7 +434,7 @@
 
             /* Base element insertion function */
             var insert_element_common = function () {
-                if (is_backward) {
+                if (insert_before) {
                     src_elt.insertBefore(target_elt);
                 } else {
                     src_elt.insertAfter(target_elt);
@@ -284,9 +466,8 @@
             var recalc_elts;
 
             if (different_parent) {
-                var next_elt = src_elt.next();
-                recalc_elts = [ src_elt, next_elt, target_elt ].concat(
-                    next_elt.nextAll().add(target_elt.nextAll()).toArray()
+                recalc_elts = [ src_elt[0], target_elt[0] ].concat(
+                    src_elt.nextAll().add(target_elt.nextAll()).toArray()
                 );
             } else {
                 recalc_elts = $.uI.directional_find(
@@ -316,7 +497,7 @@
                     grow to its natural extent, one will start at its
                     natural extent and shrink to an extent of zero. */
 
-                if (is_backward) {
+                if (insert_before) {
                     shrink_elt.insertBefore(src_elt);
                     grow_elt.insertBefore(target_elt);
                 } else {
@@ -335,7 +516,15 @@
                     if ((--data.animation_count) === 0) {
                         src_elt.css('display', 'block');
                     }
-                    
+
+                    /* Two types of recalculation:
+                        The first recalculates the large area(s) that
+                        contain the individual sortable elements, since they
+                        may have changed size due to the element insertion.
+                        The second call recalculates positions of individual
+                        sortable elements, managed by this uSort instance. */
+
+                    src_elt.uDrag('recalculate');
                     areas.recalculate_element_areas(recalc_elts);
 
                     invoke_callback();
@@ -425,15 +614,16 @@
             };
 
             /**
-             * Fixed-frame animation:
+             * Fixed-speed animation:
              *  This custom animation implementation uses a fixed number
-             *  of frames, rather than a wall-clock duration. When using
-             *  a wall-clock duration, jQuery needs to divide the element's
-             *  total extent by the elapsed time, leading to non-integer
-             *  extents with very large decimal portions. Placement can
-             *  vary +/- one pixel in some browsers, which causes visual
-             *  jitter during the animation. This method is integer-only,
-             *  and provides predictable placement in all browsers.
+             *  of frames per millisecond, rather than a wall-clock duration.
+             *  When using a wall-clock duration, jQuery needs to divide
+             *  the element's total extent by the elapsed time, leading
+             *  to non-integer extents with very large decimal portions.
+             *  Placement can vary +/- one pixel in some browsers, which
+             *  causes visual jitter during the animation. This method is
+             *  integer-only, and provides predictable placement behavior
+             *  in all browsers.
              */
 
             Animation.prototype = {
@@ -567,6 +757,34 @@
                 }
             }
         },
+        /**
+         * For purposes of efficiency, the uSort {remove} method only
+         * blanks out values in the {items} array, rather than filtering
+         * the array every time. This function removes free space, 
+         * ensuring that the list of sortable items can be safely used
+         * with functions that don't skip nulls. After compaction, we
+         * renumber 
+         */
+        compact_sortable_items: function (_sortable_elt) {
+
+            var index = 0;
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(_sortable_elt);
+
+            var rv = [];
+            var items = (data.items || []);
+
+            for (var i = 0, len = items.length; i < len; ++i) {
+                if (items[i]) {
+                    $(items[i]).data(
+                        $.uSort.key + '-item', { index: index++ }
+                    );
+                    rv.push(items[i]);
+                }
+            }
+
+            data.items = rv;
+        },
 
         /**
          * Event handler for uDrag-initiated {hover} events.
@@ -585,6 +803,11 @@
                 priv.insert_element(_drop_elt, src_area, target_area);
             }
 
+            $.uI.trigger_event(
+                'hover', $.uSort.key, null,
+                    this, data.options, [ _drop_elt, _offsets ]
+            );
+
             return true; /* Allow drop operation */
         },
 
@@ -595,6 +818,11 @@
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
+
+            $.uI.trigger_event(
+                'recalculate',
+                    $.uSort.key, null, this, data.options
+            );
 
             data.areas.recalculate_all();
             return true;

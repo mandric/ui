@@ -60,31 +60,29 @@
 
             var default_options = {};
 
+            var key = $.uMenu.key;
             var priv = $.uMenu.priv;
-            var css_classes = 'no-padding';
             var options = $.extend(default_options, _options || {});
-
-            if (options.cssClasses) {
-                css_classes += (' ' + options.cssClasses);
-            }
+            var css_classes = 'no-padding ' + (options.cssClasses || '');
 
             if (!options.duration) {
-                options.duration = 150; /* ms */
+                options.duration = 200; /* ms */
             }
 
             if (!options.delay) {
                 options.delay = 60; /* ms */
             }
 
-            this.each(function (i, menu_elt) {
+            this.each(function () {
 
-                menu_elt = $(menu_elt);
+                var menu_elt = $(this);
                 var data = priv.create_instance_data(menu_elt, options);
 
                 /* Item handling:
-                    Search for menu items, using one of three strategies. */
+                    Search for menu items, using one of two strategies. */
 
-                var items = (options.items || '.item');
+                var items = (options.items || '.' + key + '-item');
+
                 switch (typeof(items)) {
                     case 'function':
                         items = $(items.apply(menu_elt));
@@ -116,11 +114,11 @@
                     priv._handle_document_click.call(menu_elt);
                 };
             
-                $(document).bind('click.' + $.uMenu.key, document_click_fn);
+                $(document).bind('click.' + key, document_click_fn);
                 data.document_click_fn = document_click_fn;
 
                 menu_elt.bind(
-                    'click.' + $.uMenu.key, priv._handle_menu_click
+                    'click.' + key, priv._handle_menu_click
                 );
 
                 /* Contained classes:
@@ -132,21 +130,37 @@
                     hidden: true,
                     useMutation: false,
                     direction: data.bias,
+                    vertical: options.vertical,
+                    style: options.style,
                     cssClasses: css_classes,
                     duration: options.duration,
-                    onReorient: priv._handle_drag_reorient,
+                    onReorient: priv._handle_drag_reorient
                 });
 
                 if (!options.hidden) {
                     priv.toggle(menu_elt, true);
                 }
 
+                var style = menu_elt.uPopup('style')[0];
+
+                css_classes += (
+                    (style ? ' ' + key + '-style-' + style : '')
+                );
+
                 if (options.sortable) {
-                    menu_elt.uSort('create', {
-                        animate: true,
+
+                    var opts = {
                         items: items, scroll: 'body',
-                        cssClasses: options.cssClasses
-                    });
+                        animate: true, cssClasses: css_classes
+                    };
+
+                    if (options.parentMenu) {
+                        menu_elt.uMenu('root').uSort(
+                            'add', menu_elt, opts
+                        );
+                    } else {
+                        menu_elt.uSort('create', opts);
+                    }
                 }
             });
 
@@ -162,10 +176,6 @@
             var data = priv.instance_data_for(this);
             var submenus = data.active_submenus;
 
-            for (var k in submenus) {
-                submenus[k].uMenu('show');
-            }
-
             return priv.toggle(this, true, _callback);
         },
 
@@ -176,11 +186,20 @@
 
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(this);
-            var submenus = data.active_submenus;
 
-            for (var k in submenus) {
-                submenus[k].uMenu('hide');
+            var submenu_hide_fn = function (submenu_elt) {
+                var submenu_data = priv.instance_data_for(submenu_elt);
+                var submenus = submenu_data.active_submenus;
+
+                for (var k in submenus) {
+                    submenu_hide_fn(submenus[k]);
+                    submenus[k].uPopup('wrapper').hide();
+                }
             }
+
+            this.each(function () {
+                submenu_hide_fn(this);
+            });
 
             return priv.toggle(this, false, _callback);
         },
@@ -211,53 +230,111 @@
             var key = $.uMenu.key;
             var priv = $.uMenu.priv;
 
-            $(this).each(function (i, menu_elt) {
+            this.each(function () {
 
-                menu_elt = $(menu_elt);
+                var menu_elt = $(this);
                 var data = priv.instance_data_for(menu_elt);
+
+                var options = data.options;
                 var submenus = data.active_submenus;
 
-                if (data.is_created) {
-
-                    data.is_created = false;
-
-                    if (data.options.sortable) {
+                if (options.sortable) {
+                    if (options.parentMenu) {
+                        menu_elt.uMenu('root').uSort(
+                            'remove', menu_elt, {
+                                items: menu_elt.children('.umenu-item')
+                            }
+                        );
+                    } else {
                         menu_elt.uSort('destroy');
                     }
+                }
 
-                    for (var k in submenus) {
-                        var submenu_elt = submenus[k];
-                        var sub_data = priv.instance_data_for(submenu_elt);
+                for (var k in submenus) {
+                    var submenu_elt = submenus[k];
+                    var sub_data = priv.instance_data_for(submenu_elt);
 
-                        submenu_elt.uMenu('destroy');
+                    submenu_elt.uMenu('destroy');
+                }
+
+                menu_elt.uPopup('destroy', function () {
+
+                    priv.unbind_menu_items(menu_elt);
+
+                    if (options.parentMenu) {
+                        menu_elt.hide();
                     }
 
-                    menu_elt.uPopup('destroy', function () {
+                    menu_elt.unbind('.' + key);
+                    $(document).unbind('click', data.document_click_fn);
 
-                        data.items.each(function (j, item_elt) {
-                            item_elt = $(item_elt);
-                            priv.toggle_item(menu_elt, item_elt, false);
-                            item_elt.unbind('.' + key);
-                            item_elt.data('.' + key, null);
-                        });
-
-                        if (data.options.submenu) {
-                            menu_elt.hide();
-                        }
-
-                        menu_elt.unbind('.' + key);
-                        $(document).unbind('click', data.document_click_fn);
-
-                        if (_callback) {
-                            _callback.call(menu_elt)
-                        }
-                    });
-                }
+                    if (_callback) {
+                        _callback.call(menu_elt)
+                    }
+                });
             });
 
             return this;
-        }
+        },
 
+        /**
+         * Removes the uMenu-managed event handlers from the entire
+         * menu hierarchy containing an element in the selection {this}.
+         * Elements and objects are restored to their original state.
+         */
+        destroyAll: function (_callback) {
+
+            this.uMenu('root').uMenu('destroy', _callback);
+        },
+
+        /**
+         * If {this} is a submenu, follow the sequence of {parentMenu}
+         * options options all of the way up to the root menu, then return
+         * the root menu. This option is set automatically by uMenu
+         * when creating a sub-menu, and is usually not set directly.
+         */
+        root: function () {
+
+            var parent_elts = this.uMenu('parents');
+
+            if (parent_elts.length) {
+                return parent_elts.last();
+            }
+            
+            return this;
+        },
+
+        /**
+         * If {this} is a submenu, follow the sequence of {parentMenu}
+         * options options all of the way up to the root menu, and return
+         * every uMenu instance encountered along the way. This option is
+         * set automatically by uMenu when creating a sub-menu, and is
+         * usually not set directly.
+         */
+        parents: function () {
+
+            var priv = $.uMenu.priv;
+
+            return $(this.map(function () {
+
+                var elt = $(this);
+                var rv = [ ];
+
+                for (;;) {
+                    var data = priv.instance_data_for(elt);
+                    var parent_elt = (data.options || {}).parentMenu;
+
+                    if (!parent_elt) {
+                        break;
+                    }
+
+                    elt = parent_elt;
+                    rv = rv.concat(parent_elt);
+                }
+
+                return rv;
+            }));
+        }
     };
 
     /**
@@ -291,18 +368,19 @@
          */
         create_instance_data: function (_menu_elt, _options) {
 
+            var key = $.uMenu.key;
+
             _menu_elt.data(
-                $.uMenu.key, {
+                key, {
                  /* items: null,
                     is_visible: false,
                     selected_item_elt: null, */
-                    is_created: true,
                     options: _options,
                     active_submenus: {}
                 }
             );
 
-            return _menu_elt.data($.uMenu.key);
+            return _menu_elt.data(key);
         },
 
       /**
@@ -324,34 +402,60 @@
                 These will be shown on mouse-over, by instansiating
                 another instance of uMenu on the sub-menu element. */
 
-            $('.' + key, _item_elts).each(function (i, _elt) {
-                $(_elt).hide();
+            $('.' + key, _item_elts).each(function () {
+                $(this).hide();
             });
 
             /* Bind each item:
                 For every item selected via the {items} option,
                 bind the appropriate mouse-based event handlers. */
 
-            $(_item_elts).each(function (_i, _item_elt) {
+            $(_item_elts).each(function (_i) {
 
-                var item_elt = $(_item_elt);
-                var arrow_elt = item_elt.closestChild('.arrow');
-                var submenu_elt = item_elt.closestChild('.umenu');
+                var item_elt = $(this);
+                var submenu_elt = item_elt.closestChild('.' + key);
+                var arrow_elt = item_elt.closestChild('.' + key + '-arrow');
+
+                var click_fn = function (_ev) {
+                    return priv._handle_item_click.call(
+                        this, _ev, _menu_elt
+                    );
+                };
 
                 /* Manage arrow element:
-                    If we don't have any sub-menus, hide the arrow symbol. */
+                    If we don't have any sub-menus, hide the arrow symbol,
+                    and add a CSS class to easily locate empty subtrees. */
+
+                var s = key + '-empty';
 
                 if (submenu_elt[0]) {
                     arrow_elt.show();
+                    item_elt.removeClass(s);
                 } else {
                     arrow_elt.hide();
+                    item_elt.addClass(s);
                 }
 
-                item_elt.data($.uMenu.key, { index: _i });
+                item_elt.data(key, { index: _i });
                 item_elt.bind('mouseover.' + key, mouseover_fn);
+                item_elt.bind('click.' + key, click_fn);
             });
         },
 
+        /**
+         */
+        unbind_menu_items: function (_menu_elt) {
+
+            var key = $.uMenu.key;
+            var priv = $.uMenu.priv;
+            var data = priv.instance_data_for(_menu_elt);
+
+            data.items.each(function () {
+                var item_elt = $(this);
+                priv.toggle_item(_menu_elt, item_elt, false);
+                item_elt.unbind('.' + key);
+            });
+        },
         
         /**
          * Show or hide the hierarchical pop-up menu(s) rooted at
@@ -362,8 +466,8 @@
 
             var priv = $.uMenu.priv;
 
-            $(_menu_elt).each(function (i, menu_elt) {
-                menu_elt = $(menu_elt);
+            $(_menu_elt).each(function () {
+                var menu_elt = $(this);
 
                 var op = (_is_show ? 'show' : 'hide');
                 var data = priv.instance_data_for(menu_elt);
@@ -392,9 +496,12 @@
          */
         toggle_item: function (_menu_elt, _item_elt, _is_select) {
 
+            var key = $.uMenu.key;
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
-            var item_data = _item_elt.data($.uMenu.key);
+            
+            var item_elt = $(_item_elt);
+            var item_data = _item_elt.data(key);
 
             var default_callback = (
                 _is_select ?
@@ -421,12 +528,13 @@
                     setTimeout(select_fn, data.options.delay);
                 } else {
                     item_data.is_delaying = false;
-                    priv.toggle_item_submenu(_menu_elt, _item_elt, _is_select);
+                    priv.toggle_item_submenu(
+                        _menu_elt, _item_elt, _is_select
+                    );
                 }
-
                 $.uI.trigger_event(
                     (_is_select ? 'select' : 'unselect'),
-                        $.uMenu.key, default_callback, _menu_elt,
+                        key, default_callback, _menu_elt,
                         data.options, [ _item_elt ]
                 );
             }
@@ -440,10 +548,13 @@
          */
         toggle_item_submenu: function (_menu_elt, _item_elt, _is_select) {
 
+            var key = $.uMenu.key;
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
-            var item_data = _item_elt.data($.uMenu.key);
+            var options = data.options;
+
             var submenus = data.active_submenus;
+            var item_data = _item_elt.data(key);
 
             if (item_data) {
                 var animate_elt = submenus[item_data.index];
@@ -458,18 +569,20 @@
                 /* Selection case:
                     Show the submenu rooted at {item_elt}. */
 
-                var arrow_elt = _item_elt.closestChild('.arrow');
-                var submenu_elt = _item_elt.closestChild('.umenu');
+                var submenu_elt = _item_elt.closestChild('.' + key);
+                var arrow_elt = _item_elt.closestChild('.' + key + '-arrow');
 
                 if (submenu_elt[0] && data.items.length > 0) {
                     submenus[item_data.index] = submenu_elt.uMenu(
                         'create', arrow_elt, {
                             hidden: true,
-                            submenu: true,
+                            vertical: false,
                             direction: data.bias,
-                            items: data.options.items,
-                            sortable: data.options.sortable,
-                            cssClasses: data.options.cssClasses
+                            parentMenu: _menu_elt,
+                            style: options.style,
+                            items: options.items,
+                            sortable: options.sortable,
+                            cssClasses: options.cssClasses
                         }
                     );
                     submenu_elt.show();
@@ -489,7 +602,7 @@
                     submenu_elt.uMenu('stop');
                     submenus[item_data.index] = submenu_elt;
 
-                    priv.toggle(submenu_elt, false, function () {
+                    submenu_elt.uMenu('hide', function () {
                         submenu_elt.uMenu('destroy', function () {
                             delete submenus[item_data.index];
                         });
@@ -548,7 +661,7 @@
          */
         _default_select_item: function (_item_elt) {
 
-            $(_item_elt).addClass('selected');
+            $(_item_elt).addClass($.uMenu.key + '-selected');
         },
 
         /**
@@ -556,7 +669,7 @@
          */
         _default_unselect_item: function (_item_elt) {
 
-            $(_item_elt).removeClass('selected');
+            $(_item_elt).removeClass($.uMenu.key + '-selected');
         },
 
         /**
@@ -575,8 +688,8 @@
         },
 
         /**
-         * Event handler for uMenu's click event. This is invoked
-         * when a user selects a menu item, and stops event propogation
+         * Event handler for the outermost uMenu element, which
+         * contains the uMenu items. This stops event propogation
          * so that {_handle_window_click} is not invoked after.
          */
         _handle_menu_click: function (_ev) {
@@ -584,7 +697,8 @@
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(this);
 
-            return true;
+            _ev.stopPropagation();
+            return false;
         },
 
         /**
@@ -599,10 +713,51 @@
             var data = priv.instance_data_for(menu_elt);
 
             if (data.is_visible) {
-                menu_elt.uMenu('destroy');
+                menu_elt.uMenu('destroy', function () {
+                    menu_elt.css('display', null);
+                });
             }
 
             return false;
+        },
+
+        /**
+         * Handler for mouse click events occurring inside of
+         * a uMenu item. This forwards the click event to callbacks
+         * and/or event listeners, and then closes the menu.
+         */
+        _handle_item_click: function (_ev, _menu_elt) {
+
+            var menu_elt = $(_menu_elt);
+
+            var item_elt = $(this);
+            var priv = $.uMenu.priv;
+            var data = priv.instance_data_for(_menu_elt);
+
+            var is_finished = $.uI.trigger_event(
+                'click', $.uMenu.key, priv._handle_default_item_click,
+                    menu_elt, data.options, [ item_elt ]
+            );
+
+            if (is_finished) {
+                menu_elt.uMenu('destroyAll');
+            }
+
+            return false;
+        },
+
+        /**
+         * Default handler for mouse click events occuring inside
+         * of a uMenu item. This handler closes the menu if and
+         * only if it is a leaf node (i.e. has no submenus).
+         */
+        _handle_default_item_click: function (_item_elt) {
+
+            var priv = $.uMenu.priv;
+            var item_elt = $(_item_elt);
+            var data = priv.instance_data_for(this);
+
+            return item_elt.hasClass($.uMenu.key + '-empty');
         },
 
         /**
@@ -612,14 +767,24 @@
          */
         _handle_item_mouseover: function (_ev, _menu_elt) {
 
-            var item_elt = $(this);
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
+
+            var item_elt = $(this);
+            var menu_elt = $(_menu_elt);
+
+            if (data.options.sortable && menu_elt.uSort('dragging')) {
+                return false;
+            }
 
             var current_elt = (
                 data.selected_item_elt ?
                     data.selected_item_elt[0] : undefined
             );
+
+            if (item_elt.hasClass($.uMenu.key + '-disabled')) {
+                return false;
+            }
 
             if (item_elt[0] !== current_elt) {
                 if (data.selected_item_elt) {

@@ -34,8 +34,6 @@
             .content {
                 max-width: 22em;
             }
-            .arrow {
-            }
         </style>
     </head>
     <body>
@@ -61,11 +59,12 @@
                     );
                     elt.uPopup('create', this, {
                         style: $.uPopup.style.bootstrap,
+                        direction: { y: 0 },
                         center: !!$(this).hasClass('danger')
                     });
                     var popup = elt.uPopup('wrapper');
                     popup.click(function (ev) {
-                        $(elt).uPopup('destroy');
+                        elt.uPopup('destroy');
                     });
                 });
             });

@@ -54,7 +54,7 @@
      *  (pipe characters denote mutually-exclusive alternatives):
      *
      *    <div class="upopup">
-     *      <div class="format direction {n|s|e|w|nw|...|wnw|wsw|ene|ese}">
+     *      <div class="format {n|s|e|w|nw|...|wnw|wsw|ene|ese}">
      *        <div class="arrow first-arrow" />
      *        <div class="border">
      *          <div class="inner">
@@ -74,8 +74,8 @@
      *  asterisks indicate centered-arrow styles, which may have
      *  suboptimal placement due to the position of the arrow).
      *
-     *                              (top *
-     *                    (n | nw)   | above)    (ne)
+     *                               (above) *
+     *                    (n | nw)      |       (ne)
      *                       ^          ^        ^
      *               (wnw) < +--------------------+ > (ene)
      *                       |                    |
@@ -83,8 +83,7 @@
      *                       |                    |
      *               (wsw) < +--------------------+ > (ese)
      *                       v          v         v
-     *                    (s | sw)   (below *    (se)
-     *                                | bottom)
+     *                    (s | sw)   (below) *    (se)
      *
      *  To modify the appearance of any uPopup-managed element, use a
      *  custom stylesheet to override properties found in the default
@@ -279,6 +278,7 @@
          */
         create: function (_target_elts, _options) {
 
+            var key = $.uPopup.key;
             var priv = $.uPopup.priv;
             var options = (_options || {});
             var target_elts = $(_target_elts);
@@ -344,7 +344,7 @@
                     Add classes that affect size/shape before reposition. */
 
                 if (options.cssClasses) {
-                    wrapper_elt.closestChild('.format').addClass(
+                    wrapper_elt.closestChild('.' + key + '-format').addClass(
                         options.cssClasses
                     );
                 }
@@ -482,20 +482,14 @@
          */
         wrapper: function () {
 
-            var rv = [];
-            
-            $(this).each(function (i, popup_elt) {
+            /* Use flattening map function */
+            return $($.map(this, function (popup_elt) {
 
-                /* Convert element to instance data */
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
                 var wrapper_elt = data.wrapper_elt;
 
-                rv.push(
-                    $(data.is_created ? wrapper_elt[0] : [])
-                );
-            });
-
-            return $(rv);
+                return (data.is_created ? wrapper_elt[0] : []);
+            }));
         },
 
         /**
@@ -512,16 +506,30 @@
             
             $(this).each(function (i, popup_elt) {
 
-                /* Convert element to instance data */
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
-
-                rv.push(
-                    (data.is_created ? data.bias : {})
-                );
+                rv.push((data.is_created ? data.bias : {}));
             });
 
             return rv;
-        }
+        },
+
+        /**
+         * Returns the type of {$.uPopup.Style} object currently in
+         * use by this uPopup instance. This is useful for passing
+         * style information to components that can make use of it.
+         */
+         style: function () {
+ 
+            var rv = [];
+
+            $(this).each(function (i, popup_elt) {
+
+                var data = $.uPopup.priv.instance_data_for(popup_elt);
+                rv.push(data.options.style.name.call());
+            });
+
+            return rv;
+         }
     };
 
     /**
@@ -570,7 +578,7 @@
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
 
-            var wrap_selector = '.inner';
+            var wrap_selector = '.' + $.uPopup.key + '-inner';
             var wrap_elt = $(_options.style.create_wrapper());
 
             data.original_parent = _popup_elt.parent();
@@ -827,7 +835,7 @@
                 if (dir[k] !== undefined && dir[k] !== null) {
                     var i = (dir[k] > 0 ? 1 : 0);
                     if (avail[k][i] >= wrapper_size[k]) {
-                        data.bias[k] = i;
+                        data.forced_bias[k] = data.bias[k] = i;
                     }
                 }
             }
@@ -850,13 +858,14 @@
         reposition: function (_wrapper_elt, _wrapper_size,
                               _popup_elt, _target_elt, _bias) {
             var offsets;
+            var key = $.uPopup.key;
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
 
             var options = data.options;
             var ev = options.eventData;
-            var inner_elt = _wrapper_elt.closestChild('.format');
-            var arrow_elt = inner_elt.closestChild('.arrow');
+            var inner_elt = _wrapper_elt.closestChild('.' + key + '-format');
+            var arrow_elt = inner_elt.closestChild('.' + key + '-arrow');
 
             /* Precompute sizes:
                 These figures are used in the placement algorithm. */
@@ -872,7 +881,6 @@
                 x: (_wrapper_size.x - inner_elt.width()) / 2,
                 y: (_wrapper_size.y - inner_elt.height()) / 2
             };
-
 
             /* Delta value:
                 Distance between popup's edge and arrow's edge. */
@@ -1027,6 +1035,7 @@
                 wrapper_elt: null,
                 reposition_fn: null,
                 original_parent: null, */
+                forced_bias: {},
                 is_created: true,
                 popup_elt: _popup_elt,
                 options: (_options || {})
@@ -1076,27 +1085,22 @@
              * one axis, rather than in a corner of {_wrapper_elt}.
              */
             adjust_for_centered_pointer: function (_wrapper_elt,
-                                                   _inner_elt,
-                                                   _data, _bias) {
+                                                   _inner_elt, _data, _bias) {
                 var avail = _data.avail;
                 var offsets = _data.offsets;
                 var size = _data.size;
 
-                /* Select preferred side and axis:
-                    Together, these determine placement entirely. */
-
-                var side = {
-                    x: (avail.x[0] > avail.x[1] ? 0 : 1),
-                    y: (avail.y[0] > avail.y[1] ? 0 : 1)
-                };
+                /* Select preferred axis:
+                    Together with {_bias}, this determines placement. */
 
                 var axis = (
-                    avail.x[side.x] > avail.y[side.y] ? 'x' : 'y'
+                    _data.options.vertical ? 'y' :
+                        ((avail.x[_bias.x] > avail.y[_bias.y]) ? 'x' : 'y')
                 );
 
                 /* Adjustment factor:
-                    This transforms the popup placement, centering it
-                    along the placement axis that we did not select. */
+                    This transforms the popup placement, by centering
+                    it along the placement axis that we did not select. */
 
                 var coeff = {
                     x: (axis === 'y' ? (_bias.x ? -1 : 1) : 0),
@@ -1108,10 +1112,7 @@
                     left: offsets.x[_bias.x] + ((size.x / 2) * coeff.x)
                 });
 
-                return {
-                    axis: axis,
-                    side: side[axis]
-                };
+                return { axis: axis, bias: _bias[axis] };
             },
 
 
@@ -1123,20 +1124,32 @@
         regular: {
 
             /**
+             * Introspection function: Return this name of this class.
+             */
+            name: function () {
+                return 'regular';
+            },
+
+            /**
              * Create an element that will surround the user-provided
              * element. Content will be inserted under the element
              * that has a CSS class of {.inner}.
              */
             create_wrapper: function () {
+
+                var key = $.uPopup.key;
+
                 return $(
-                    '<div class="' + $.uPopup.key + '">' +
-                        '<div class="format direction">' +
-                            '<div class="arrow first-arrow" />' +
-                            '<div class="border">' +
-                                '<div class="inner" />' +
+                    '<div class="' + key + '">' +
+                        '<div class="' + key + '-format">' +
+                            '<div class="' + key +
+                                '-arrow ' + key + '-first-arrow" />' +
+                            '<div class="' + key + '-border">' +
+                                '<div class="' + key + '-inner" />' +
                             '</div>' +
-                            '<div class="arrow last-arrow" />' +
-                            '<div class="clear" />' +
+                            '<div class="' + key +
+                                '-arrow ' + key + '-last-arrow" />' +
+                            '<div class="' + key + '-clear" />' +
                         '</div>' +
                     '</div>'
                 );
@@ -1149,6 +1162,7 @@
              */
             apply_style: function (_elts, _data, _bias) {
 
+                var key = $.uPopup.key;
                 var coefficients, classes;
                 var helper = $.uPopup.style.helper;
 
@@ -1163,8 +1177,10 @@
 
                     classes = (
                         is_vertical ?
-                            [ [ 'se', 'ne' ], [ 's', 'n' ] ]
-                            : [ [ 'ese', 'e' ], [ 'wsw', 'w' ] ]
+                            [ [ key + '-se', key + '-ne' ],
+                                [ key + '-s', key + '-n' ] ] :
+                            [ [ key + '-ese', key + '-e' ],
+                                [ key + '-wsw', key + '-w' ] ]
                     );
 
                     coefficients = (
@@ -1173,14 +1189,17 @@
                             : { x: [ -1, 1 ], y: [ -1, 1 ] }
                     );
 
-                    _elts.inner.removeClass('se ne s n ese e wsw w');
+                    _elts.inner.removeClass(
+                        classes[0].concat(classes[1]).join(' ')
+                    );
+
                     _elts.inner.addClass(classes[_bias.x][_bias.y]);
 
                 } else {
                
                     classes = {
-                        x: [ 'right', 'left' ],
-                        y: [ 'below', 'above' ]
+                        x: [ key + '-right', key + '-left' ],
+                        y: [ key + '-below', key + '-above' ]
                     };
 
                     var pos = helper.adjust_for_centered_pointer(
@@ -1194,8 +1213,8 @@
                     );
 
                     var e = _elts.inner;
-                    e.removeClass('right left top bottom above below');
-                    e.addClass(classes[pos.axis][pos.side]);
+                    e.removeClass(classes.x.concat(classes.y).join(' '));
+                    e.addClass(classes[pos.axis][pos.bias]);
                 }
 
                 helper.adjust_for_arrow(
@@ -1212,11 +1231,12 @@
              */
             calculate_delta: function (_elts, _data, _bias)
             {
+                var key = $.uPopup.key;
                 var delta = { x: 0, y: 0 };
 
                 if (_data.options.useCorners) {
 
-                    var adjust_div = $('<div />').addClass('adjust');
+                    var adjust_div = $('<div />').addClass(key + '-adjust');
                     _elts.inner.append(adjust_div);
 
                     /* Coefficients:
@@ -1239,6 +1259,14 @@
          * library, which provides a 'popover' class.
          */
         bootstrap: {
+
+            /**
+             * Introspection function: Return this name of this class.
+             */
+            name: function () {
+                return 'bootstrap';
+            },
+
             /**
              * Create an element that will surround the user-provided
              * element. Content will be inserted under the element
@@ -1247,9 +1275,9 @@
             create_wrapper: function () {
                 return $(
                     '<div class="popover">' +
-                        '<div class="format">' +
-                            '<div class="arrow" />' +
-                                '<div class="inner" />' +
+                        '<div class="format upopup-format">' +
+                            '<div class="arrow upopup-arrow" />' +
+                                '<div class="inner upopup-inner" />' +
                             '</div>' +
                         '</div>' +
                     '</div>'
@@ -1264,6 +1292,7 @@
              */
             apply_style: function (_elts, _data, _bias) {
 
+                var key = $.uPopup.key;
                 var helper = $.uPopup.style.helper;
 
                 var css = {
@@ -1275,8 +1304,8 @@
                     _elts.wrapper, _elts.wrapper, _data, _bias
                 );
 
-                _elts.wrapper.removeClass('left right above below');
-                _elts.wrapper.addClass(css[pos.axis][pos.side]);
+                _elts.wrapper.removeClass(css.x.concat(css.y).join(' '));
+                _elts.wrapper.addClass(css[pos.axis][pos.bias]);
 
                 helper.adjust_for_arrow(
                     _elts.wrapper, _elts.arrow, _bias,

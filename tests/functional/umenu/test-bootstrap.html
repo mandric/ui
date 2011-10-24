@@ -5,6 +5,8 @@
             href="../../../styles/ui.upopup.css" />
         <link rel="stylesheet"
             href="../../../styles/ui.umenu.css" />
+        <link rel="stylesheet"
+            href="../../../styles/contrib/bootstrap.min.css" />
         <script type="text/javascript"
             src="../../../scripts/contrib/jquery-1.4.2.js">
         </script>
@@ -36,19 +38,19 @@
                 text-align: center;
                 margin: auto;
             }
-            .top {
+            input.top {
                 position: absolute;
                 top: 10%;
             }
-            .bottom {
+            input.bottom {
                 position: absolute;
                 bottom: 10%;
             }
-            .left {
+            input.left {
                 position: absolute;
                 left: 10%;
             }
-            .right {
+            input.right {
                 position: absolute;
                 right: 10%;
             }
@@ -65,14 +67,14 @@
                     <label>This is a Test Caption</label>
                 </div>
                 <div class="umenu">
-                    <div id="item-1-1" class="umenu-item">
+                    <div class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
                             This is a Submenu Test
                         </div>
                     </div>
-                    <div id="item-1-2" class="umenu-item">
+                    <div class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
@@ -88,21 +90,21 @@
                     This is Another Test
                 </div>
                 <div class="umenu">
-                    <div id="item-2-1" class="umenu-item">
+                    <div class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
                             This is a Submenu Test
                         </div>
                     </div>
-                    <div id="item-2-2" class="umenu-item umenu-disabled">
+                    <div class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
                             <label>This is a Submenu Caption</label>
                         </div>
                     </div>
-                    <div id="item-2-3" class="umenu-item">
+                    <div class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
@@ -194,7 +196,7 @@
                             This is a Submenu Test
                         </div>
                     </div>
-                    <div class="umenu-item umenu-disabled">
+                    <div class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
@@ -210,7 +212,7 @@
                     </div>
                 </div>
             </div>
-            <div class="umenu-item umenu-disabled">
+            <div class="umenu-item">
                 <div class="umenu-arrow">
                 </div>
                 <div class="umenu-inner">
@@ -303,21 +305,19 @@
                 </div>
             </div>
         </div>
-        <input class="button sortable vertical top left" type="button" value="Test" />
-        <input class="button top right" type="button" value="Test" />
-        <input class="button sortable bottom right" type="button" value="Test" />
-        <input class="button vertical bottom left" type="button" value="Test" />
+        <input class="btn top left" type="button" value="Test" />
+        <input class="btn top right" type="button" value="Test" />
+        <input class="btn bottom right" type="button" value="Test" />
+        <input class="btn bottom left" type="button" value="Test" />
     </body>
         <script type="text/javascript">
             jQuery(function () {
-                $('.button').bind('mousedown', function (ev) {
+                $('.btn').bind('mousedown', function (ev) {
                     var elt = $('#umenu');
-                    if (!elt.parents('.upopup')[0]) {
+                    if (!elt.parents('.popover')[0]) {
                         elt.uMenu('create', this, {
-                            vertical: $(this).hasClass('vertical'),
-                            sortable: $(this).hasClass('sortable'),
-                            items: '.umenu-item',
-                            cssClasses: 'white umenu-small'
+                            vertical: true, sortable: true,
+                            style: $.uPopup.style.bootstrap,
                         });
                     }
                 });

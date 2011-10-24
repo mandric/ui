@@ -99,7 +99,7 @@
             area.index = this._areas.length;
             area.container_elt = $(area.container_elt || _elt);
 
-            area.elt.data($.uDrag.key + '.area', {
+            area.elt.data($.uDrag.key + '-area', {
                 index: area.index
             });
 
@@ -107,6 +107,44 @@
             this.recalculate_one(area);
 
             return this;
+        },
+
+        /**
+         * Stop tracking the area of the page occupied by {_elt},
+         * free any references to {_elt}, and remove all associated
+         * data. This function does not compact the internal area
+         * index; if you need to do that due to memory pressure,
+         * use the {compact} method.
+         */
+        untrack: function (_elt) {
+
+            var elt = $(_elt);
+            var index = this.element_to_index(elt);
+
+            if (index !== undefined && index !== null) {
+                this._areas[index] = null;
+                elt.data($.uDrag.key + '-area', {});
+            }
+
+            return elt;
+        },
+
+        /**
+         * Remove any unused entries from the internal area index,
+         * freeing some memory, and allowing for reuse of indices.
+         */
+        compact: function () {
+
+            var rv = [];
+            var areas = this._areas;
+
+            for (var i = 0, len = areas.length; i < len; ++i) {
+                if (areas[i] !== null) {
+                    rv.push(areas[i]);
+                }
+            }
+
+            this._areas = rv;
         },
 
         /**
@@ -132,6 +170,18 @@
          * drop area elements.
          */
         recalculate_one: function (_area) {
+
+            /* Skip untracked entries:
+                The {untrack} method simply writes a null in the internal
+                {_areas} array; free space is not compacted until {compact}
+                is called. Skip items that have been voided by {untrack}. */
+
+            if (_area === null) {
+                return this;
+            }
+
+            /* Otherwise, update:
+                This an active entry, so go ahead and recalculate. */
 
             var size = { x: 0, y: 0 };
             var container_elt = _area.container_elt;
@@ -162,10 +212,7 @@
 
             for (var i = 0, len = _elts.length; i < len; ++i) {
                 var area = this.element_to_area(_elts[i]);
-                if (area) {
-                    /* Ignore elements that are unknown to us */
-                    this.recalculate_one(area);
-                }
+                this.recalculate_one(area);
             }
         },
 
@@ -175,7 +222,7 @@
          */
         element_to_index: function (_elt) {
 
-            var data = ($(_elt).data($.uDrag.key + '.area') || {});
+            var data = ($(_elt).data($.uDrag.key + '-area') || {});
             return data.index;
         },
 
@@ -203,6 +250,12 @@
 
             for (var i = 0, len = areas.length; i < len; ++i) {
 
+                var area = areas[i];
+
+                if (!area) {
+                    continue;
+                }
+
                 /* Offset formats:
                     Accept two different formats. One is a jQuery
                     event object, from which {pageX} and {pageY} are used.
@@ -211,7 +264,6 @@
                 var x = (_pt.pageX !== undefined ? _pt.pageX : _pt.x);
                 var y = (_pt.pageY !== undefined ? _pt.pageY : _pt.y);
 
-                var area = areas[i];
                 var scroll_elt = area.scroll_elt;
                 var container_elt = area.container_elt;
 
@@ -344,6 +396,14 @@
 
             this.each(function (i, elt) {
 
+                /* Allow deletion-in-place:
+                    This allows callers to use sparse arrays if needed;
+                    helping callers defer reclaiming space after delete. */
+
+                if (!elt) {
+                    return;
+                }
+
                 elt = $(elt);
                 var data = priv.create_instance_data(elt, options);
                 var handle_elts = priv.find_drag_handles(elt, options);
@@ -372,15 +432,15 @@
                     Register event handlers to detect drag/move events. */
 
                 data.document_mousemove_fn = function (_ev) {
-                    return priv._handle_document_mousemove.call(elt, _ev);
+                    priv._handle_document_mousemove.call(elt, _ev);
                 };
 
                 data.document_mouseup_fn = function (_ev) {
-                    return priv._handle_document_mouseup.call(elt, _ev);
+                    priv._handle_document_mouseup.call(elt, _ev);
                 };
 
                 data.window_resize_fn = function (_ev) {
-                    return priv._handle_window_resize.call(elt, _ev);
+                    priv._handle_window_resize.call(elt, _ev);
                 };
 
                 w.bind('resize.' + key, data.window_resize_fn);
@@ -405,6 +465,14 @@
             var d = $(document), w = $(window);
 
             this.each(function (i, elt) {
+
+                /* Handle deletion-in-place:
+                    See the {create} method for additional details. */
+
+                if (!elt) {
+                    return;
+                }
+
                 elt = $(elt);
                 var data = priv.instance_data_for(elt);
 
@@ -440,6 +508,14 @@
             var priv = $.uDrag.priv;
             
             this.each(function (i, elt) {
+
+                /* Handle deletion-in-place:
+                    See the {create} method for additional details. */
+
+                if (!elt) {
+                    return;
+                }
+
                 var data = priv.instance_data_for(elt);
 
                 if (data.areas) {
@@ -464,10 +540,67 @@
             var priv = $.uDrag.priv;
 
             this.each(function (i, elt) {
+
+                /* Handle deletion-in-place:
+                    See the {create} method for additional details. */
+
+                if (!elt) {
+                    return;
+                }
+
                 priv.bind_drop_areas(elt, _options);
             });
 
             return this;
+        },
+
+        /**
+         * Remove drop zones from a uDrag instance, after it has already
+         * been created and initialized. The {this} argument should be a
+         * selection of elements that have previously been initialized
+         * by uDrag's {create} method; the {_options} argument should
+         * contain a {drop} option, formatted in the same way as it is
+         * in the {create} method. The drop zones within {this} referred
+         * to by {drop} will be stripped of event handlers, and the
+         * underlying $.uDrag.AreaIndex will remove references to them.
+         */
+        remove: function (_options) {
+            
+            var priv = $.uDrag.priv;
+
+            this.each(function (i, elt) {
+
+                /* Handle deletion-in-place:
+                    See the {create} method for additional details. */
+
+                if (!elt) {
+                    return;
+                }
+
+                priv.unbind_drop_areas(elt, _options);
+            });
+
+            return this;
+        },
+
+        /**
+         * Return true if the draggable element(s) in {this}
+         * are currently being dragged by the user, otherwise
+         * return false.
+         */
+        dragging: function () {
+
+            var rv = false;
+            var priv = $.uDrag.priv;
+
+            this.each(function () {
+                var data = priv.instance_data_for(this);
+                if (data.is_dragging) {
+                    rv = true;
+                }
+            });
+
+            return rv;
         }
     };
 
@@ -503,8 +636,7 @@
          */
          find_drag_handles: function (_elt, _options) {
 
-            var rv = false;
-            var handle_option = _options.handle;
+            var rv, handle_option = _options.handle;
 
             switch (typeof(handle_option)) {
                 case 'string':
@@ -580,17 +712,17 @@
                 _ev, [ data.placeholder_elt ]
             );
 
+            var drop_elt = (drop_area || {}).elt;
             priv.exit_drop_area(null, data);
 
             $.uI.trigger_event(
                 'drop', $.uDrag.key, priv.default_drop_callback,
-                    _elt, data.options
+                    _elt, data.options, [ (drop_area || {}).elt ]
             );
 
-            if (drop_area && !drop_area.scroll_only && data.drop_allowed) {
+            if (drop_elt && !drop_area.scroll_only && data.drop_allowed) {
 
                 var options = data.options;
-                var drop_elt = drop_area.elt;
                 var absolute_offset = { x: _ev.pageX, y: _ev.pageY };
 
                 var offsets = {
@@ -717,7 +849,6 @@
 
                 priv.stop_autoscroll(_elt);
                 data.drop_allowed = false;
-
             }
 
             return _elt;
@@ -1014,17 +1145,84 @@
         bind_drop_areas: function (_elt, _options) {
 
             var priv = $.uDrag.priv;
-            var drop_option = (_options.drop || []);
-            var scroll_option = (_options.scroll || []);
-
-            var container_option = (_options.container || false);
-            var container_callback = null;
 
             /* Argument processing:
                 Array-ize any non-array arguments */
 
-            drop_option = $.uI.listify(drop_option);
-            scroll_option = $.uI.listify(scroll_option);
+            var drop_option = $.uI.listify(_options.drop || []);
+            var scroll_option = $.uI.listify(_options.scroll || []);
+
+            /* Generate container location function:
+                If a function wasn't already provided, generate one. */
+
+            container_callback = priv.parse_container_option(_options);
+
+            /* Bind function for drop elements:
+                This binds event handlers for a single jQuery
+                selection, containing one or more droppable elements. */
+
+            var bind_drop_elts = function (_drop_elts, _i) {
+                $(_drop_elts).each(function () {
+
+                    /* Find drop area element's container:
+                        This is used for auto-scrolling. The container is a
+                        parent that matches the supplied container selector,
+                        or the same as the drop area element otherwise. */
+
+                    var drop_elt = $(this);
+                    var container_elt = container_callback(drop_elt, _i);
+
+                    if (!container_elt || !container_elt[0]) {
+                        container_elt = drop_elt;
+                    }
+
+                    priv.track_drop_area(
+                        _elt, drop_elt, container_elt, _options
+                    );
+                });
+            };
+
+            /* Bind function for scroll elements:
+                This binds event handlers for a single jQuery selection,
+                containing undroppable elements requesting autoscrolling. */
+
+            var bind_scroll_elts = function (_scroll_elts, _i) {
+                $(_scroll_elts).each(function () {
+                    var scroll_elt = $(this);
+
+                    var container_elt = $(
+                        scroll_elt[0] === document.body ?
+                            window : scroll_elt[0]
+                    );
+                    scroll_elt = $(
+                        scroll_elt[0] === window ?
+                            document.body : scroll_elt[0]
+                    );
+                    priv.track_drop_area(
+                        _elt, scroll_elt[0], container_elt,
+                            _options, { scroll_only: true }
+                    );
+                });
+            };
+
+            /* Drop areas: array of jQuery collections */
+            for (var i = 0, len = drop_option.length; i < len; ++i) {
+                bind_drop_elts(drop_option[i], i);
+            }
+
+            /* Scroll-only areas: array of jQuery collection objects */
+            for (i = 0, len = scroll_option.length; i < len; ++i) {
+                bind_scroll_elts(scroll_option[i], i);
+            }
+
+            return _elt;
+        },
+
+        /**
+         */
+        parse_container_option: function (_options) {
+
+            var rv, container_option = (_options.container || false);
 
             /* Base implementation of container locator function:
                 This function treats container_option as a jQuery selector
@@ -1050,9 +1248,9 @@
                 callback to the option (or the appropriate array item). */
 
             if ($.isFunction(container_option)) {
-                container_callback = container_option;
+                rv = container_option;
             } else {
-                container_callback = function (_drop_elt, _i) {
+                rv = function (_drop_elt, _i) {
                     return locate_container_element(
                         _drop_elt,
                         ($.isArray(container_option) ?
@@ -1061,66 +1259,7 @@
                 };
             }
 
-            /* Bind function for drop elements:
-                This binds event handlers for a single jQuery
-                selection, containing one or more droppable elements. */
-
-            var bind_drop_elts = function (_drop_elts, _i) {
-                $(_drop_elts).each(function (j, drop_elt) {
-
-                    /* Find drop area element's container:
-                        This is used for auto-scrolling. The container is a
-                        parent that matches the supplied container selector,
-                        or the same as the drop area element otherwise. */
-
-                    drop_elt = $(drop_elt);
-                    var container_elt = container_callback(drop_elt, _i);
-
-                    if (!container_elt || !container_elt[0]) {
-                        container_elt = drop_elt;
-                    }
-
-                    priv.track_drop_area(
-                        _elt, drop_elt, container_elt, _options
-                    );
-                });
-            };
-
-            /* Bind function for scroll elements:
-                This binds event handlers for a single jQuery selection,
-                containing undroppable elements requesting autoscrolling. */
-
-            var bind_scroll_elts = function (_scroll_elts, _i) {
-                $(_scroll_elts).each(function (j, scroll_elt) {
-
-                    scroll_elt = $(scroll_elt);
-
-                    var container_elt = $(
-                        scroll_elt[0] === document.body ?
-                            window : scroll_elt[0]
-                    );
-                    scroll_elt = $(
-                        scroll_elt[0] === window ?
-                            document.body : scroll_elt[0]
-                    );
-                    priv.track_drop_area(
-                        _elt, scroll_elt, container_elt, _options,
-                            { scroll_only: true }
-                    );
-                });
-            };
-
-            /* Drop areas: array of jQuery collections */
-            for (var i = 0, len = drop_option.length; i < len; ++i) {
-                bind_drop_elts(drop_option[i], i);
-            }
-
-            /* Scroll-only areas: array of jQuery collection objects */
-            for (i = 0, len = scroll_option.length; i < len; ++i) {
-                bind_scroll_elts(scroll_option[i], i);
-            }
-
-            return _elt;
+            return rv;
         },
 
         /**
@@ -1141,6 +1280,7 @@
                     $.proxy(priv._handle_ancestor_scroll, _elt)
                 );
             }
+
             /* Cache a single drop area:
                 This fills in details about the drop area,
                 and prepares it for fast indexed retrieval. */
@@ -1149,6 +1289,22 @@
                 container_elt: _container_elt,
                 ancestor_elts: ancestor_elts
             }));
+        },
+
+        /**
+         */
+        unbind_drop_areas: function (_elt, _options) {
+
+            var key = $.uDrag.key;
+            var priv = $.uDrag.priv;
+            var data = priv.instance_data_for(_elt);
+            var drop_option = $.uI.listify(_options.drop || []);
+
+            for (var i = 0, len = drop_option.length; i < len; ++i) {
+                $(drop_option[i]).each(function () {
+                    data.areas.untrack(this);
+                });
+            }
         },
 
         /**
@@ -1269,13 +1425,13 @@
 
             var wrap_elt = $('<div />');
             var drag_elt = _elt.clone(true);
-            
+
             if (options.cssClasses) {
-                drag_elt.addClass(options.cssClasses);
+                wrap_elt.addClass(options.cssClasses);
             }
 
             wrap_elt.append(drag_elt);
-            wrap_elt.addClass('udrag-wrapper');
+            wrap_elt.addClass($.uDrag.key + '-wrapper');
             data.placeholder_elt = wrap_elt;
 
             wrap_elt.css({
@@ -1358,6 +1514,8 @@
                     }
                 }
             });
+
+            return _elt;
         },
 
 
@@ -1372,8 +1530,6 @@
             if (data.is_dragging) {
                 priv.stop_dragging($(this), _ev);
             }
-            
-            return false;
         },
 
         /**
@@ -1387,8 +1543,6 @@
             if (data.is_dragging) {
                 priv.update_position(this, _ev);
             }
-
-            return false;
         },
 
         /**
@@ -1400,7 +1554,6 @@
             var data = priv.instance_data_for(this);
 
             priv.recalculate_all(this);
-            return false;
         },
 
         /**
@@ -1443,8 +1596,6 @@
             if (data.is_dragging) {
                 priv.update_position(this);
             }
-
-            return false;
         },
 
         /**
