@@ -155,9 +155,9 @@
                     };
 
                     if (options.parentMenu) {
-                        menu_elt.uMenu('parents').each(function () {
-                            $(this).uSort('add', menu_elt, opts);
-                        });
+                        menu_elt.uMenu('root').uSort(
+                            'add', menu_elt, opts
+                        );
                     } else {
                         menu_elt.uSort('create', opts);
                     }
@@ -240,7 +240,7 @@
 
                 if (options.sortable) {
                     if (options.parentMenu) {
-                        menu_elt.uMenu('parents').uSort(
+                        menu_elt.uMenu('root').uSort(
                             'remove', menu_elt, {
                                 items: menu_elt.children('.umenu-item')
                             }
@@ -767,9 +767,15 @@
          */
         _handle_item_mouseover: function (_ev, _menu_elt) {
 
-            var item_elt = $(this);
             var priv = $.uMenu.priv;
             var data = priv.instance_data_for(_menu_elt);
+
+            var item_elt = $(this);
+            var menu_elt = $(_menu_elt);
+
+            if (data.options.sortable && menu_elt.uSort('dragging')) {
+                return false;
+            }
 
             var current_elt = (
                 data.selected_item_elt ?

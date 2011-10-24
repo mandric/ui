@@ -82,13 +82,18 @@
             var priv = $.uSort.priv;
 
             this.each(function (i, sortable_elt) {
+
                 var data = priv.instance_data_for(sortable_elt);
+                var items = data.items;
 
                 if (!data.is_created) {
                     return;
                 }
 
-                data.items.uDrag('destroy');
+                for (var i = 0, len = items.length; i < len; ++i) {
+                    $(items[i]).uDrag('destroy');
+                }
+
                 $(sortable_elt).data(key, null);
             });
 
@@ -105,10 +110,12 @@
         add: function (_elt, _options) {
             
             var priv = $.uSort.priv;
+            var add_items = priv.parse_items_option(_elt, _options);
 
             this.each(function () {
+
                 var data = priv.instance_data_for(this);
-                var items = priv.parse_items_option(_elt, _options);
+                var items = data.items;
 
                 /* Copy data on to new uSort container */
                 _elt.data($.uSort.key, data);
@@ -117,10 +124,19 @@
                 priv.bind_drag_elements(_elt, _options);
 
                 /* Allow new items to drop on existing instance */
-                items.uDrag('add', $.extend(_options, { drop: this }));
+
+                /* Fix me:
+                    We need to dynamically discover the drop element;
+                    `this` might contain elements from other parents. */
+                    
+                for (var i = 0, len = add_items.length; i < len; ++i) {
+                    $(add_items[i]).uDrag('add', { drop: this });
+                }
 
                 /* Allow existing items to drop on new instance {_elt} */
-                data.items.uDrag('add', $.extend(_options, { drop: _elt }));
+                for (i = 0, len = items.length; i < len; ++i) {
+                    $(items[i]).uDrag('add', { drop: _elt });
+                }
             });
 
             return this;
@@ -137,24 +153,36 @@
         remove: function (_elt, _options) {
 
             var priv = $.uSort.priv;
+            var remove_items = priv.parse_items_option(_elt, _options);
 
             this.each(function () {
+
                 var data = priv.instance_data_for(this);
-                var items = priv.parse_items_option(_elt, _options);
+                var items = data.items;
 
-                items.each(function () {
-                    var item_data = $(this).data($.uSort.key + '-item');
+                if (!items) {
+
+                    /* Fix me:
+                        This should never be the case; find the caller. */
+
+                    return;
+                }
+
+                for (var i = 0, len = remove_items.length; i < len; ++i) {
+                    var remove_elt = $(remove_items[i]);
+                    var item_data = remove_elt.data($.uSort.key + '-item');
+
                     if (item_data) {
-                        data.areas.untrack(this);
-                        data.items[item_data.index] = null;
+                        data.areas.untrack(remove_elt);
+                        items[item_data.index] = null;
                     }
-                });
 
-                data.items.uDrag(
-                    'remove', $.extend(_options, { drop: _elt })
-                );
+                    $(remove_items[i]).uDrag('destroy');
+                };
 
-                items.uDrag('destroy');
+                for (i = 0, len = items.length; i < len; ++i) {
+                    $(items[i]).uDrag('remove', { drop: _elt });
+                }
             });
 
             return this;
@@ -169,14 +197,17 @@
 
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(this);
+            var items = data.items;
 
             /* Instance data may not be set yet:
                 This might be invoked from an early subtree-modified
                 event, firing before the instance data has been created.
                 Check for the presence of each member; ignore if missing. */
 
-            if (data.items) {
-                data.items.uDrag('recalculate');
+            if (items) {
+                for (var i = 0, len = items.length; i < len; ++i) {
+                    $(items[i]).uDrag('recalculate');
+                }
             }
 
             if (data.areas) {
@@ -184,6 +215,30 @@
             }
 
             return this;
+        },
+
+        /**
+         * Return true if any of the sortable items managed by the
+         * uSort element {this} are currently being dragged by the
+         * user, otherwise yield false.
+         */
+        dragging: function () {
+
+            var rv = false;
+            var priv = $.uSort.priv;
+
+            this.each(function () {
+                var data = priv.instance_data_for(this);
+                var items = data.items;
+
+                for (var i = 0, len = items.length; i < len; ++i) {
+                    if ($(items[i]).uDrag('dragging')) {
+                        rv = true;
+                    }
+                }
+            });
+
+            return rv;
         }
     };
 
@@ -222,40 +277,41 @@
             var sortable_elt = $(_sortable_elt);
             var items = priv.parse_items_option(sortable_elt, _options);
 
-            items.uDrag('create', {
-                drop: sortable_elt,
-                scroll: _options.scroll,
-                container: _options.container,
-                cssClasses: _options.cssClasses,
-                onInsertElement: function (_drop_elt) {
-                    priv.stop_other_animations(_drop_elt, false);
-                    $.uI.trigger_event(
-                        'insert', key, null,
-                            sortable_elt, _options, [ _drop_elt ]
-                    );
-                },
-                onDrop: function (_drop_elt) {
-                    sortable_elt.css('display', 'block');
-                    $.uI.trigger_event(
-                        'drop', key, null,
-                            sortable_elt, _options, [ _drop_elt ]
-                    );
-                },
-                onPositionElement: false,
-                onHover: priv._handle_drag_hover,
-                onRecalculate: $.proxy(
-                    priv._handle_drag_recalculate, sortable_elt
-                )
-            });
+            for (var i = 0, len = items.length; i < len; ++i) {
+                $(items[i]).uDrag('create', {
+                    drop: sortable_elt,
+                    scroll: _options.scroll,
+                    container: _options.container,
+                    cssClasses: _options.cssClasses,
+                    onInsertElement: function (_drop_elt) {
+                        priv.stop_other_animations(_drop_elt, false);
+                        $.uI.trigger_event(
+                            'insert', key, null,
+                                sortable_elt, _options, [ _drop_elt ]
+                        );
+                    },
+                    onDrop: function (_drop_elt) {
+                        sortable_elt.css('display', 'block');
+                        $.uI.trigger_event(
+                            'drop', key, null,
+                                sortable_elt, _options, [ _drop_elt ]
+                        );
+                    },
+                    onPositionElement: false,
+                    onHover: priv._handle_drag_hover,
+                    onRecalculate: $.proxy(
+                        priv._handle_drag_recalculate, sortable_elt
+                    )
+                });
+            }
 
             /* Compact items array:
                 This array might be sparse if we've removed drop areas
                 previously. Clean out the empty entries before calling
                 {add}, as jQuery requires that all entries be defined. */
 
-            data.items = priv.compact_sortable_items(data.items).add(
-                priv.bind_sort_items(sortable_elt, items)
-            );
+            priv.compact_sortable_items(sortable_elt);
+            priv.bind_sort_items(sortable_elt, items);
 
             return data;
         },
@@ -269,8 +325,8 @@
 
             _sortable_elt.data(
                 $.uSort.key, {
-                 /* elt: null,
-                    items: null, */
+                 /* elt: null, */
+                    items: [],
                     animations: {},
                     is_created: true,
                     animation_count: 0,
@@ -299,25 +355,23 @@
             var key = $.uSort.key;
             var priv = $.uSort.priv;
             var data = priv.instance_data_for(_sortable_elt);
+            var base_index = data.items.length;
 
-            var item_elts = $(_item_elts);
-            var base_index = (data.items || []).length;
+            for (var i = 0, len = _item_elts.length; i < len; ++i) {
 
-            item_elts.each(function (_i) {
-                var item_elt = $(this);
+                var item_elt = $(_item_elts[i]);
                 var item_key = key + '-item';
 
                 item_elt.addClass(item_key);
-                item_elt.data(item_key, { index: _i + base_index });
+                item_elt.data(item_key, { index: i + base_index });
+                data.items.push(item_elt);
 
                 data.areas.track(item_elt, {
                     sortable_elt: (
                         item_elt.parents('.' + key + '-track').first()
                     )
                 });
-            });
-
-            return item_elts;
+            }
         },
 
         /**
@@ -339,7 +393,7 @@
                     break;
             }
 
-            return rv;
+            return rv.toArray();
         },
 
         /*
@@ -412,7 +466,7 @@
 
             if (different_parent) {
                 var next_elt = src_elt.next();
-                recalc_elts = [ src_elt, next_elt, target_elt ].concat(
+                recalc_elts = [ src_elt[0], next_elt[0], target_elt[0] ].concat(
                     next_elt.nextAll().add(target_elt.nextAll()).toArray()
                 );
             } else {
@@ -552,15 +606,16 @@
             };
 
             /**
-             * Fixed-frame animation:
+             * Fixed-speed animation:
              *  This custom animation implementation uses a fixed number
-             *  of frames, rather than a wall-clock duration. When using
-             *  a wall-clock duration, jQuery needs to divide the element's
-             *  total extent by the elapsed time, leading to non-integer
-             *  extents with very large decimal portions. Placement can
-             *  vary +/- one pixel in some browsers, which causes visual
-             *  jitter during the animation. This method is integer-only,
-             *  and provides predictable placement in all browsers.
+             *  of frames per millisecond, rather than a wall-clock duration.
+             *  When using a wall-clock duration, jQuery needs to divide
+             *  the element's total extent by the elapsed time, leading
+             *  to non-integer extents with very large decimal portions.
+             *  Placement can vary +/- one pixel in some browsers, which
+             *  causes visual jitter during the animation. This method is
+             *  integer-only, and provides predictable placement behavior
+             *  in all browsers.
              */
 
             Animation.prototype = {
@@ -696,29 +751,31 @@
         },
         /**
          * For purposes of efficiency, the uSort {remove} method only
-         * blanksout  values in the {items} array, rather than filtering
+         * blanks out values in the {items} array, rather than filtering
          * the array every time. This function removes free space, 
          * ensuring that the list of sortable items can be safely used
          * with functions that don't skip nulls. After compaction, we
          * renumber 
          */
-        compact_sortable_items: function (_item_elts) {
+        compact_sortable_items: function (_sortable_elt) {
 
             var index = 0;
+            var priv = $.uSort.priv;
+            var data = priv.instance_data_for(_sortable_elt);
 
-            return (_item_elts || $([])).filter(function (_i, _elt) {
+            var rv = [];
+            var items = (data.items || []);
 
-                if (_elt !== null && _elt !== undefined) {
-                    /* Renumber */
-                    var item_data = $(this).data($.uSort.key + '-item');
-                    item_data.index = index++;
-                    return true;
-
-                } else {
-                    /* Filter */
-                    return false;
+            for (var i = 0, len = items.length; i < len; ++i) {
+                if (items[i]) {
+                    $(items[i]).data(
+                        $.uSort.key + '-item', { index: index++ }
+                    );
+                    rv.push(items[i]);
                 }
-            });
+            }
+
+            data.items = rv;
         },
 
         /**

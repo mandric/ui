@@ -584,6 +584,26 @@
             });
 
             return this;
+        },
+
+        /**
+         * Return true if the draggable element(s) in {this}
+         * are currently being dragged by the user, otherwise
+         * return false.
+         */
+        dragging: function () {
+
+            var rv = false;
+            var priv = $.uDrag.priv;
+
+            this.each(function () {
+                var data = priv.instance_data_for(this);
+                if (data.is_dragging) {
+                    rv = true;
+                }
+            });
+
+            return rv;
         }
     };
 
@@ -1263,6 +1283,7 @@
                     $.proxy(priv._handle_ancestor_scroll, _elt)
                 );
             }
+
             /* Cache a single drop area:
                 This fills in details about the drop area,
                 and prepares it for fast indexed retrieval. */
