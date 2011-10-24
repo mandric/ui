@@ -65,14 +65,14 @@
                     <label>This is a Test Caption</label>
                 </div>
                 <div class="umenu">
-                    <div class="umenu-item">
+                    <div id="item-1-1" class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
                             This is a Submenu Test
                         </div>
                     </div>
-                    <div class="umenu-item">
+                    <div id="item-1-2" class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
@@ -88,21 +88,21 @@
                     This is Another Test
                 </div>
                 <div class="umenu">
-                    <div class="umenu-item">
+                    <div id="item-2-1" class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
                             This is a Submenu Test
                         </div>
                     </div>
-                    <div class="umenu-item umenu-disabled">
+                    <div id="item-2-2" class="umenu-item umenu-disabled">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
                             <label>This is a Submenu Caption</label>
                         </div>
                     </div>
-                    <div class="umenu-item">
+                    <div id="item-2-3" class="umenu-item">
                         <div class="umenu-arrow">
                         </div>
                         <div class="umenu-inner">
@@ -303,10 +303,10 @@
                 </div>
             </div>
         </div>
-        <input class="button vertical top left" type="button" value="Test" />
+        <input class="button sortable vertical top left" type="button" value="Test" />
         <input class="button top right" type="button" value="Test" />
-        <input class="button vertical bottom right" type="button" value="Test" />
-        <input class="button bottom left" type="button" value="Test" />
+        <input class="button sortable bottom right" type="button" value="Test" />
+        <input class="button vertical bottom left" type="button" value="Test" />
     </body>
         <script type="text/javascript">
             jQuery(function () {
@@ -315,7 +315,8 @@
                     if (!elt.parents('.upopup')[0]) {
                         elt.uMenu('create', this, {
                             vertical: $(this).hasClass('vertical'),
-                            sortable: true, items: '.umenu-item',
+                            sortable: $(this).hasClass('sortable'),
+                            items: '.umenu-item',
                             cssClasses: 'white umenu-small'
                         });
                     }

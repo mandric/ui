@@ -62,12 +62,8 @@
 
             var key = $.uMenu.key;
             var priv = $.uMenu.priv;
-            var css_classes = 'no-padding';
             var options = $.extend(default_options, _options || {});
-
-            if (options.cssClasses) {
-                css_classes += (' ' + options.cssClasses);
-            }
+            var css_classes = 'no-padding ' + (options.cssClasses || '');
 
             if (!options.duration) {
                 options.duration = 200; /* ms */
@@ -152,11 +148,19 @@
                 );
 
                 if (options.sortable) {
-                    menu_elt.uSort('create', {
-                        animate: true,
+
+                    var opts = {
                         items: items, scroll: 'body',
-                        cssClasses: css_classes
-                    });
+                        animate: true, cssClasses: css_classes
+                    };
+
+                    if (options.parentMenu) {
+                        menu_elt.uMenu('parents').each(function () {
+                            $(this).uSort('add', menu_elt, opts);
+                        });
+                    } else {
+                        menu_elt.uSort('create', opts);
+                    }
                 }
             });
 
@@ -193,7 +197,7 @@
                 }
             }
 
-            $(this).each(function () {
+            this.each(function () {
                 submenu_hide_fn(this);
             });
 
@@ -226,14 +230,24 @@
             var key = $.uMenu.key;
             var priv = $.uMenu.priv;
 
-            $(this).each(function () {
+            this.each(function () {
 
                 var menu_elt = $(this);
                 var data = priv.instance_data_for(menu_elt);
+
+                var options = data.options;
                 var submenus = data.active_submenus;
 
-                if (data.options.sortable) {
-                    menu_elt.uSort('destroy');
+                if (options.sortable) {
+                    if (options.parentMenu) {
+                        menu_elt.uMenu('parents').uSort(
+                            'remove', menu_elt, {
+                                items: menu_elt.children('.umenu-item')
+                            }
+                        );
+                    } else {
+                        menu_elt.uSort('destroy');
+                    }
                 }
 
                 for (var k in submenus) {
@@ -247,7 +261,7 @@
 
                     priv.unbind_menu_items(menu_elt);
 
-                    if (data.options.parentMenu) {
+                    if (options.parentMenu) {
                         menu_elt.hide();
                     }
 
@@ -270,29 +284,56 @@
          */
         destroyAll: function (_callback) {
 
+            this.uMenu('root').uMenu('destroy', _callback);
+        },
+
+        /**
+         * If {this} is a submenu, follow the sequence of {parentMenu}
+         * options options all of the way up to the root menu, then return
+         * the root menu. This option is set automatically by uMenu
+         * when creating a sub-menu, and is usually not set directly.
+         */
+        root: function () {
+
+            var parent_elts = this.uMenu('parents');
+
+            if (parent_elts.length) {
+                return parent_elts.last();
+            }
+            
+            return this;
+        },
+
+        /**
+         * If {this} is a submenu, follow the sequence of {parentMenu}
+         * options options all of the way up to the root menu, and return
+         * every uMenu instance encountered along the way. This option is
+         * set automatically by uMenu when creating a sub-menu, and is
+         * usually not set directly.
+         */
+        parents: function () {
+
             var priv = $.uMenu.priv;
 
-            $(this).each(function (_i, _elt) {
+            return $(this.map(function () {
 
-                _elt = $(_elt);
-
-                /* Find menu root:
-                    From there, we can recursively destroy the menu. */
+                var elt = $(this);
+                var rv = [ ];
 
                 for (;;) {
-
-                    var data = priv.instance_data_for(_elt);
-                    var parent_elt = data.options.parentMenu;
+                    var data = priv.instance_data_for(elt);
+                    var parent_elt = (data.options || {}).parentMenu;
 
                     if (!parent_elt) {
                         break;
                     }
 
-                    _elt = $(parent_elt);
+                    elt = parent_elt;
+                    rv = rv.concat(parent_elt);
                 }
 
-                _elt.uMenu('destroy');
-            });
+                return rv;
+            }));
         }
     };
 

@@ -99,7 +99,7 @@
             area.index = this._areas.length;
             area.container_elt = $(area.container_elt || _elt);
 
-            area.elt.data($.uDrag.key + '.area', {
+            area.elt.data($.uDrag.key + '-area', {
                 index: area.index
             });
 
@@ -121,9 +121,9 @@
             var elt = $(_elt);
             var index = this.element_to_index(elt);
 
-            if (index !== undefined) {
+            if (index !== undefined && index !== null) {
                 this._areas[index] = null;
-                elt.data($.uDrag.key + '.area', {});
+                elt.data($.uDrag.key + '-area', {});
             }
 
             return elt;
@@ -225,7 +225,7 @@
          */
         element_to_index: function (_elt) {
 
-            var data = ($(_elt).data($.uDrag.key + '.area') || {});
+            var data = ($(_elt).data($.uDrag.key + '-area') || {});
             return data.index;
         },
 

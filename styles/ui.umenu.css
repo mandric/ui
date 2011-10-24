@@ -23,6 +23,18 @@
     border-bottom: solid 1px #ccc;
 }
 
+.umenu .umenu-empty .umenu-inner,
+.umenu .umenu-empty .umenu-inner label {
+    cursor: pointer;
+}
+
+.umenu-item .umenu-inner,
+.umenu-item .umenu-inner label,
+.umenu .umenu-disabled .umenu-inner,
+.umenu .umenu-disabled .umenu-inner label {
+    cursor: default;
+}
+
 .umenu-left .umenu-item .umenu-inner,
 .upopup .inner .umenu-left .umenu-item .umenu-inner {
     padding: 0.75em 0.75em 0.75em 1.5em;

@@ -105,20 +105,23 @@
         add: function (_elt, _options) {
             
             var priv = $.uSort.priv;
-            var data = priv.instance_data_for(this);
-            var items = priv.parse_items_option(_elt, _options);
 
-            /* Copy data on to new uSort container */
-            _elt.data($.uSort.key, data);
+            this.each(function () {
+                var data = priv.instance_data_for(this);
+                var items = priv.parse_items_option(_elt, _options);
 
-            /* Set up sorting within {_elt} */
-            priv.bind_drag_elements(_elt, _options);
+                /* Copy data on to new uSort container */
+                _elt.data($.uSort.key, data);
 
-            /* Allow new items to drop on existing instance */
-            items.uDrag('add', $.extend(_options, { drop: this }));
+                /* Set up sorting within {_elt} */
+                priv.bind_drag_elements(_elt, _options);
 
-            /* Allow existing items to drop on new instance {_elt} */
-            data.items.uDrag('add', $.extend(_options, { drop: _elt }));
+                /* Allow new items to drop on existing instance */
+                items.uDrag('add', $.extend(_options, { drop: this }));
+
+                /* Allow existing items to drop on new instance {_elt} */
+                data.items.uDrag('add', $.extend(_options, { drop: _elt }));
+            });
 
             return this;
         },
@@ -134,19 +137,25 @@
         remove: function (_elt, _options) {
 
             var priv = $.uSort.priv;
-            var data = priv.instance_data_for(this);
-            var items = priv.parse_items_option(_elt, _options);
 
-            items.each(function () {
-                var item_data = $(this).data($.uSort.key + '-item');
-                if (item_data) {
-                    data.areas.untrack(data.items[item_data.index]);
-                    data.items[item_data.index] = null;
-                }
+            this.each(function () {
+                var data = priv.instance_data_for(this);
+                var items = priv.parse_items_option(_elt, _options);
+
+                items.each(function () {
+                    var item_data = $(this).data($.uSort.key + '-item');
+                    if (item_data) {
+                        data.areas.untrack(this);
+                        data.items[item_data.index] = null;
+                    }
+                });
+
+                data.items.uDrag(
+                    'remove', $.extend(_options, { drop: _elt })
+                );
+
+                items.uDrag('destroy');
             });
-
-            data.items.uDrag('remove', $.extend(_options, { drop: _elt }));
-            items.uDrag('destroy');
 
             return this;
         },
@@ -244,11 +253,7 @@
                 previously. Clean out the empty entries before calling
                 {add}, as jQuery requires that all entries be defined. */
 
-            data.items = (data.items || $([])).filter(
-                function (i, elt) { return !elt; }
-            );
-
-            data.items = data.items.add(
+            data.items = priv.compact_sortable_items(data.items).add(
                 priv.bind_sort_items(sortable_elt, items)
             );
 
@@ -688,6 +693,32 @@
                     }
                 }
             }
+        },
+        /**
+         * For purposes of efficiency, the uSort {remove} method only
+         * blanksout  values in the {items} array, rather than filtering
+         * the array every time. This function removes free space, 
+         * ensuring that the list of sortable items can be safely used
+         * with functions that don't skip nulls. After compaction, we
+         * renumber 
+         */
+        compact_sortable_items: function (_item_elts) {
+
+            var index = 0;
+
+            return (_item_elts || $([])).filter(function (_i, _elt) {
+
+                if (_elt !== null && _elt !== undefined) {
+                    /* Renumber */
+                    var item_data = $(this).data($.uSort.key + '-item');
+                    item_data.index = index++;
+                    return true;
+
+                } else {
+                    /* Filter */
+                    return false;
+                }
+            });
         },
 
         /**
