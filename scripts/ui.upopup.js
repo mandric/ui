@@ -179,6 +179,14 @@
      *                  along one axis, on the top/bottom/left/right of the
      *                  popup wrapper.
      *
+     *              invertPlacement:
+     *                  A boolean value, defaults to false. When set, this
+     *                  option causes uPopup to seek out the minimal space
+     *                  along each positioning axis in use, rather than
+     *                  the maximal amount of space. This option is useful
+     *                  when your popup is over something that shouldn't
+     *                  be obscured.
+     *
      *              vertical:
      *                  A boolean value. If true, place each popup dialog's
      *                  pointer (i.e. triangular arrow) on the top or bottom
@@ -296,6 +304,7 @@
                 direction: {},
                 useCorners: true,
                 useMutation: true,
+                invertPlacement: false,
                 duration: 250 /* ms */
             }
 
@@ -846,6 +855,15 @@
                 x: $.uI.index_of_max(avail.x),
                 y: $.uI.index_of_max(avail.y)
             };
+
+            /* Handle strategy inversion:
+                If requested, flip each axis' bias value, so as to
+                cause uPopup to seek the minimum space along each axis. */
+
+            if (options.invertPlacement) {
+                data.bias.x = (data.bias.x ? 0 : 1);
+                data.bias.y = (data.bias.y ? 0 : 1);
+            }
 
             /* Direction preference:
                 If the caller noted a preferred direction along either

@@ -64,7 +64,9 @@
                         popup.uPopup('recalculate', { eventData: ev });
                     } else {
                         popup = $('.popup').uPopup('create', this, {
-                            eventData: ev, useCorners: false,
+                            eventData: ev,
+                            useCorners: false,
+                            invertPlacement: true,
                             cssClasses: $(['square', 'white', 'small']).map(
                                 /* This is obnoxious; please fix */
                                 function (i, s) { return 'upopup-' + s; }
