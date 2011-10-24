@@ -294,7 +294,7 @@
 
             var default_options = {
                 direction: {},
-                useCorners: false,
+                useCorners: true,
                 useMutation: true,
                 duration: 250 /* ms */
             }
