@@ -39,10 +39,11 @@
     </head>
     <body>
         <div class="test-instructions">
-            Hover over the shaded rectangle below. A popup window should
-            appear, and follow your mouse pointer as long as you remain within
-            the shaded area.  When your mouse pointer leaves the shaded area,
-            ensure that the popup disappears.
+            Hover over the shaded figure below. A popup window should appear,
+            and should follow your mouse pointer as long as you remain within
+            the shaded area.  When you click the mouse anywhere in the document,
+            the popup should disappear.
+
         </div>
         <div class="popup">
             This is a test of a uPopup instance, being driven by a mouse-over
@@ -58,7 +59,7 @@
                         });
                     }
                 });
-                $('.hover').bind('mousemove', function (ev) {
+                $('svg tspan').bind('mousemove', function (ev) {
                     if (popup) {
                         popup.uPopup('recalculate', { eventData: ev });
                     } else {
@@ -66,15 +67,14 @@
                             eventData: ev,
                             useCorners: false,
                             invertPlacement: true,
-                            cssClasses: 'upopup-square upopup-white upopup-small'
+                            cssClasses: 'upopup-square upopup-small'
                         });
                     }
                 });
             });
         </script>
         <div class="center">
-            <div class="hover">
-            </div>
+        <svg height="300" version="1.1" width="220" xmlns="http://www.w3.org/2000/svg" style="overflow-x: hidden; overflow-y: hidden; position: relative; "><defs></defs><path style="" fill="#ca410b" stroke="#f2f2f2" d="M110,150L210,150A100,100,0,0,0,102.39949136676039,50.2892570054959Z" stroke-width="2"></path><text style="text-anchor: middle; font: normal normal normal 10px/normal Arial; opacity: 1; font-size: 18px; font-weight: bold; " x="147.87502488121027" y="109.12805562045149" text-anchor="middle" font="10px &quot;Arial&quot;" stroke="none" fill="#ffffff" opacity="1" font-size="18px" font-weight="bold"><tspan dy="6.628055620451491">26%</tspan></text><path style="" fill="#cbcbcb" stroke="#f2f2f2" d="M110,150L102.39949136676039,50.2892570054959A100,100,0,0,0,92.63518223330696,248.4807753012208Z" stroke-width="2"></path><text style="text-anchor: middle; font: normal normal normal 10px/normal Arial; opacity: 1; font-size: 18px; font-weight: bold; " x="56.80445815468784" y="147.37921319960748" text-anchor="middle" font="10px &quot;Arial&quot;" stroke="none" fill="#ffffff" opacity="1" font-size="18px" font-weight="bold"><tspan dy="5.879213199607477">46%</tspan></text><path style="" fill="#8eb51c" stroke="#f2f2f2" d="M110,150L92.63518223330696,248.4807753012208A100,100,0,0,0,210,150.00000000000003Z" stroke-width="2"></path><text style="text-anchor: middle; font: normal normal normal 10px/normal Arial; opacity: 1; font-size: 18px; font-weight: bold; " x="145.61043357663428" y="192.43886214879137" text-anchor="middle" font="10px &quot;Arial&quot;" stroke="none" fill="#ffffff" opacity="1" font-size="18px" font-weight="bold"><tspan dy="5.938862148791372">28%</tspan></text></svg>
         </div>
     </body>
 </html>
