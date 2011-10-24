@@ -53,8 +53,10 @@
             jQuery(function ($) {
                 $('body').bind('click', function (ev) {
                     if (popup) {
-                        popup.uPopup('destroy');
-                        popup = null;
+                        popup.uPopup('destroy', function () {
+                            console.log('here');
+                            popup = null;
+                        });
                     }
                 });
                 $('.hover').bind('mousemove', function (ev) {
