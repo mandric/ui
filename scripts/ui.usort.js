@@ -420,6 +420,7 @@
 
             var different_parent = false;
             var is_backward = ((between_elts.last())[0] === target_elt[0]);
+            var insert_before = (is_backward || target_elt.prev().length <= 0);
 
             /* Change of parent?
                 If the {src_elt} is being dropped on a different parent
@@ -433,7 +434,7 @@
 
             /* Base element insertion function */
             var insert_element_common = function () {
-                if (is_backward) {
+                if (insert_before) {
                     src_elt.insertBefore(target_elt);
                 } else {
                     src_elt.insertAfter(target_elt);
@@ -496,7 +497,7 @@
                     grow to its natural extent, one will start at its
                     natural extent and shrink to an extent of zero. */
 
-                if (is_backward) {
+                if (insert_before) {
                     shrink_elt.insertBefore(src_elt);
                     grow_elt.insertBefore(target_elt);
                 } else {
