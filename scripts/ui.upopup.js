@@ -234,9 +234,10 @@
      *
      *              onReorient:
      *                  A callback function. Like onReposition, but only
-     *                  fires if caused by a reorientation of the popup.
+     *                  fires if caused by a reorientation of the popup
+     *                  (i.e. a change in the popup's direction).
      *
-     *  elements():
+     *  wrapper():
      *      Returns the set of wrapper elements being maintained by the
      *      uPopup library. This function returns an array whose size is
      *      equal to the number of elements supplied to {create} in the
@@ -291,23 +292,17 @@
                     options.style : $.uPopup.style.regular
             );
 
-            if (options.useCorners !== false) {
-                options.useCorners = true;
-            }
-            
-            if (options.useMutation !== false) {
-                options.useMutation = true;
-            }
-            
-            if (!options.direction) {
-                options.direction = {};
+            var default_options = {
+                direction: {},
+                useCorners: false,
+                useMutation: true,
+                duration: 250 /* ms */
             }
 
-            if (!options.duration) {
-                options.duration = 250;
-            }
+            /* Apply defaults */
+            options = $.extend(default_options, options);
 
-            $(this).each(function (i, popup_elt) {
+            this.each(function (i, popup_elt) {
 
                 /* Target element:
                     Use the final element repeatedly if there
@@ -407,7 +402,7 @@
 
             var priv = $.uPopup.priv;
 
-            $(this).each(function (i, popup_elt) {
+            this.each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
 
                 if (data.is_created) {
@@ -428,7 +423,7 @@
 
             var priv = $.uPopup.priv;
 
-            $(this).each(function (i, popup_elt) {
+            this.each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
 
                 if (data.is_created) {
@@ -466,14 +461,13 @@
                 }
             };
 
-            $(this).each(function (i, popup_elt) {
+            this.each(function (i, popup_elt) {
                 var data = priv.instance_data_for(popup_elt);
 
                 if (data.is_created) {
                     priv.toggle(popup_elt, false, teardown_fn);
                 }
             });
-
         },
 
         /**
@@ -504,7 +498,7 @@
 
             var rv = [];
             
-            $(this).each(function (i, popup_elt) {
+            this.each(function (i, popup_elt) {
 
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
                 rv.push((data.is_created ? data.bias : {}));
@@ -522,14 +516,48 @@
  
             var rv = [];
 
-            $(this).each(function (i, popup_elt) {
+            this.each(function (i, popup_elt) {
 
                 var data = $.uPopup.priv.instance_data_for(popup_elt);
                 rv.push(data.options.style.name.call());
             });
 
             return rv;
-         }
+         },
+
+        /**
+         * This function causes uPopup to recalculate positioning
+         * information for all elements in {this}, updating the stored
+         * options for each if {_options} is a non-empty object. To
+         * move the popup to a new position relative to the target
+         * element, set the {eventData} option to a jQuery event object,
+         * or other structure that contains {x}/{y} or {pageX}/{pageY}.
+         */
+        recalculate: function (_options) {
+
+            var priv = $.uPopup.priv;
+
+            this.each(function (i, popup_elt) {
+
+                var data = $.uPopup.priv.instance_data_for(popup_elt);
+
+                /* Merge in new options, if provided */
+                data.options = $.extend(data.options, (_options || {}));
+
+                /* Change of position?
+                    If so, discard cached position data, so as to force
+                    it to be recalculated inside of {priv.reposition}. */
+
+                if (_options.eventData) {
+                    data.ratio = null;
+                }
+
+                /* Reposition */
+                priv.autoposition(
+                    data.wrapper_elt, popup_elt, data.target_elt
+                );
+            });
+        }
     };
 
     /**
