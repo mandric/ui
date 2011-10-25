@@ -16,15 +16,14 @@
             body {
                 margin: 0;
             }
-            .test-instructions, .center {
-                padding: 3em;
+            .test-instructions {
+                padding: 3em 3em 0 3em;
             }
             .center {
                 text-align: center;
             }
             .hover {
                 width: 50%;
-                height: 10em;
                 background-color: #888;
                 margin: 0 auto;
             }
@@ -48,6 +47,7 @@
         <div class="popup">
             This is a test of a uPopup instance, being driven by a mouse-over
             event. Notice how the popup follows the mouse cursor's position.
+            The selected element says: <span id="pct"> 0% </span>
         </div>
         <script type="text/javascript">
             var popup = null;
@@ -59,7 +59,7 @@
                         });
                     }
                 });
-                $('svg tspan').bind('mousemove', function (ev) {
+                $('path').bind('mousemove', function (ev) {
                     if (popup) {
                         popup.uPopup('recalculate', { eventData: ev });
                     } else {
@@ -70,6 +70,9 @@
                             cssClasses: 'upopup-square upopup-small'
                         });
                     }
+                    $('#pct').html(
+                        $(this).next('text').children('tspan').text()
+                    );
                 });
             });
         </script>
