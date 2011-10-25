@@ -1051,8 +1051,8 @@
                 var r = target_elt[0].getBoundingClientRect();
 
                 return {
-                    top: Math.round(r.top),
-                    left: Math.round(r.left)
+                    y: Math.round(r.top),
+                    x: Math.round(r.left)
                 }
             }
 
@@ -1104,14 +1104,14 @@
 
             if (!data.ratio) {
                 data.ratio = {
-                    x: (ev.pageX - offset.left) / size.x,
-                    y: (ev.pageY - offset.top) / size.y
+                    x: (ev.pageX - offset.x) / size.x,
+                    y: (ev.pageY - offset.y) / size.y
                 };
             }
 
             return {
-                x: offset.left + data.ratio.x * size.x,
-                y: offset.top + data.ratio.y * size.y
+                x: offset.x + data.ratio.x * size.x,
+                y: offset.y + data.ratio.y * size.y
             };
         },
 
