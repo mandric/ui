@@ -179,6 +179,14 @@
      *                  along one axis, on the top/bottom/left/right of the
      *                  popup wrapper.
      *
+     *              invertPlacement:
+     *                  A boolean value, defaults to false. When set, this
+     *                  option causes uPopup to seek out the minimal space
+     *                  along each positioning axis in use, rather than
+     *                  the maximal amount of space. This option is useful
+     *                  when your popup is over something that shouldn't
+     *                  be obscured.
+     *
      *              vertical:
      *                  A boolean value. If true, place each popup dialog's
      *                  pointer (i.e. triangular arrow) on the top or bottom
@@ -296,6 +304,7 @@
                 direction: {},
                 useCorners: true,
                 useMutation: true,
+                invertPlacement: false,
                 duration: 250 /* ms */
             }
 
@@ -644,8 +653,7 @@
          * Values inside of the _options object are used to
          * control position and placement.
          */
-        insert: function (_wrapper_elt,
-                          _popup_elt, _target_elt, _options) {
+        insert: function (_wrapper_elt, _popup_elt, _target_elt, _options) {
 
             var priv = $.uPopup.priv;
             var options = (_options || {});
@@ -717,8 +725,7 @@
          * algorithm. This wrapper implements browser-specific workarounds
          * for the actual autoposition code, found in {_autoposition}.
          */
-        autoposition: function (_wrapper_elt,
-                                _popup_elt, _target_elt) {
+        autoposition: function (_wrapper_elt, _popup_elt, _target_elt) {
 
             var priv = $.uPopup.priv;
 
@@ -739,8 +746,8 @@
          * algorithm. Places `wrapper_elt` on the side of `target_elt` that
          * has the most available screen space, in each of two dimensions.
          */
-        _autoposition: function (_wrapper_elt,
-                                 _popup_elt, _target_elt) {
+        _autoposition: function (_wrapper_elt, _popup_elt, _target_elt) {
+
             var avail = {};
             var priv = $.uPopup.priv;
             var data = priv.instance_data_for(_popup_elt);
@@ -752,16 +759,12 @@
             /* Precompute sizes, offsets:
                 These figures are used in the placement algorithm. */
                 
-            var target_offset = _target_elt.offset();
+            var target_size = priv.compute_target_size(_target_elt)
+            var target_offset = priv.compute_target_offset(_target_elt);
 
             var container_size = {
                 x: container_elt.width(),
                 y: container_elt.height()
-            };
-
-            var target_size = {
-                x: _target_elt.outerWidth(),
-                y: _target_elt.outerHeight()
             };
 
             var wrapper_size = {
@@ -794,14 +797,14 @@
 
                 avail = {
                     x: [
-                        target_offset.left,
+                        target_offset.x,
                         container_size.x -
-                            target_offset.left - target_size.x
+                            target_offset.x - target_size.x
                     ],
                     y: [
-                        target_offset.top,
+                        target_offset.y,
                         container_size.y -
-                            target_offset.top - target_size.y
+                            target_offset.y - target_size.y
                     ]
                 };
             }
@@ -846,6 +849,15 @@
                 x: $.uI.index_of_max(avail.x),
                 y: $.uI.index_of_max(avail.y)
             };
+
+            /* Handle strategy inversion:
+                If requested, flip each axis' bias value, so as to
+                cause uPopup to seek the minimum space along each axis. */
+
+            if (options.invertPlacement) {
+                data.bias.x = (data.bias.x ? 0 : 1);
+                data.bias.y = (data.bias.y ? 0 : 1);
+            }
 
             /* Direction preference:
                 If the caller noted a preferred direction along either
@@ -898,12 +910,8 @@
             /* Precompute sizes:
                 These figures are used in the placement algorithm. */
                     
-            var target_offset = _target_elt.offset();
-
-            var target_size = {
-                x: _target_elt.outerWidth(),
-                y: _target_elt.outerHeight()
-            };
+            var target_size = priv.compute_target_size(_target_elt)
+            var target_offset = priv.compute_target_offset(_target_elt);
 
             var padding_size = {
                 x: (_wrapper_size.x - inner_elt.width()) / 2,
@@ -952,15 +960,15 @@
 
                 offsets = {
                     x: [
-                        target_offset.left - _wrapper_size.x +
+                        target_offset.x - _wrapper_size.x +
                             d.x + padding_size.x,
-                        target_offset.left + target_size.x -
+                        target_offset.x + target_size.x -
                             d.x - padding_size.x
                     ],
                     y: [
-                        target_offset.top - _wrapper_size.y +
+                        target_offset.y - _wrapper_size.y +
                             d.y + padding_size.y,
-                        target_offset.top + target_size.y -
+                        target_offset.y + target_size.y -
                             d.y - padding_size.y
                     ]
                 };
@@ -1024,7 +1032,66 @@
             return true;
         },
 
-        /*
+        /**
+         * Compute the page offset of the element {_target_elt}, in
+         * pixels. For special elements (e.g. SVG-related) that don't
+         * respond correctly to jQuery's {offset} function, we employ
+         * a different strategy to find the correct value.
+         */
+        compute_target_offset: function (_target_elt) {
+
+            var target_elt = $(_target_elt);
+
+            if (target_elt.parents('svg').length > 0) {
+
+                /* Scalable vector graphics:
+                    SVG elements don't generally support querying position
+                    or size information via the usual jQuery functions. */
+
+                var r = target_elt[0].getBoundingClientRect();
+
+                return {
+                    y: Math.round(r.top),
+                    x: Math.round(r.left)
+                }
+            }
+
+            /* Normal case */
+            var rv = target_elt.offset();
+            return { x: rv.left, y: rv.top };
+        },
+
+        /**
+         * Compute the width and height of the element {_target_elt},
+         * in pixels. For special elements (e.g. SVG-related) that
+         * don't respond correctly to jQuery's {offset} function, we
+         * employ a different strategy to find the correct value.
+         */
+        compute_target_size: function (_target_elt) {
+
+            var target_elt = $(_target_elt);
+
+            if (target_elt.parents('svg').length > 0) {
+
+                /* Scalable vector graphics:
+                    See compute_target_offset for an explanation. */
+
+                var r = target_elt[0].getBoundingClientRect();
+
+                return {
+                    x: Math.round(r.width),
+                    y: Math.round(r.height)
+                }
+            }
+
+            /* Normal case */
+            return {
+                x: target_elt.outerWidth(),
+                y: target_elt.outerHeight()
+            };
+        },
+
+        /**
          * Given a jQuery event object (containing both pageX and
          * pageY coordinates), extract the coordinates and apply any
          * necessary transformations.
@@ -1037,14 +1104,14 @@
 
             if (!data.ratio) {
                 data.ratio = {
-                    x: (ev.pageX - offset.left) / size.x,
-                    y: (ev.pageY - offset.top) / size.y
+                    x: (ev.pageX - offset.x) / size.x,
+                    y: (ev.pageY - offset.y) / size.y
                 };
             }
 
             return {
-                x: offset.left + data.ratio.x * size.x,
-                y: offset.top + data.ratio.y * size.y
+                x: offset.x + data.ratio.x * size.x,
+                y: offset.y + data.ratio.y * size.y
             };
         },
 
