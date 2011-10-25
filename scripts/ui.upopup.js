@@ -372,7 +372,6 @@
                         resize, scroll, and ajax event handlers, below. */
 
                     data.reposition_fn = function (ev) {
-                        console.log('here');
                         priv._autoposition(
                             wrapper_elt, popup_elt, target_elt
                         );
